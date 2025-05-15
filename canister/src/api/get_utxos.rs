@@ -5,8 +5,8 @@ use crate::{
     types::{Address, GetUtxosRequest, Page, Utxo},
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut, State,
 };
-use ic_btc_interface::{GetUtxosError, GetUtxosResponse, Utxo as PublicUtxo, UtxosFilter};
-use ic_btc_types::{Block, BlockHash, OutPoint, Txid};
+use ic_doge_interface::{GetUtxosError, GetUtxosResponse, Utxo as PublicUtxo, UtxosFilter};
+use ic_doge_types::{Block, BlockHash, OutPoint, Txid};
 use serde_bytes::ByteBuf;
 use std::str::FromStr;
 
@@ -249,7 +249,7 @@ fn get_utxos_from_chain(
             PublicUtxo {
                 value: utxo.value,
                 height: utxo.height,
-                outpoint: ic_btc_interface::OutPoint {
+                outpoint: ic_doge_interface::OutPoint {
                     vout: utxo.outpoint.vout,
                     txid: utxo.outpoint.txid.into(),
                 },
@@ -291,11 +291,11 @@ mod test {
         types::into_bitcoin_network,
         with_state_mut,
     };
-    use ic_btc_interface::{Fees, InitConfig, Network, OutPoint, Utxo};
-    use ic_btc_test_utils::{
+    use ic_doge_interface::{Fees, InitConfig, Network, OutPoint, Utxo};
+    use ic_doge_test_utils::{
         random_p2pkh_address, random_p2tr_address, random_p2wpkh_address, random_p2wsh_address,
     };
-    use ic_btc_types::Block;
+    use ic_doge_types::Block;
     use proptest::prelude::*;
 
     #[test]
@@ -590,7 +590,7 @@ mod test {
             .with_transaction(coinbase_tx.clone())
             .build();
         let tx = TransactionBuilder::new()
-            .with_input(ic_btc_types::OutPoint::new(coinbase_tx.txid(), 0))
+            .with_input(ic_doge_types::OutPoint::new(coinbase_tx.txid(), 0))
             .with_output(&address_2, 1000)
             .build();
         let block_1 = BlockBuilder::with_prev_header(block_0.header())
@@ -775,7 +775,7 @@ mod test {
 
         // Extend block 0 with block 1 that spends the 1000 satoshis and gives them to address 2.
         let tx = TransactionBuilder::new()
-            .with_input(ic_btc_types::OutPoint::new(coinbase_tx.txid(), 0))
+            .with_input(ic_doge_types::OutPoint::new(coinbase_tx.txid(), 0))
             .with_output(&address_2, 1000)
             .build();
         let block_1 = BlockBuilder::with_prev_header(block_0.header())
@@ -825,7 +825,7 @@ mod test {
         // Extend block 0 (again) with block 1 that spends the 1000 satoshis to address 3
         // This causes a fork.
         let tx = TransactionBuilder::new()
-            .with_input(ic_btc_types::OutPoint::new(coinbase_tx.txid(), 0))
+            .with_input(ic_doge_types::OutPoint::new(coinbase_tx.txid(), 0))
             .with_output(&address_3, 1000)
             .build();
         let block_1_prime = BlockBuilder::with_prev_header(block_0.header())
@@ -877,7 +877,7 @@ mod test {
         // In this case, the fork of [block 1', block 2'] will be considered the "main"
         // chain, and will be part of the UTXOs.
         let tx = TransactionBuilder::new()
-            .with_input(ic_btc_types::OutPoint::new(tx.txid(), 0))
+            .with_input(ic_doge_types::OutPoint::new(tx.txid(), 0))
             .with_output(&address_4, 1000)
             .build();
         let block_2_prime = BlockBuilder::with_prev_header(block_1_prime.header())
@@ -1041,7 +1041,7 @@ mod test {
             .with_transaction(coinbase_tx.clone())
             .build();
         let tx = TransactionBuilder::new()
-            .with_input(ic_btc_types::OutPoint::new(coinbase_tx.txid(), 0))
+            .with_input(ic_doge_types::OutPoint::new(coinbase_tx.txid(), 0))
             .with_output(&address_2, 1000)
             .build();
         let block_1 = BlockBuilder::with_prev_header(block_0.header())

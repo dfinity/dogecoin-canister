@@ -30,11 +30,11 @@ tmpdir=$(mktemp -d)
 # Extract the wasm files from the first build
 docker run --rm -v "$tmpdir:/output" canisters cp /watchdog-canister.wasm.gz /output/watchdog-canister.wasm.gz
 docker run --rm -v "$tmpdir:/output" canisters cp /uploader-canister.wasm.gz /output/uploader-canister.wasm.gz
-docker run --rm -v "$tmpdir:/output" canisters cp /ic-btc-canister.wasm.gz /output/ic-btc-canister.wasm.gz
+docker run --rm -v "$tmpdir:/output" canisters cp /ic-doge-canister.wasm.gz /output/ic-doge-canister.wasm.gz
 
 # Calculate the SHA256 sums for the first build
 echo "Calculating SHA256 sums (1st build)..."
-sha256sum1=$(sha256sum "$tmpdir/watchdog-canister.wasm.gz" "$tmpdir/uploader-canister.wasm.gz" "$tmpdir/ic-btc-canister.wasm.gz")
+sha256sum1=$(sha256sum "$tmpdir/watchdog-canister.wasm.gz" "$tmpdir/uploader-canister.wasm.gz" "$tmpdir/ic-doge-canister.wasm.gz")
 
 # Build the Docker image for the second time
 echo "Building Docker image (2nd build)..."
@@ -43,11 +43,11 @@ docker build -t canisters "$dockerfile_dir"
 # Extract the wasm files from the second build
 docker run --rm -v "$tmpdir:/output" canisters cp /watchdog-canister.wasm.gz /output/watchdog-canister.wasm.gz
 docker run --rm -v "$tmpdir:/output" canisters cp /uploader-canister.wasm.gz /output/uploader-canister.wasm.gz
-docker run --rm -v "$tmpdir:/output" canisters cp /ic-btc-canister.wasm.gz /output/ic-btc-canister.wasm.gz
+docker run --rm -v "$tmpdir:/output" canisters cp /ic-doge-canister.wasm.gz /output/ic-doge-canister.wasm.gz
 
 # Calculate the SHA256 sums for the second build
 echo "Calculating SHA256 sums (2nd build)..."
-sha256sum2=$(sha256sum "$tmpdir/watchdog-canister.wasm.gz" "$tmpdir/uploader-canister.wasm.gz" "$tmpdir/ic-btc-canister.wasm.gz")
+sha256sum2=$(sha256sum "$tmpdir/watchdog-canister.wasm.gz" "$tmpdir/uploader-canister.wasm.gz" "$tmpdir/ic-doge-canister.wasm.gz")
 
 # Compare the SHA256 sums
 if [ "$sha256sum1" = "$sha256sum2" ]; then

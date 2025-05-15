@@ -32,9 +32,9 @@ byteorder = { workspace = true }
 ciborium = { workspace = true }
 clap = { workspace = true }
 hex = { workspace = true }
-ic-btc-canister = { workspace = true, optional = true }
-ic-btc-interface = { workspace = true }
-ic-btc-types = { workspace = true }
+ic-doge-canister = { workspace = true, optional = true }
+ic-doge-interface = { workspace = true }
+ic-doge-types = { workspace = true }
 ic-stable-structures = { workspace = true }
 integer-encoding = "3.0.4"
 rand = "0.8.5"
@@ -43,5 +43,5 @@ rusty-leveldb = "1.0.4"
 tempfile = { workspace = true }
 
 [features]
-default = ["ic-btc-canister"]
-file_memory = ["ic-btc-canister/file_memory"]
+default = ["ic-doge-canister"]
+file_memory = ["ic-doge-canister/file_memory"]

@@ -1,6 +1,6 @@
 use bitcoin::block::Header;
-use ic_btc_interface::Height;
-use ic_btc_types::BlockHash;
+use ic_doge_interface::Height;
+use ic_doge_types::BlockHash;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -65,7 +65,7 @@ impl NextBlockHeaders {
 #[cfg(test)]
 mod test {
     use crate::{test_utils::BlockBuilder, unstable_blocks::next_block_headers::NextBlockHeaders};
-    use ic_btc_types::BlockHash;
+    use ic_doge_types::BlockHash;
 
     #[test]
     fn test_get_max_height() {

@@ -3,7 +3,7 @@ use crate::{
     verify_network, with_state, with_state_mut,
 };
 use bitcoin::{consensus::Decodable, Transaction};
-use ic_btc_interface::{SendTransactionError, SendTransactionRequest};
+use ic_doge_interface::{SendTransactionError, SendTransactionRequest};
 
 pub async fn send_transaction(request: SendTransactionRequest) -> Result<(), SendTransactionError> {
     verify_api_access();
@@ -42,7 +42,7 @@ pub async fn send_transaction(request: SendTransactionRequest) -> Result<(), Sen
 mod test {
     use super::*;
     use bitcoin::{absolute::LockTime, transaction::Version};
-    use ic_btc_interface::{Fees, Flag, InitConfig, Network, NetworkInRequest};
+    use ic_doge_interface::{Fees, Flag, InitConfig, Network, NetworkInRequest};
 
     fn empty_transaction() -> Vec<u8> {
         let mut buf = vec![];

@@ -13,9 +13,9 @@ use crate::{
 };
 use bitcoin::{block::Header, consensus::Decodable};
 use candid::Principal;
-use ic_btc_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
-use ic_btc_types::{Block, BlockHash, OutPoint};
-use ic_btc_validation::{validate_header, ValidateHeaderError as InsertBlockError};
+use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
+use ic_doge_types::{Block, BlockHash, OutPoint};
+use ic_doge_validation::{validate_header, ValidateHeaderError as InsertBlockError};
 use serde::{Deserialize, Serialize};
 
 /// A structure used to maintain the entire state.

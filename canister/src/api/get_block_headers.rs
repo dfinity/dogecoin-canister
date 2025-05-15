@@ -1,5 +1,5 @@
 use bitcoin::consensus::Encodable;
-use ic_btc_interface::{GetBlockHeadersError, GetBlockHeadersRequest, GetBlockHeadersResponse};
+use ic_doge_interface::{GetBlockHeadersError, GetBlockHeadersRequest, GetBlockHeadersResponse};
 
 use crate::{
     charge_cycles,
@@ -180,7 +180,7 @@ mod test {
         with_state_mut,
     };
     use bitcoin::consensus::Encodable;
-    use ic_btc_interface::{Fees, InitConfig, Network};
+    use ic_doge_interface::{Fees, InitConfig, Network};
     use proptest::prelude::*;
 
     fn get_block_headers_helper(network: Network) {

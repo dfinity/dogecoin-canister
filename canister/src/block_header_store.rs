@@ -3,8 +3,8 @@ use bitcoin::{
     block::Header,
     consensus::{Decodable, Encodable},
 };
-use ic_btc_interface::Height;
-use ic_btc_types::{Block, BlockHash};
+use ic_doge_interface::Height;
+use ic_doge_types::{Block, BlockHash};
 use ic_stable_structures::StableBTreeMap;
 use serde::{Deserialize, Serialize};
 

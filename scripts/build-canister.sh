@@ -39,7 +39,7 @@ if [[ "$STATUS" -eq "0" ]]; then
     "./target/$TARGET/${PROFILE}/$CANISTER.wasm" \
     -o "./target/$TARGET/${PROFILE}/$CANISTER.wasm" shrink
 
-    if [[ "$CANISTER" == "ic-btc-canister" ]]; then
+    if [[ "$CANISTER" == "ic-doge-canister" ]]; then
       ./target/bin/ic-wasm \
       "./target/$TARGET/${PROFILE}/$CANISTER.wasm" \
       -o "./target/$TARGET/${PROFILE}/$CANISTER.wasm" \

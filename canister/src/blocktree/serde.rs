@@ -1,6 +1,6 @@
 use super::BlockTree;
 use bitcoin::Block as BitcoinBlock;
-use ic_btc_types::Block;
+use ic_doge_types::Block;
 use serde::{
     de::{Deserializer, SeqAccess, Visitor},
     ser::SerializeSeq,

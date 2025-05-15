@@ -8,10 +8,10 @@
 //!   --utxos-dump-path utxos-dump.csv
 use bitcoin::{hashes::Hash, Address, Txid as BitcoinTxid};
 use clap::Parser;
-use ic_btc_canister::types::into_bitcoin_network;
-use ic_btc_canister::{types::TxOut, with_state, with_state_mut};
-use ic_btc_interface::{Flag, InitConfig, Network};
-use ic_btc_types::{OutPoint, Txid};
+use ic_doge_canister::types::into_bitcoin_network;
+use ic_doge_canister::{types::TxOut, with_state, with_state_mut};
+use ic_doge_interface::{Flag, InitConfig, Network};
+use ic_doge_types::{OutPoint, Txid};
 use ic_stable_structures::{
     memory_manager::{MemoryId, MemoryManager},
     FileMemory, Memory,
@@ -41,7 +41,7 @@ struct Args {
 }
 
 fn write_memory_to_file(path: &PathBuf, memory_id: MemoryId) {
-    let canister_mem = ic_btc_canister::get_memory();
+    let canister_mem = ic_doge_canister::get_memory();
     let memory_manager = MemoryManager::init(canister_mem);
 
     let memory = memory_manager.get(memory_id);
@@ -67,7 +67,7 @@ fn main() {
     // Set a temp file to use as the memory while we compute the state.
     // This is significantly slower than building the state in RAM, but now that state sizes
     // are very large, this is the more reliable approach to avoid OOM issues.
-    ic_btc_canister::memory::set_memory(FileMemory::new(tempfile::tempfile().unwrap()));
+    ic_doge_canister::memory::set_memory(FileMemory::new(tempfile::tempfile().unwrap()));
 
     // Create the output directory if it doesn't already exist.
     create_dir_all(&args.output).unwrap();
@@ -76,7 +76,7 @@ fn main() {
     let utxos_file = File::open(args.utxos_dump_path).unwrap();
     let reader = BufReader::new(utxos_file);
 
-    ic_btc_canister::init(InitConfig {
+    ic_doge_canister::init(InitConfig {
         network: Some(args.network),
         api_access: Some(Flag::Disabled),
         ..Default::default()

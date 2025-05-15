@@ -414,12 +414,12 @@ dependencies = [
  "canbench-rs",
  "candid 0.10.10",
  "hex",
- "ic-btc-canister",
- "ic-btc-interface",
- "ic-btc-test-utils",
- "ic-btc-types",
  "ic-cdk 0.15.1",
  "ic-cdk-macros 0.15.0",
+ "ic-doge-canister",
+ "ic-doge-interface",
+ "ic-doge-test-utils",
+ "ic-doge-types",
 ]
 
 [[package]]
@@ -1101,9 +1101,9 @@ version = "0.1.0"
 dependencies = [
  "bitcoin",
  "candid 0.10.10",
- "ic-btc-test-utils",
  "ic-cdk 0.15.1",
  "ic-cdk-macros 0.15.0",
+ "ic-doge-test-utils",
  "serde",
 ]
 
@@ -1749,83 +1749,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-btc-canister"
-version = "0.1.0"
-dependencies = [
- "assert_matches",
- "async-std",
- "bitcoin",
- "byteorder",
- "canbench-rs",
- "candid 0.10.10",
- "candid_parser",
- "ciborium",
- "datasize",
- "hex",
- "ic-btc-interface",
- "ic-btc-test-utils",
- "ic-btc-types",
- "ic-btc-validation",
- "ic-cdk 0.15.1",
- "ic-cdk-macros 0.15.0",
- "ic-metrics-encoder",
- "ic-stable-structures",
- "lazy_static",
- "maplit",
- "pocket-ic",
- "proptest 0.9.6",
- "serde",
- "serde_bytes",
- "tempfile",
- "test-strategy",
-]
-
-[[package]]
-name = "ic-btc-interface"
-version = "0.2.2"
-dependencies = [
- "candid 0.10.10",
- "ciborium",
- "datasize",
- "proptest 1.5.0",
- "serde",
- "serde_bytes",
-]
-
-[[package]]
-name = "ic-btc-test-utils"
-version = "0.1.0"
-dependencies = [
- "bitcoin",
- "ic-btc-types",
-]
-
-[[package]]
-name = "ic-btc-types"
-version = "0.1.0"
-dependencies = [
- "bitcoin",
- "candid 0.10.10",
- "datasize",
- "hex",
- "ic-btc-interface",
- "ic-btc-validation",
- "ic-stable-structures",
- "serde",
- "serde_bytes",
-]
-
-[[package]]
-name = "ic-btc-validation"
-version = "0.1.0"
-dependencies = [
- "bitcoin",
- "csv",
- "hex",
- "proptest 0.9.6",
-]
-
-[[package]]
 name = "ic-cdk"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1930,6 +1853,82 @@ dependencies = [
  "serde",
  "serde_bytes",
  "sha2 0.10.8",
+]
+
+[[package]]
+name = "ic-doge-canister"
+version = "0.1.0"
+dependencies = [
+ "assert_matches",
+ "async-std",
+ "bitcoin",
+ "byteorder",
+ "canbench-rs",
+ "candid 0.10.10",
+ "candid_parser",
+ "ciborium",
+ "datasize",
+ "hex",
+ "ic-cdk 0.15.1",
+ "ic-cdk-macros 0.15.0",
+ "ic-doge-interface",
+ "ic-doge-test-utils",
+ "ic-doge-types",
+ "ic-doge-validation",
+ "ic-metrics-encoder",
+ "ic-stable-structures",
+ "lazy_static",
+ "maplit",
+ "pocket-ic",
+ "proptest 0.9.6",
+ "serde",
+ "serde_bytes",
+ "tempfile",
+ "test-strategy",
+]
+
+[[package]]
+name = "ic-doge-interface"
+version = "0.1.0"
+dependencies = [
+ "candid 0.10.10",
+ "ciborium",
+ "datasize",
+ "proptest 1.5.0",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
+name = "ic-doge-test-utils"
+version = "0.1.0"
+dependencies = [
+ "bitcoin",
+ "ic-doge-types",
+]
+
+[[package]]
+name = "ic-doge-types"
+version = "0.1.0"
+dependencies = [
+ "bitcoin",
+ "candid 0.10.10",
+ "datasize",
+ "hex",
+ "ic-doge-interface",
+ "ic-stable-structures",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
+name = "ic-doge-validation"
+version = "0.1.0"
+dependencies = [
+ "bitcoin",
+ "csv",
+ "hex",
+ "proptest 0.9.6",
 ]
 
 [[package]]
@@ -3427,9 +3426,9 @@ version = "0.1.0"
 dependencies = [
  "bitcoin",
  "candid 0.10.10",
- "ic-btc-test-utils",
  "ic-cdk 0.15.1",
  "ic-cdk-macros 0.15.0",
+ "ic-doge-test-utils",
  "serde",
 ]
 
@@ -3439,9 +3438,9 @@ version = "0.1.0"
 dependencies = [
  "bitcoin",
  "candid 0.10.10",
- "ic-btc-test-utils",
  "ic-cdk 0.15.1",
  "ic-cdk-macros 0.15.0",
+ "ic-doge-test-utils",
  "serde",
 ]
 
@@ -3451,9 +3450,9 @@ version = "0.1.0"
 dependencies = [
  "bitcoin",
  "candid 0.10.10",
- "ic-btc-test-utils",
  "ic-cdk 0.15.1",
  "ic-cdk-macros 0.15.0",
+ "ic-doge-test-utils",
  "serde",
 ]
 
@@ -3842,9 +3841,9 @@ dependencies = [
  "ciborium",
  "clap",
  "hex",
- "ic-btc-canister",
- "ic-btc-interface",
- "ic-btc-types",
+ "ic-doge-canister",
+ "ic-doge-interface",
+ "ic-doge-types",
  "ic-stable-structures",
  "integer-encoding",
  "rand 0.8.5",
@@ -4547,10 +4546,10 @@ dependencies = [
  "candid_parser",
  "futures",
  "hex",
- "ic-btc-interface",
  "ic-cdk 0.15.1",
  "ic-cdk-macros 0.15.0",
  "ic-cdk-timers",
+ "ic-doge-interface",
  "ic-http",
  "ic-metrics-encoder",
  "regex",

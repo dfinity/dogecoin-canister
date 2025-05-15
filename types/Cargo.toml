@@ -1,5 +1,5 @@
 [package]
-name = "ic-btc-types"
+name = "ic-doge-types"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,8 +10,7 @@ bitcoin = { workspace = true, features = ["serde"] }
 candid = { workspace = true }
 datasize = { workspace = true }
 hex = { workspace = true }
-ic-btc-interface = { workspace = true }
-ic-btc-validation = { workspace = true }
+ic-doge-interface = { workspace = true }
 ic-stable-structures = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }

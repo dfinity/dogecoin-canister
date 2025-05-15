@@ -1,11 +1,11 @@
-## The Bitcoin Canister API
+## The Dogecoin Canister API
 
-The canister IDs of the Bitcoin canisters for Bitcoin mainnet and testnet:
+The canister IDs of the Dogecoin canisters for Dogecoin mainnet and testnet:
 
 * `mainnet`:  [`ghsi2-tqaaa-aaaan-aaaca-cai`](https://dashboard.internetcomputer.org/canister/ghsi2-tqaaa-aaaan-aaaca-cai)
 * `testnet` (specifically `testnet4`):  [`g4xu7-jiaaa-aaaan-aaaaq-cai`](https://dashboard.internetcomputer.org/canister/g4xu7-jiaaa-aaaan-aaaaq-cai)
 
-Information about Bitcoin and the IC Bitcoin integration can be found in the [Bitcoin developer guides](https://developer.bitcoin.org/devguide/) and the [Bitcoin integration documentation](https://internetcomputer.org/docs/current/references/bitcoin-how-it-works).
+Information about Dogecoin and the IC Dogecoin integration can be found in the [Bitcoin developer guides](https://developer.bitcoin.org/devguide/) and the [Bitcoin integration documentation](https://internetcomputer.org/docs/current/references/bitcoin-how-it-works).
 
 ### `bitcoin_get_utxos`
 

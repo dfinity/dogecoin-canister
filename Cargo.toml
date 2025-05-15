@@ -37,11 +37,11 @@ clap = { version = "4.0.11", features = ["derive"] }
 datasize = "0.2.15"
 futures = "0.3.28"
 hex = "0.4.3"
-ic-btc-canister = { path = "./canister" }
-ic-btc-interface = { path = "./interface" }
-ic-btc-test-utils = { path = "./test-utils" }
-ic-btc-types = { path = "./types" }
-ic-btc-validation = { path = "./validation" }
+ic-doge-canister = { path = "./canister" }
+ic-doge-interface = { path = "./interface" }
+ic-doge-test-utils = { path = "./test-utils" }
+ic-doge-types = { path = "./types" }
+ic-doge-validation = { path = "./validation" }
 ic-cdk = "0.15.1"
 ic-cdk-macros = "0.15"
 ic-http = { path = "./ic-http" }

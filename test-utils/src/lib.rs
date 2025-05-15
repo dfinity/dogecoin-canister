@@ -8,7 +8,7 @@ use bitcoin::{
     PublicKey, Script, Sequence, Target, Transaction, TxIn, TxMerkleNode, TxOut, Witness,
     XOnlyPublicKey,
 };
-use ic_btc_types::Block;
+use ic_doge_types::Block;
 use simple_rng::{fill_bytes, generate_keypair};
 use std::str::FromStr;
 

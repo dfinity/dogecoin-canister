@@ -5,7 +5,7 @@ use crate::{
     unstable_blocks::testnet_unstable_max_depth_difference,
     with_state,
 };
-use ic_btc_interface::Flag;
+use ic_doge_interface::Flag;
 use ic_cdk::api::time;
 use ic_metrics_encoder::MetricsEncoder;
 use serde_bytes::ByteBuf;

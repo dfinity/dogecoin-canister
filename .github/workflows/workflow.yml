@@ -413,7 +413,7 @@ jobs:
       - name: Run cycles_burn test
         run: bash e2e-tests/cycles_burn.sh
 
-  bitcoin_canister_metadata:
+  dogecoin_canister_metadata:
     runs-on: ubuntu-20.04
     needs: cargo-build
 
@@ -438,8 +438,8 @@ jobs:
         with:
           dfx-version: $DFX_VERSION
 
-      - name: Run bitcoin_canister_metadata test
-        run: bash e2e-tests/bitcoin-canister-metadata.sh
+      - name: Run dogecoin_canister_metadata test
+        run: bash e2e-tests/dogecoin-canister-metadata.sh
 
   benchmark:
     runs-on: ubuntu-latest
@@ -669,7 +669,7 @@ jobs:
         watchdog_metrics,
         watchdog_upgradability,
         canister-build-reproducibility,
-        bitcoin_canister_metadata,
+        dogecoin_canister_metadata,
       ]
     runs-on: ubuntu-20.04
     steps:
@@ -709,8 +709,8 @@ jobs:
       - name: check cycles_burn result
         if: ${{ needs.cycles_burn.result != 'success' }}
         run: exit 1
-      - name: check bitcoin_canister_metadata result
-        if: ${{ needs.bitcoin_canister_metadata.result != 'success' }}
+      - name: check dogecoin_canister_metadata result
+        if: ${{ needs.dogecoin_canister_metadata.result != 'success' }}
         run: exit 1
       - name: check benchmark result
         if: ${{ needs.benchmark.result != 'success' }}

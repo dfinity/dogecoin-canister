@@ -1,5 +1,5 @@
-use ic_btc_canister::types::{HttpRequest, HttpResponse};
-use ic_btc_interface::{
+use ic_doge_canister::types::{HttpRequest, HttpResponse};
+use ic_doge_interface::{
     Config, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
     GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig,
     MillisatoshiPerByte, Satoshi, SendTransactionRequest, SetConfigRequest,
@@ -18,28 +18,28 @@ fn hook() {
 #[init]
 fn init(init_config: InitConfig) {
     hook();
-    ic_btc_canister::init(init_config);
+    ic_doge_canister::init(init_config);
 }
 
 #[pre_upgrade]
 fn pre_upgrade() {
-    ic_btc_canister::pre_upgrade();
+    ic_doge_canister::pre_upgrade();
 }
 
 #[post_upgrade]
 fn post_upgrade(config_update: Option<SetConfigRequest>) {
     hook();
-    ic_btc_canister::post_upgrade(config_update);
+    ic_doge_canister::post_upgrade(config_update);
 }
 
 #[heartbeat]
 async fn heartbeat() {
-    ic_btc_canister::heartbeat().await
+    ic_doge_canister::heartbeat().await
 }
 
 #[update(manual_reply = true)]
 pub fn bitcoin_get_balance(request: GetBalanceRequest) -> ManualReply<Satoshi> {
-    match ic_btc_canister::get_balance(request) {
+    match ic_doge_canister::get_balance(request) {
         Ok(response) => ManualReply::one(response),
         Err(e) => ManualReply::reject(format!("get_balance failed: {:?}", e).as_str()),
     }
@@ -50,7 +50,7 @@ pub fn bitcoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Sato
     if ic_cdk::api::data_certificate().is_none() {
         return ManualReply::reject("get_balance_query cannot be called in replicated mode");
     }
-    match ic_btc_canister::get_balance_query(request) {
+    match ic_doge_canister::get_balance_query(request) {
         Ok(response) => ManualReply::one(response),
         Err(e) => ManualReply::reject(format!("get_balance_query failed: {:?}", e).as_str()),
     }
@@ -58,7 +58,7 @@ pub fn bitcoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Sato
 
 #[update(manual_reply = true)]
 pub fn bitcoin_get_utxos(request: GetUtxosRequest) -> ManualReply<GetUtxosResponse> {
-    match ic_btc_canister::get_utxos(request) {
+    match ic_doge_canister::get_utxos(request) {
         Ok(response) => ManualReply::one(response),
         Err(e) => ManualReply::reject(format!("get_utxos failed: {:?}", e).as_str()),
     }
@@ -69,7 +69,7 @@ pub fn bitcoin_get_utxos_query(request: GetUtxosRequest) -> ManualReply<GetUtxos
     if ic_cdk::api::data_certificate().is_none() {
         return ManualReply::reject("get_utxos_query cannot be called in replicated mode");
     }
-    match ic_btc_canister::get_utxos_query(request) {
+    match ic_doge_canister::get_utxos_query(request) {
         Ok(response) => ManualReply::one(response),
         Err(e) => ManualReply::reject(format!("get_utxos_query failed: {:?}", e).as_str()),
     }
@@ -79,7 +79,7 @@ pub fn bitcoin_get_utxos_query(request: GetUtxosRequest) -> ManualReply<GetUtxos
 pub fn bitcoin_get_block_headers(
     request: GetBlockHeadersRequest,
 ) -> ManualReply<GetBlockHeadersResponse> {
-    match ic_btc_canister::get_block_headers(request) {
+    match ic_doge_canister::get_block_headers(request) {
         Ok(response) => ManualReply::one(response),
         Err(e) => ManualReply::reject(format!("get_block_headers failed: {:?}", e).as_str()),
     }
@@ -87,7 +87,7 @@ pub fn bitcoin_get_block_headers(
 
 #[update(manual_reply = true)]
 async fn bitcoin_send_transaction(request: SendTransactionRequest) -> ManualReply<()> {
-    match ic_btc_canister::send_transaction(request).await {
+    match ic_doge_canister::send_transaction(request).await {
         Ok(_) => ManualReply::all(()),
         Err(e) => ManualReply::reject(format!("send_transaction failed: {:?}", e).as_str()),
     }
@@ -97,22 +97,22 @@ async fn bitcoin_send_transaction(request: SendTransactionRequest) -> ManualRepl
 pub fn bitcoin_get_current_fee_percentiles(
     request: GetCurrentFeePercentilesRequest,
 ) -> Vec<MillisatoshiPerByte> {
-    ic_btc_canister::get_current_fee_percentiles(request)
+    ic_doge_canister::get_current_fee_percentiles(request)
 }
 
 #[query]
 pub fn get_config() -> Config {
-    ic_btc_canister::get_config()
+    ic_doge_canister::get_config()
 }
 
 #[update]
 fn set_config(request: SetConfigRequest) {
-    ic_btc_canister::set_config(request)
+    ic_doge_canister::set_config(request)
 }
 
 #[query]
 pub fn http_request(request: HttpRequest) -> HttpResponse {
-    ic_btc_canister::http_request(request)
+    ic_doge_canister::http_request(request)
 }
 
 #[inspect_message]

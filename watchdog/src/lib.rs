@@ -20,7 +20,7 @@ use crate::{
     health::HealthStatus,
     types::{CandidHttpRequest, CandidHttpResponse},
 };
-use ic_btc_interface::Flag;
+use ic_doge_interface::Flag;
 use ic_cdk::api::management_canister::http_request::{HttpResponse, TransformArgs};
 use ic_cdk_macros::{init, post_upgrade, query};
 use ic_cdk_timers::TimerId;

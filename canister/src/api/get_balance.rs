@@ -4,7 +4,7 @@ use crate::{
     types::{Address, GetBalanceRequest},
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut,
 };
-use ic_btc_interface::{GetBalanceError, Satoshi};
+use ic_doge_interface::{GetBalanceError, Satoshi};
 use std::str::FromStr;
 
 // Various profiling stats for tracking the performance of `get_balance`.
@@ -112,9 +112,9 @@ mod test {
         types::into_bitcoin_network,
         with_state_mut,
     };
-    use ic_btc_interface::{Fees, InitConfig, Network};
-    use ic_btc_test_utils::random_p2pkh_address;
-    use ic_btc_types::OutPoint;
+    use ic_doge_interface::{Fees, InitConfig, Network};
+    use ic_doge_test_utils::random_p2pkh_address;
+    use ic_doge_types::OutPoint;
 
     #[test]
     fn get_balance_error_on_malformed_address() {

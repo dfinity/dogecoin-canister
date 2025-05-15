@@ -1,4 +1,4 @@
-use ic_btc_interface::Txid;
+use ic_doge_interface::Txid;
 use proptest::array::uniform32;
 use proptest::collection::vec as pvec;
 use proptest::prelude::*;

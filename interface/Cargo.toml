@@ -1,13 +1,13 @@
 [package]
-name = "ic-btc-interface"
-version = "0.2.2"
+name = "ic-doge-interface"
+version = "0.1.0"
 edition = "2021"
-description = "Rust types for the Internet Computer's Bitcoin API."
-homepage = "https://docs.rs/ic-btc-interface"
-documentation = "https://docs.rs/ic-btc-interface"
+description = "Rust types for the Internet Computer's Dogecoin API."
+homepage = "https://docs.rs/ic-doge-interface"
+documentation = "https://docs.rs/ic-doge-interface"
 license = "Apache-2.0"
 include = ["src", "Cargo.toml", "../LICENSE", "README.md"]
-repository = "https://github.com/dfinity/bitcoin-canister"
+repository = "https://github.com/dfinity/dogecoin-canister"
 readme = "README.md"
 
 [dependencies]

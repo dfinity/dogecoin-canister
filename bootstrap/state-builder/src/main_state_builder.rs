@@ -9,14 +9,14 @@
 //!   --unstable-blocks ./unstable_blocks
 use bitcoin::{consensus::Decodable, Block as BitcoinBlock};
 use clap::Parser;
-use ic_btc_canister::{
+use ic_doge_canister::{
     pre_upgrade,
     types::{BlockHeaderBlob, TxOut},
     unstable_blocks::{self, UnstableBlocks},
     with_state, with_state_mut,
 };
-use ic_btc_interface::{Flag, Height, InitConfig, Network};
-use ic_btc_types::{Block, BlockHash, OutPoint};
+use ic_doge_interface::{Flag, Height, InitConfig, Network};
+use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_stable_structures::FileMemory;
 use std::{
     collections::BTreeMap,
@@ -68,7 +68,7 @@ fn main() {
     let args = Args::parse();
 
     // Set the memory of the canister.
-    ic_btc_canister::memory::set_memory(FileMemory::new(
+    ic_doge_canister::memory::set_memory(FileMemory::new(
         File::options()
             .read(true)
             .write(true)
@@ -76,7 +76,7 @@ fn main() {
             .expect("canister state file must be available"),
     ));
 
-    ic_btc_canister::init(InitConfig {
+    ic_doge_canister::init(InitConfig {
         network: Some(args.network),
         stability_threshold: Some(args.stability_threshold),
         api_access: Some(Flag::Enabled),

@@ -10,8 +10,8 @@ use crate::{
 };
 use bitcoin::{consensus::Decodable, Block as BitcoinBlock};
 use datasize::data_size;
-use ic_btc_interface::Flag;
-use ic_btc_types::{Block, BlockHash};
+use ic_doge_interface::Flag;
+use ic_doge_types::{Block, BlockHash};
 use std::time::Duration;
 
 /// The heartbeat of the Bitcoin canister.
@@ -338,8 +338,8 @@ mod test {
         utxo_set::IngestingBlock,
     };
     use bitcoin::block::Header;
-    use ic_btc_interface::{InitConfig, Network};
-    use ic_btc_test_utils::random_p2pkh_address;
+    use ic_doge_interface::{InitConfig, Network};
+    use ic_doge_test_utils::random_p2pkh_address;
 
     fn build_block(prev_header: &Header, address: Address, num_transactions: u128) -> Block {
         let mut block = BlockBuilder::with_prev_header(prev_header);
@@ -549,7 +549,7 @@ mod test {
         // Create another transaction where the UTXOs of address 1 are transferred to address 2.
         let mut tx_2 = TransactionBuilder::new();
         for i in 0..tx_cardinality {
-            tx_2 = tx_2.with_input(ic_btc_types::OutPoint {
+            tx_2 = tx_2.with_input(ic_doge_types::OutPoint {
                 txid: tx_1.txid(),
                 vout: i,
             });

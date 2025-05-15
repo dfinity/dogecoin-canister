@@ -1,4 +1,4 @@
-//! Types used in the interface of the Bitcoin Canister.
+//! Types used in the interface of the Dogecoin Canister.
 
 use candid::{CandidType, Deserialize, Principal};
 use datasize::DataSize;

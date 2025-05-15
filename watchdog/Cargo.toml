@@ -14,7 +14,7 @@ async-trait = "0.1.67"
 candid = { workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
-ic-btc-interface = { workspace = true }
+ic-doge-interface = { workspace = true }
 ic-cdk = { workspace = true }
 ic-cdk-macros = { workspace = true }
 ic-cdk-timers = "0.1"

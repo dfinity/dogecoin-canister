@@ -5,8 +5,8 @@ use crate::{
     unstable_blocks::{self, UnstableBlocks},
     verify_has_enough_cycles, with_state, with_state_mut,
 };
-use ic_btc_interface::MillisatoshiPerByte;
-use ic_btc_types::{Block, Transaction};
+use ic_doge_interface::MillisatoshiPerByte;
+use ic_doge_types::{Block, Transaction};
 
 /// The number of transactions to include in the percentiles calculation.
 const NUM_TRANSACTIONS: u32 = 10_000;
@@ -172,9 +172,9 @@ mod test {
     };
     use async_std::task::block_on;
     use bitcoin::Witness;
-    use ic_btc_interface::{Fees, InitConfig, Network, Satoshi};
-    use ic_btc_test_utils::random_p2pkh_address;
-    use ic_btc_types::OutPoint;
+    use ic_doge_interface::{Fees, InitConfig, Network, Satoshi};
+    use ic_doge_test_utils::random_p2pkh_address;
+    use ic_doge_types::OutPoint;
     use std::iter::FromIterator;
 
     /// Covers an inclusive range of `[0, 100]` percentiles.

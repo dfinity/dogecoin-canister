@@ -1,11 +1,11 @@
 use crate::{genesis_block, types::Address};
 use bitcoin::{block::Header, Address as BitcoinAddress, Witness};
-use ic_btc_interface::Network;
-use ic_btc_test_utils::{
+use ic_doge_interface::Network;
+use ic_doge_test_utils::{
     random_p2pkh_address, BlockBuilder as ExternalBlockBuilder,
     TransactionBuilder as ExternalTransactionBuilder,
 };
-use ic_btc_types::{into_bitcoin_network, Block, OutPoint, Transaction};
+use ic_doge_types::{into_bitcoin_network, Block, OutPoint, Transaction};
 use ic_stable_structures::{Memory, StableBTreeMap, Storable};
 use std::{
     ops::{Bound, RangeBounds},
@@ -84,7 +84,7 @@ pub fn is_stable_btreemap_equal<M: Memory, K: Storable + Ord + Eq + Clone, V: St
     true
 }
 
-/// A wrapper around `ic_btc_test_utils::BlockBuilder` that returns `crate::types::Block`
+/// A wrapper around `ic_doge_test_utils::BlockBuilder` that returns `crate::types::Block`
 /// as opposed to `bitcoin::Block`.
 pub struct BlockBuilder {
     builder: ExternalBlockBuilder,
@@ -133,7 +133,7 @@ impl BlockBuilder {
     }
 }
 
-/// A wrapper around `ic_btc_test_utils::TransactionBuilder` that returns
+/// A wrapper around `ic_doge_test_utils::TransactionBuilder` that returns
 /// `crate::types::Transaction` as opposed to `bitcoin::Transaction`.
 pub struct TransactionBuilder {
     builder: ExternalTransactionBuilder,
