@@ -16,6 +16,8 @@ serde = { workspace = true }
 serde_bytes = { workspace = true }
 
 [features]
+default = ["btc"]
+
 mock_difficulty = []
 
 btc = []
