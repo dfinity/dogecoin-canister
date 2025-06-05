@@ -1,8 +1,20 @@
 //! Types used across crates.
 //! NOTE: These types are _not_ part of the interface.
 
+#[cfg(all(feature = "btc", feature = "doge"))]
+compile_error!("Features \"btc\" and \"doge\" cannot be enabled at the same time.");
+
+#[cfg(not(any(feature = "btc", feature = "doge")))]
+compile_error!("Either feature \"btc\" or \"doge\" must be enabled.");
+
+#[cfg(feature = "btc")]
+use bitcoin::{block::Block as BitcoinBlock, params::Params};
+
+#[cfg(feature = "doge")]
+use bitcoin::{dogecoin::params::Params, dogecoin::Block as BitcoinBlock};
+
 use bitcoin::{
-    block::Header, hashes::Hash, params::Params, Block as BitcoinBlock, Network as BitcoinNetwork,
+    block::Header, dogecoin::Network as DogecoinNetwork, hashes::Hash, Network as BitcoinNetwork,
     OutPoint as BitcoinOutPoint, Target,
 };
 use candid::CandidType;
@@ -73,7 +85,7 @@ impl Block {
     // The definition here corresponds to what is referred as "bdiff" in
     // https://en.bitcoin.it/wiki/Difficulty
     pub fn target_difficulty(network: Network, target: Target) -> u128 {
-        target.difficulty(Params::new(into_bitcoin_network(network)))
+        target.difficulty(Params::new(into_blockchain_network(network)))
     }
 
     pub fn internal_bitcoin_block(&self) -> &BitcoinBlock {
@@ -312,11 +324,21 @@ impl std::fmt::Debug for BlockHash {
     }
 }
 
-pub fn into_bitcoin_network(network: Network) -> BitcoinNetwork {
+#[cfg(feature = "btc")]
+pub fn into_blockchain_network(network: Network) -> BitcoinNetwork {
     match network {
         Network::Mainnet => BitcoinNetwork::Bitcoin,
         Network::Testnet => BitcoinNetwork::Testnet4,
         Network::Regtest => BitcoinNetwork::Regtest,
+    }
+}
+
+#[cfg(feature = "doge")]
+pub fn into_blockchain_network(network: Network) -> DogecoinNetwork {
+    match network {
+        Network::Mainnet => DogecoinNetwork::Dogecoin,
+        Network::Testnet => DogecoinNetwork::Testnet,
+        Network::Regtest => DogecoinNetwork::Regtest,
     }
 }
 
@@ -438,4 +460,10 @@ fn target_difficulty() {
         ),
         1_032
     );
+}
+
+#[derive(Debug)]
+pub enum BlockchainNetwork {
+    Bitcoin(BitcoinNetwork),
+    Dogecoin(DogecoinNetwork),
 }
