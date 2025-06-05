@@ -11,6 +11,7 @@ repository = "https://github.com/dfinity/dogecoin-canister"
 
 [dependencies]
 bitcoin = { workspace = true }
+ic-doge-types = { workspace = true }
 
 [dev-dependencies]
 csv = "1.1"
