@@ -343,10 +343,12 @@ fn compute_next_difficulty_dogecoin(
     }
     // Computing the `last_adjustment_header`.
     // `last_adjustment_header` is the last header with height multiple of 240
-    let last_adjustment_height = if height < DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN {
+    // Dogecoin solves the "off-by-one" or Time Wrap bug in Bitcoin by going back to the full retarget period.
+    // See: <https://litecoin.info/docs/history/time-warp-attack>
+    let last_adjustment_height = if height <= DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN {
         0
     } else {
-        height - DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN
+        height - DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN - 1
     };
     let last_adjustment_header = store
         .get_with_height(last_adjustment_height)
