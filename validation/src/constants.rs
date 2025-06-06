@@ -56,7 +56,7 @@ pub fn no_pow_retargeting(network: &BlockchainNetwork) -> bool {
     }
 }
 
-/// Returns the PoW limit bits of the bitcoin network
+/// Returns the PoW limit bits depending on the network
 pub fn pow_limit_bits(network: &BlockchainNetwork) -> CompactTarget {
     use ic_doge_types::BlockchainNetwork::*;
 
@@ -93,6 +93,10 @@ pub mod test {
     /// Testnet 00000000383cd7fff4692410ccd9bd6201790043bb41b93bacb21e9b85620767
     pub const TESTNET_HEADER_2132556: &str = "00000020974f55e77dff100bc252a01aa7b00d16736c6e04a091b03be200000000000000c44f2d69fc200c4a2211885000b6b67512f42c1bec550f3754e103b6c4046e05a202c161ffff001d09ec1bc4";
 
+    /// Mainnet 0c120ab190655673a709bc92ad86f80dc1cd9f11f9e0f09ebc5e6a3058b73002
+    pub const MAINNET_HEADER_DOGE_17: &str = "01000000fbc172c83b7e535390cfd7807118a7fc799cdbda9da0cbd390f4b70c0f62c2fb155fa2e0ad11cfd91cd0f47049c0fcf5dfabd2fe1a3a406c0350e89f14618bb1f4eda352f0ff0f1e00067505";
+    /// Mainnet da0e2362cc1d1cd48c8eb70e578c97f00d9a530985ba36027eb7e3fba98c74ae
+    pub const MAINNET_HEADER_DOGE_18: &str = "010000000230b758306a5ebc9ef0e0f9119fcdc10df886ad92bc09a773566590b10a120ca96ac7b3a8ef18a68f1044aef152724403bb6bb6e2e44bdb26395a6f00ec858df6eda352f0ff0f1e0002c935";
     /// Mainnet 7b8f3d7006952b2d6663967ed2b20226db8c1c3c392c0fe1da14cca43b55e344
     pub const MAINNET_HEADER_DOGE_23505: &str ="01000000f6ee239bf5264e3a178517140db01eda71343bd7defdccee54850a561dbd474bc1e1706d919aaba102e68d3fa67d0eb58846c6770ce30c6c17d8410c00b30628f355b752a6c2001c0058caa9";
     /// Mainnet f0b769c6eb33f9671e0f520df1bacb76d91fa2d41d6e19d3b6becd9a6daa45c1
