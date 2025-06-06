@@ -1,12 +1,15 @@
-use crate::constants::TEN_MINUTES;
+use crate::header::get_next_target;
 use crate::{BlockHeight, HeaderStore};
-use bitcoin::block::Header;
+use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
-use bitcoin::constants::genesis_block;
 use bitcoin::hashes::hex::FromHex;
-use bitcoin::params::Params;
-use bitcoin::{BlockHash, CompactTarget};
+use bitcoin::{BlockHash, CompactTarget, Target, TxMerkleNode};
+use csv::Reader;
+use ic_doge_types::BlockchainNetwork;
+use proptest::proptest;
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::str::FromStr;
 
 const MOCK_CURRENT_TIME: u64 = 2_634_590_600;
 
@@ -53,7 +56,7 @@ impl SimpleHeaderStore {
         let prev = self
             .headers
             .get(&header.prev_blockhash)
-            .expect("prev hash missing");
+            .expect(format!("prev hash missing for header {header:?}").as_str());
         let stored_header = StoredHeader {
             header,
             height: prev.height + 1,
@@ -88,68 +91,88 @@ impl HeaderStore for SimpleHeaderStore {
     }
 }
 
-fn genesis_header(network: impl AsRef<Params>, bits: CompactTarget) -> Header {
-    Header {
-        bits,
-        ..genesis_block(network).header
+fn test_next_targets(network: BlockchainNetwork, headers_path: &str, up_to_height: usize) {
+    use bitcoin::consensus::Decodable;
+    use std::io::BufRead;
+    let file = std::fs::File::open(
+        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(headers_path),
+    )
+    .unwrap();
+
+    let rdr = std::io::BufReader::new(file);
+
+    println!("Loading headers...");
+    let mut headers = vec![];
+    for line in rdr.lines() {
+        let header = line.unwrap();
+        // If this line fails make sure you install git-lfs.
+        let decoded = hex::decode(header.trim()).unwrap();
+        let header = Header::consensus_decode(&mut &decoded[..]).unwrap();
+        headers.push(header);
     }
+
+    println!("Creating header store...");
+    let mut store = SimpleHeaderStore::new(headers[0], 0);
+    for header in headers[1..].iter() {
+        store.add(*header);
+    }
+
+    println!("Verifying next targets...");
+    proptest!(|(i in 0..up_to_height)| {
+        // Compute what the target of the next header should be.
+        let expected_next_target =
+            get_next_target(&network, &store, &headers[i], i as u32, headers[i + 1].time);
+
+        // Assert that the expected next target matches the next header's target.
+        assert_eq!(
+            expected_next_target,
+            Target::from_compact(headers[i + 1].bits)
+        );
+    });
 }
 
-fn next_block_header(prev: Header, bits: CompactTarget) -> Header {
-    Header {
-        prev_blockhash: prev.block_hash(),
-        time: prev.time + TEN_MINUTES,
-        bits,
-        ..prev
+/// This function reads `num_headers` headers from `tests/data/headers.csv`
+/// and returns them.
+fn get_headers(file: &str) -> Vec<Header> {
+    let rdr = Reader::from_path(
+        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
+            .join("tests/data/")
+            .join(file),
+    );
+    assert!(rdr.is_ok(), "Unable to find {file} file");
+    let mut rdr = rdr.unwrap();
+    let mut headers = vec![];
+    for result in rdr.records() {
+        let record = result.unwrap();
+        let header = Header {
+            version: Version::from_consensus(
+                i32::from_str_radix(record.get(0).unwrap(), 16).unwrap(),
+            ),
+            prev_blockhash: BlockHash::from_str(record.get(1).unwrap()).unwrap(),
+            merkle_root: TxMerkleNode::from_str(record.get(2).unwrap()).unwrap(),
+            time: u32::from_str_radix(record.get(3).unwrap(), 16).unwrap(),
+            bits: CompactTarget::from_consensus(
+                u32::from_str_radix(record.get(4).unwrap(), 16).unwrap(),
+            ),
+            nonce: u32::from_str_radix(record.get(5).unwrap(), 16).unwrap(),
+        };
+        headers.push(header);
     }
+    headers
 }
 
 mod bitcoin_header {
-    use std::{path::PathBuf, str::FromStr};
-
-    use bitcoin::{block::Version, blockdata::constants::genesis_block, TxMerkleNode};
-    use csv::Reader;
-    use proptest::prelude::*;
-
     use super::super::*;
     use super::{
-        deserialize_header, genesis_header, next_block_header, SimpleHeaderStore, MOCK_CURRENT_TIME,
+        deserialize_header, get_headers, test_next_targets, SimpleHeaderStore, MOCK_CURRENT_TIME,
     };
     use crate::constants::test::{
         MAINNET_HEADER_586656, MAINNET_HEADER_705600, MAINNET_HEADER_705601, MAINNET_HEADER_705602,
         TESTNET_HEADER_2132555, TESTNET_HEADER_2132556,
     };
+    use bitcoin::constants::genesis_block;
 
-    use bitcoin::Network::{Bitcoin, Regtest};
-
-    /// This function reads `num_headers` headers from `tests/data/headers.csv`
-    /// and returns them.
-    fn get_bitcoin_headers() -> Vec<Header> {
-        let rdr = Reader::from_path(
-            PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
-                .join("tests/data/headers.csv"),
-        );
-        assert!(rdr.is_ok(), "Unable to find blockchain_headers.csv file");
-        let mut rdr = rdr.unwrap();
-        let mut headers = vec![];
-        for result in rdr.records() {
-            let record = result.unwrap();
-            let header = Header {
-                version: Version::from_consensus(
-                    i32::from_str_radix(record.get(0).unwrap(), 16).unwrap(),
-                ),
-                prev_blockhash: BlockHash::from_str(record.get(1).unwrap()).unwrap(),
-                merkle_root: TxMerkleNode::from_str(record.get(2).unwrap()).unwrap(),
-                time: u32::from_str_radix(record.get(3).unwrap(), 16).unwrap(),
-                bits: CompactTarget::from_consensus(
-                    u32::from_str_radix(record.get(4).unwrap(), 16).unwrap(),
-                ),
-                nonce: u32::from_str_radix(record.get(5).unwrap(), 16).unwrap(),
-            };
-            headers.push(header);
-        }
-        headers
-    }
+    use bitcoin::Network::{Bitcoin, Regtest, Testnet};
 
     #[test]
     fn test_simple_mainnet() {
@@ -183,7 +206,7 @@ mod bitcoin_header {
     fn test_is_header_valid() {
         let header_586656 = deserialize_header(MAINNET_HEADER_586656);
         let mut store = SimpleHeaderStore::new(header_586656, 586_656);
-        let headers = get_bitcoin_headers();
+        let headers = get_headers("headers.csv");
         for (i, header) in headers.iter().enumerate() {
             let result = validate_header(
                 &BlockchainNetwork::Bitcoin(Bitcoin),
@@ -277,50 +300,26 @@ mod bitcoin_header {
         ));
     }
 
-    fn test_next_targets(network: BitcoinNetwork, headers_path: &str, up_to_height: usize) {
-        use bitcoin::consensus::Decodable;
-        use std::io::BufRead;
-        let file = std::fs::File::open(
-            PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(headers_path),
-        )
-        .unwrap();
-
-        let rdr = std::io::BufReader::new(file);
-
-        println!("Loading headers...");
-        let mut headers = vec![];
-        for line in rdr.lines() {
-            let header = line.unwrap();
-            // If this line fails make sure you install git-lfs.
-            let decoded = hex::decode(header.trim()).unwrap();
-            let header = Header::consensus_decode(&mut &decoded[..]).unwrap();
-            headers.push(header);
+    fn genesis_header(network: BitcoinNetwork, bits: CompactTarget) -> Header {
+        Header {
+            bits,
+            ..genesis_block(network).header
         }
+    }
 
-        println!("Creating header store...");
-        let mut store = SimpleHeaderStore::new(headers[0], 0);
-        for header in headers[1..].iter() {
-            store.add(*header);
+    fn next_block_header(prev: Header, bits: CompactTarget) -> Header {
+        Header {
+            prev_blockhash: prev.block_hash(),
+            time: prev.time + TEN_MINUTES,
+            bits,
+            ..prev
         }
-
-        println!("Verifying next targets...");
-        proptest!(|(i in 0..up_to_height)| {
-            // Compute what the target of the next header should be.
-            let expected_next_target =
-                get_next_target(&BlockchainNetwork::Bitcoin(network), &store, &headers[i], i as u32, headers[i + 1].time);
-
-            // Assert that the expected next target matches the next header's target.
-            assert_eq!(
-                expected_next_target,
-                Target::from_compact(headers[i + 1].bits)
-            );
-        });
     }
 
     #[test]
     fn mainnet_next_targets() {
         test_next_targets(
-            BitcoinNetwork::Bitcoin,
+            BlockchainNetwork::Bitcoin(Bitcoin),
             "tests/data/block_headers_mainnet.csv",
             700_000,
         );
@@ -329,7 +328,7 @@ mod bitcoin_header {
     #[test]
     fn testnet_next_targets() {
         test_next_targets(
-            BitcoinNetwork::Testnet,
+            BlockchainNetwork::Bitcoin(Testnet),
             "tests/data/block_headers_testnet.csv",
             2_400_000,
         );
@@ -385,7 +384,7 @@ mod bitcoin_header {
     #[test]
     fn test_compute_next_difficulty_for_backdated_blocks() {
         // Arrange: Set up the test network and parameters
-        let network = BitcoinNetwork::Testnet;
+        let network = Testnet;
         let chain_length = DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN - 1; // To trigger the difficulty adjustment.
         let genesis_difficulty = CompactTarget::from_consensus(486604799);
 
@@ -412,13 +411,16 @@ mod bitcoin_header {
 }
 
 mod dogecoin_header {
-    use super::{deserialize_header, SimpleHeaderStore, MOCK_CURRENT_TIME};
+    use super::{
+        deserialize_header, get_headers, test_next_targets, SimpleHeaderStore, MOCK_CURRENT_TIME,
+    };
+    use crate::constants::pow_limit_bits;
     use crate::constants::test::{
         MAINNET_HEADER_DOGE_151556, MAINNET_HEADER_DOGE_151557, MAINNET_HEADER_DOGE_17,
         MAINNET_HEADER_DOGE_18,
     };
-    use crate::constants::pow_limit_bits;
     use crate::{validate_header, ValidateHeaderError};
+    use bitcoin::dogecoin::constants::genesis_block;
     use bitcoin::dogecoin::Network::{Dogecoin, Regtest};
     use ic_doge_types::BlockchainNetwork;
 
@@ -440,7 +442,7 @@ mod dogecoin_header {
     fn test_is_header_valid_invalid_header_target() {
         let header_151556 = deserialize_header(MAINNET_HEADER_DOGE_151556);
         let mut header = deserialize_header(MAINNET_HEADER_DOGE_151557);
-        header.bits = pow_limit_bits(&BlockchainNetwork::Dogecoin(Dogecoin));
+        header.bits = pow_limit_bits(&BlockchainNetwork::Dogecoin(Dogecoin)); // Modify header to invalidate PoW
         let store = SimpleHeaderStore::new(header_151556, 151556);
         let result = validate_header(
             &BlockchainNetwork::Dogecoin(Dogecoin),
@@ -458,7 +460,7 @@ mod dogecoin_header {
     fn test_is_header_valid_target_difficulty_above_max() {
         let header_705600 = deserialize_header(MAINNET_HEADER_DOGE_151556);
         let mut header = deserialize_header(MAINNET_HEADER_DOGE_151557);
-        header.bits = pow_limit_bits(&BlockchainNetwork::Dogecoin(Regtest));
+        header.bits = pow_limit_bits(&BlockchainNetwork::Dogecoin(Regtest)); // Target exceeds what is allowed on mainnet
         let store = SimpleHeaderStore::new(header_705600, 705_600);
         let result = validate_header(
             &BlockchainNetwork::Dogecoin(Dogecoin),
@@ -470,6 +472,38 @@ mod dogecoin_header {
             result,
             Err(ValidateHeaderError::TargetDifficultyAboveMax)
         ));
+    }
+
+    #[test]
+    fn mainnet_next_targets() {
+        test_next_targets(
+            BlockchainNetwork::Dogecoin(Dogecoin),
+            "tests/data/block_headers_mainnet_doge.csv",
+            5_000,
+        );
+    }
+
+    #[test]
+    fn test_is_header_valid() {
+        let genesis_header = genesis_block(Dogecoin).header;
+        let mut store = SimpleHeaderStore::new(genesis_header, 0);
+        let headers = get_headers("headers_doge_1_5000.csv");
+        for (i, header) in headers.iter().enumerate() {
+            println!("Processing header {:?}", header);
+            let result = validate_header(
+                &BlockchainNetwork::Dogecoin(Dogecoin),
+                &store,
+                header,
+                MOCK_CURRENT_TIME,
+            );
+            assert!(
+                result.is_ok(),
+                "Failed to validate header on line {}: {:?}",
+                i,
+                result
+            );
+            store.add(*header);
+        }
     }
 }
 
