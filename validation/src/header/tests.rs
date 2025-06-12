@@ -55,7 +55,7 @@ impl SimpleHeaderStore {
         let prev = self
             .headers
             .get(&header.prev_blockhash)
-            .expect(format!("prev hash missing for header {header:?}").as_str());
+            .expect(&format!("Previous hash missing for header: {:?}", header));
         let stored_header = StoredHeader {
             header,
             height: prev.height + 1,
