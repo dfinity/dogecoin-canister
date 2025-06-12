@@ -139,8 +139,6 @@ fn main() {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_candid_interface_compatibility() {
         use candid_parser::utils::{service_compatible, CandidSource};
