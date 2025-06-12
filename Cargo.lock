@@ -463,6 +463,7 @@ checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 [[package]]
 name = "bitcoin"
 version = "0.32.5-doge.0"
+source = "git+https://github.com/dfinity/rust-dogecoin.git?rev=c4afb3eca4b6bca0f493df89072e8c48f767df76#c4afb3eca4b6bca0f493df89072e8c48f767df76"
 dependencies = [
  "base58ck",
  "bech32",
