@@ -1,11 +1,10 @@
-use crate::header::get_next_target;
+use crate::header::{get_next_target, BlockchainNetwork};
 use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::{BlockHash, CompactTarget, Target, TxMerkleNode};
 use csv::Reader;
-use ic_doge_types::BlockchainNetwork;
 use proptest::proptest;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -162,7 +161,6 @@ fn get_headers(file: &str) -> Vec<Header> {
 }
 
 mod bitcoin_header {
-    use super::super::*;
     use super::{
         deserialize_header, get_headers, test_next_targets, SimpleHeaderStore, MOCK_CURRENT_TIME,
     };
@@ -170,8 +168,13 @@ mod bitcoin_header {
         MAINNET_HEADER_586656, MAINNET_HEADER_705600, MAINNET_HEADER_705601, MAINNET_HEADER_705602,
         TESTNET_HEADER_2132555, TESTNET_HEADER_2132556,
     };
+    use crate::header::{
+        compute_next_difficulty, get_next_target, pow_limit_bits, BitcoinNetwork,
+        BlockchainNetwork, CompactTarget, Header, HeaderStore, Target,
+        DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES,
+    };
+    use crate::{validate_header, ValidateHeaderError};
     use bitcoin::constants::genesis_block;
-
     use bitcoin::Network::{Bitcoin, Regtest, Testnet};
 
     #[test]
@@ -414,15 +417,14 @@ mod dogecoin_header {
     use super::{
         deserialize_header, get_headers, test_next_targets, SimpleHeaderStore, MOCK_CURRENT_TIME,
     };
-    use crate::constants::pow_limit_bits;
     use crate::constants::test::{
         MAINNET_HEADER_DOGE_151556, MAINNET_HEADER_DOGE_151557, MAINNET_HEADER_DOGE_17,
         MAINNET_HEADER_DOGE_18,
     };
+    use crate::header::{pow_limit_bits, BlockchainNetwork};
     use crate::{validate_header, ValidateHeaderError};
     use bitcoin::dogecoin::constants::genesis_block;
     use bitcoin::dogecoin::Network::{Dogecoin, Regtest};
-    use ic_doge_types::BlockchainNetwork;
 
     #[test]
     fn test_simple_mainnet_dogecoin() {
@@ -507,16 +509,17 @@ mod dogecoin_header {
 }
 
 mod timestamp {
+    use super::{deserialize_header, SimpleHeaderStore, MOCK_CURRENT_TIME};
     use crate::constants::test::{
         MAINNET_HEADER_705600, MAINNET_HEADER_705601, MAINNET_HEADER_705602,
     };
-    use crate::header::tests::{deserialize_header, SimpleHeaderStore, MOCK_CURRENT_TIME};
-    use crate::header::{is_timestamp_valid, timestamp_is_less_than_2h_in_future, ONE_HOUR};
+    use crate::header::{
+        is_timestamp_valid, timestamp_is_less_than_2h_in_future, BlockchainNetwork, ONE_HOUR,
+    };
     use crate::{validate_header, ValidateHeaderError};
     use bitcoin::block::{Header, Version};
     use bitcoin::Network::Bitcoin;
     use bitcoin::{BlockHash, CompactTarget, TxMerkleNode};
-    use ic_doge_types::BlockchainNetwork;
     use std::str::FromStr;
 
     #[test]
