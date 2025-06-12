@@ -165,8 +165,8 @@ fn get_next_target(
     timestamp: u32,
 ) -> Target {
     match network {
-        BlockchainNetwork::Bitcoin(btc_network) => {
-            match btc_network {
+        BlockchainNetwork::Bitcoin(network) => {
+            match network {
                 BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
                     if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 {
                         // This if statements is reached only for Regtest and Testnet networks
@@ -177,12 +177,12 @@ fn get_next_target(
                         if timestamp > prev_header.time + TEN_MINUTES * 2 {
                             // If no block has been found in 20 minutes, then use the maximum difficulty
                             // target
-                            max_target(&BlockchainNetwork::Bitcoin(*btc_network))
+                            max_target(&BlockchainNetwork::Bitcoin(*network))
                         } else {
                             // If the block has been found within 20 minutes, then use the previous
                             // difficulty target that is not equal to the maximum difficulty target
                             Target::from_compact(find_next_difficulty_in_chain(
-                                btc_network,
+                                network,
                                 store,
                                 prev_header,
                                 prev_height,
@@ -190,7 +190,7 @@ fn get_next_target(
                         }
                     } else {
                         Target::from_compact(compute_next_difficulty(
-                            btc_network,
+                            network,
                             store,
                             prev_header,
                             prev_height,
@@ -198,15 +198,15 @@ fn get_next_target(
                     }
                 }
                 BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => Target::from_compact(
-                    compute_next_difficulty(btc_network, store, prev_header, prev_height),
+                    compute_next_difficulty(network, store, prev_header, prev_height),
                 ),
                 &other => unreachable!("Unsupported network: {:?}", other),
             }
         }
-        BlockchainNetwork::Dogecoin(doge_network) => {
-            match doge_network {
+        BlockchainNetwork::Dogecoin(network) => {
+            match network {
                 DogecoinNetwork::Dogecoin => Target::from_compact(
-                    compute_next_difficulty_dogecoin(doge_network, store, prev_header, prev_height),
+                    compute_next_difficulty_dogecoin(network, store, prev_header, prev_height),
                 ),
                 &other => unreachable!("Unsupported network: {:?}", other),
             }
@@ -342,8 +342,9 @@ fn compute_next_difficulty_dogecoin(
         return prev_header.bits;
     }
     // Computing the `last_adjustment_header`.
-    // `last_adjustment_header` is the last header with height multiple of 240
-    // Dogecoin solves the "off-by-one" or Time Wrap bug in Bitcoin by going back to the full retarget period.
+    // `last_adjustment_header` is the last header with height multiple of 240 - 1
+    // Dogecoin solves the "off-by-one" or Time Wrap bug in Bitcoin by going back to the full
+    // retarget period (hence the - 1).
     // See: <https://litecoin.info/docs/history/time-warp-attack>
     let last_adjustment_height = if height <= DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN {
         0
