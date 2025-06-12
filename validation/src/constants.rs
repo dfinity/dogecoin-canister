@@ -4,10 +4,10 @@ use crate::BlockHeight;
 use bitcoin::{CompactTarget, Target};
 use ic_doge_types::BlockchainNetwork;
 
-/// Expected number of blocks for 2 weeks (2_016) in Bitcoin.
+/// Expected number of blocks for 2 weeks in Bitcoin (2_016).
 pub const DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN: BlockHeight = 6 * 24 * 14;
 
-/// Expected number of blocks for 4 hours (240) in Dogecoin.
+/// Expected number of blocks for 4 hours in Dogecoin (240).
 pub const DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN: BlockHeight = 4 * 60;
 
 /// Needed to help test check for the 20 minute testnet/regtest rule
@@ -68,8 +68,8 @@ pub fn pow_limit_bits(network: &BlockchainNetwork) -> CompactTarget {
             _ => unreachable!("Unsupported Bitcoin network variant: {:?}", net),
         },
         Dogecoin(net) => match net {
-            DogecoinNetwork::Dogecoin => 0x1e0ffff0,
-            DogecoinNetwork::Testnet => 0x1e0ffff0,
+            DogecoinNetwork::Dogecoin => 0x1e0fffff, // In Dogecoin this is higher than the Genesis compact target (0x1e0ffff0)
+            DogecoinNetwork::Testnet => 0x1e0fffff,
             DogecoinNetwork::Regtest => 0x207fffff,
             _ => unreachable!("Unsupported Dogecoin network variant: {:?}", net),
         },
