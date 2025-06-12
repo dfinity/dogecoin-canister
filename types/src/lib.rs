@@ -14,7 +14,7 @@ use bitcoin::block::Block as BlockData;
 use bitcoin::dogecoin::Block as BlockData;
 
 use bitcoin::{
-    block::Header, dogecoin::Network as DogecoinNetwork, hashes::Hash, params::Params,
+    block::Header, dogecoin::Network as DogecoinNetwork, hashes::Hash,
     Network as BitcoinNetwork, OutPoint as BitcoinOutPoint, Target,
 };
 use candid::CandidType;
@@ -85,7 +85,7 @@ impl Block {
     // The definition here corresponds to what is referred as "bdiff" in
     // https://en.bitcoin.it/wiki/Difficulty
     pub fn target_difficulty(network: Network, target: Target) -> u128 {
-        target.difficulty(into_blockchain_network(network))
+        target.difficulty(into_bitcoin_network(network))
     }
 
     pub fn internal_bitcoin_block(&self) -> &BlockData {
@@ -324,21 +324,11 @@ impl std::fmt::Debug for BlockHash {
     }
 }
 
-#[cfg(feature = "btc")]
-pub fn into_blockchain_network(network: Network) -> BlockchainNetwork {
+pub fn into_bitcoin_network(network: Network) -> BitcoinNetwork {
     match network {
-        Network::Mainnet => BlockchainNetwork::Bitcoin(BitcoinNetwork::Bitcoin),
-        Network::Testnet => BlockchainNetwork::Bitcoin(BitcoinNetwork::Testnet4),
-        Network::Regtest => BlockchainNetwork::Bitcoin(BitcoinNetwork::Regtest),
-    }
-}
-
-#[cfg(feature = "doge")]
-pub fn into_blockchain_network(network: Network) -> DogecoinNetwork {
-    match network {
-        Network::Mainnet => DogecoinNetwork::Dogecoin,
-        Network::Testnet => DogecoinNetwork::Testnet,
-        Network::Regtest => DogecoinNetwork::Regtest,
+        Network::Mainnet => BitcoinNetwork::Bitcoin,
+        Network::Testnet => BitcoinNetwork::Testnet4,
+        Network::Regtest => BitcoinNetwork::Regtest,
     }
 }
 
@@ -466,13 +456,4 @@ fn target_difficulty() {
 pub enum BlockchainNetwork {
     Bitcoin(BitcoinNetwork),
     Dogecoin(DogecoinNetwork),
-}
-
-impl AsRef<Params> for BlockchainNetwork {
-    fn as_ref(&self) -> &Params {
-        match self {
-            BlockchainNetwork::Bitcoin(n) => n.as_ref(),
-            BlockchainNetwork::Dogecoin(n) => n.as_ref(),
-        }
-    }
 }
