@@ -273,6 +273,9 @@ mod bitcoin_header {
         let mut store = SimpleHeaderStore::new(h0, 0);
         store.add(h1);
         store.add(h2);
+        // In regtest, this will use the previous difficulty target that is not equal to the
+        // maximum difficulty target (`pow_regtest`), meaning `pow_bitcoin`.
+        // See [`crate::header::find_next_difficulty_in_chain`]
         let result = validate_header(
             &BlockchainNetwork::Bitcoin(Regtest),
             &store,
@@ -427,7 +430,7 @@ mod dogecoin_header {
     use bitcoin::dogecoin::Network::{Dogecoin, Regtest};
 
     #[test]
-    fn test_simple_mainnet_dogecoin() {
+    fn test_simple_mainnet() {
         let header_151555 = deserialize_header(MAINNET_HEADER_DOGE_17);
         let header_151556 = deserialize_header(MAINNET_HEADER_DOGE_18);
         let store = SimpleHeaderStore::new(header_151555, 151_555);
@@ -438,6 +441,28 @@ mod dogecoin_header {
             MOCK_CURRENT_TIME,
         );
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_is_header_valid() {
+        let genesis_header = genesis_block(Dogecoin).header;
+        let mut store = SimpleHeaderStore::new(genesis_header, 0);
+        let headers = get_headers("headers_doge_1_5000.csv");
+        for (i, header) in headers.iter().enumerate() {
+            let result = validate_header(
+                &BlockchainNetwork::Dogecoin(Dogecoin),
+                &store,
+                header,
+                MOCK_CURRENT_TIME,
+            );
+            assert!(
+                result.is_ok(),
+                "Failed to validate header on line {}: {:?}",
+                i,
+                result
+            );
+            store.add(*header);
+        }
     }
 
     #[test]
@@ -483,28 +508,6 @@ mod dogecoin_header {
             "tests/data/block_headers_mainnet_doge.csv",
             5_000,
         );
-    }
-
-    #[test]
-    fn test_is_header_valid() {
-        let genesis_header = genesis_block(Dogecoin).header;
-        let mut store = SimpleHeaderStore::new(genesis_header, 0);
-        let headers = get_headers("headers_doge_1_5000.csv");
-        for (i, header) in headers.iter().enumerate() {
-            let result = validate_header(
-                &BlockchainNetwork::Dogecoin(Dogecoin),
-                &store,
-                header,
-                MOCK_CURRENT_TIME,
-            );
-            assert!(
-                result.is_ok(),
-                "Failed to validate header on line {}: {:?}",
-                i,
-                result
-            );
-            store.add(*header);
-        }
     }
 }
 
