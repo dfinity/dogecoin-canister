@@ -194,7 +194,7 @@ mod bitcoin_header {
         let header_2132556 = deserialize_header(TESTNET_HEADER_2132556);
         let store = SimpleHeaderStore::new(header_2132555, 2_132_555);
         let result = validate_header(
-            &BlockchainNetwork::Bitcoin(BitcoinNetwork::Testnet),
+            &BlockchainNetwork::Bitcoin(Testnet),
             &store,
             &header_2132556,
             MOCK_CURRENT_TIME,
@@ -489,7 +489,6 @@ mod dogecoin_header {
         let mut store = SimpleHeaderStore::new(genesis_header, 0);
         let headers = get_headers("headers_doge_1_5000.csv");
         for (i, header) in headers.iter().enumerate() {
-            println!("Processing header {:?}", header);
             let result = validate_header(
                 &BlockchainNetwork::Dogecoin(Dogecoin),
                 &store,
