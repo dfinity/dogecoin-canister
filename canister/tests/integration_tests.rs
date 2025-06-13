@@ -1,6 +1,6 @@
 use candid::{encode_one, Encode, Principal};
-use ic_doge_interface::InitConfig;
 use ic_cdk::api::management_canister::main::CanisterId;
+use ic_doge_interface::InitConfig;
 use pocket_ic::{ErrorCode, PocketIc, PocketIcBuilder, UserError};
 use std::{path::PathBuf, process::Command};
 
