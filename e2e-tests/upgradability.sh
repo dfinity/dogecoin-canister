@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-# This script tests the upgradability of the bitcoin canister.
+# This script tests the upgradability of the dogecoin canister.
 #
 # The process follows these steps:
-# - Fetches and downloads the latest release of the bitcoin canister (a reference canister).
+# - Fetches and downloads the latest release of the dogecoin canister (a reference canister).
 # - Deploys this reference canister on a local IC network.
-# - Upgrades the reference canister to a recent 'bitcoin' canister from the current branch.
-# - Verifies that the 'bitcoin' canister is in a 'stopped' state.
+# - Upgrades the reference canister to a recent 'dogecoin' canister from the current branch.
+# - Verifies that the 'dogecoin' canister is in a 'stopped' state.
 # - Tests canister upgradability by redeploying and restarting it.
 
 set -Eexuo pipefail
@@ -25,7 +25,7 @@ pushd "$PARENT_DIR"
 # Get the URL of the latest release.
 get_latest_release_url() {
   curl -s https://api.github.com/repos/dfinity/bitcoin-canister/releases/latest | 
-  grep "browser_download_url.*ic-doge-canister.wasm.gz" | 
+  grep "browser_download_url.*ic-btc-canister.wasm.gz" |
   cut -d '"' -f 4
 }
 
@@ -44,32 +44,32 @@ dfx deploy --no-wallet ${REFERENCE_CANISTER_NAME} --argument "(record {})"
 
 dfx canister stop ${REFERENCE_CANISTER_NAME}
 
-# Update the local dfx configuration to point to the 'bitcoin' canister 
+# Update the local dfx configuration to point to the 'dogecoin' canister
 # in the current branch, rather than the reference canister.
-sed -i'' -e 's/'${REFERENCE_CANISTER_NAME}'/bitcoin/' .dfx/local/canister_ids.json
+sed -i'' -e 's/'${REFERENCE_CANISTER_NAME}'/dogecoin/' .dfx/local/canister_ids.json
 
-# Verify that the bitcoin canister now exists and is already stopped.
-if ! [[ $(dfx canister status bitcoin 2>&1) == *"Status: Stopped"* ]]; then
-  echo "Failed to create and stop Bitcoin canister."
+# Verify that the dogecoin canister now exists and is already stopped.
+if ! [[ $(dfx canister status dogecoin 2>&1) == *"Status: Stopped"* ]]; then
+  echo "Failed to create and stop Dogecoin canister."
   exit 1
 fi
 
 # Update candid to make the post_upgrade accept a set_config_request.
-sed -i.bak 's/service bitcoin : (init_config)/service bitcoin : (opt set_config_request)/' ./canister/candid.did
+sed -i.bak 's/service dogecoin : (init_config)/service dogecoin : (opt set_config_request)/' ./canister/candid.did
 
 echo "Deploy new version of canister..."
-dfx deploy --no-wallet bitcoin --argument "(null)"
+dfx deploy --no-wallet dogecoin --argument "(null)"
 
-dfx canister start bitcoin
-dfx canister stop bitcoin
+dfx canister start dogecoin
+dfx canister stop dogecoin
 
 echo "Upgrade canister to own version..."
 
 # Redeploy the canister to test the pre-upgrade hook.
-dfx deploy --upgrade-unchanged bitcoin --argument "(null)"
-dfx canister start bitcoin
+dfx deploy --upgrade-unchanged dogecoin --argument "(null)"
+dfx canister start dogecoin
 
 # Reset candid init args
-sed -i.bak 's/service bitcoin : (opt set_config_request)/service bitcoin : (init_config)/' ./canister/candid.did
+sed -i.bak 's/service dogecoin : (opt set_config_request)/service dogecoin : (init_config)/' ./canister/candid.did
 
 echo "SUCCESS"

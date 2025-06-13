@@ -1,11 +1,11 @@
 use bitcoin::consensus::Decodable;
 use bitcoin::{block::Header, consensus::Encodable, Block as BitcoinBlock};
 use canbench_rs::{bench, bench_fn, BenchResult};
+use ic_cdk_macros::init;
 use ic_doge_canister::{types::BlockHeaderBlob, with_state_mut};
 use ic_doge_interface::{InitConfig, Network};
 use ic_doge_test_utils::build_regtest_chain;
 use ic_doge_types::Block;
-use ic_cdk_macros::init;
 use std::cell::RefCell;
 
 thread_local! {
@@ -143,7 +143,10 @@ fn insert_block_headers_multiple_times() -> BenchResult {
     bench_fn(|| {
         with_state_mut(|s| {
             for _ in 0..10 {
-                ic_doge_canister::state::insert_next_block_headers(s, next_block_headers.as_slice());
+                ic_doge_canister::state::insert_next_block_headers(
+                    s,
+                    next_block_headers.as_slice(),
+                );
             }
         });
     })

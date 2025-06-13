@@ -2,7 +2,7 @@
 set -Eexuo pipefail
 
 get_balance() {
-    dfx canister status bitcoin 2>&1 | grep "Balance: " | awk '{ print $2 }'
+    dfx canister status dogecoin 2>&1 | grep "Balance: " | awk '{ print $2 }'
 }
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -15,8 +15,8 @@ dfx start --background --clean
 
 INITIAL_BALANCE=100000000000
 
-# Deploy the bitcoin canister.
-dfx deploy --no-wallet --with-cycles "$INITIAL_BALANCE" bitcoin --argument "(record {
+# Deploy the dogecoin canister.
+dfx deploy --no-wallet --with-cycles "$INITIAL_BALANCE" dogecoin --argument "(record {
   network = opt variant { regtest };
   burn_cycles = opt variant { enabled };
 })"

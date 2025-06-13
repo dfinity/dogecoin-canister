@@ -18,11 +18,11 @@ use bitcoin::{
     Block as BitcoinBlock, Network as BitcoinNetwork,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
+use ic_cdk::api::call::RejectionCode;
 use ic_doge_interface::{Flag, GetUtxosResponse, InitConfig, Network, Txid, UtxosFilter};
 use ic_doge_interface::{OutPoint, Utxo};
 use ic_doge_test_utils::random_p2pkh_address;
 use ic_doge_types::{Block, BlockHash};
-use ic_cdk::api::call::RejectionCode;
 use std::str::FromStr;
 use std::{collections::HashMap, io::BufReader, path::PathBuf};
 use std::{fs::File, panic::catch_unwind};
