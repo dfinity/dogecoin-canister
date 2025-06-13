@@ -12,8 +12,8 @@ dfx start --background --clean
 # Deploy the canister that returns the blocks for scenario 1.
 dfx deploy --no-wallet e2e-scenario-1
 
-# Deploy the bitcoin canister, setting the blocks_source to be the source above.
-dfx deploy --no-wallet bitcoin --argument "(record {
+# Deploy the dogecoin canister, setting the blocks_source to be the source above.
+dfx deploy --no-wallet dogecoin --argument "(record {
   stability_threshold = opt 2;
   network = opt variant { regtest };
   blocks_source = opt principal \"$(dfx canister id e2e-scenario-1)\";
@@ -23,7 +23,7 @@ dfx deploy --no-wallet bitcoin --argument "(record {
 wait_until_stable_height 3 60
 
 # Fetch the balance of an address we do not expect to have funds.
-BALANCE=$(dfx canister call bitcoin bitcoin_get_balance '(record {
+BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
   address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
 })')
@@ -33,7 +33,7 @@ if ! [[ $BALANCE = "(0 : nat64)" ]]; then
   exit 1
 fi
 
-BALANCE=$(dfx canister call --query bitcoin bitcoin_get_balance_query '(record {
+BALANCE=$(dfx canister call --query dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
   address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
 })')
@@ -44,7 +44,7 @@ if ! [[ $BALANCE = "(0 : nat64)" ]]; then
 fi
 
 # Fetch the balance of an address we expect to have funds.
-BALANCE=$(dfx canister call bitcoin bitcoin_get_balance '(record {
+BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
   address = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
   min_confirmations = opt 2;
@@ -56,7 +56,7 @@ if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
   exit 1
 fi
 
-UTXOS=$(dfx canister call bitcoin bitcoin_get_utxos '(record {
+UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
   network = variant { regtest };
   address = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
 })')
@@ -67,7 +67,7 @@ if ! [[ $(num_utxos "$UTXOS") = 0 ]]; then
   exit 1
 fi
 
-UTXOS=$(dfx canister call --query bitcoin bitcoin_get_utxos_query '(record {
+UTXOS=$(dfx canister call --query dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
   address = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
 })')
@@ -82,7 +82,7 @@ fi
 # We temporarily pause outputting the commands to the terminal as
 # this command would print thousands of UTXOs.
 set +x
-UTXOS=$(dfx canister call --query bitcoin bitcoin_get_utxos_query '(record {
+UTXOS=$(dfx canister call --query dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
   address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh"
 })')
@@ -95,7 +95,7 @@ fi
 set -x
 
 set +x
-UTXOS=$(dfx canister call bitcoin bitcoin_get_utxos_query '(record {
+UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
   address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh"
 })')
@@ -109,7 +109,7 @@ set -x
 
 # Check that 'bitcoin_get_utxos_query' cannot be called in replicated mode.
 set +e
-GET_UTXOS_QUERY_REPLICATED_CALL=$(dfx canister call --update bitcoin bitcoin_get_utxos_query '(record {
+GET_UTXOS_QUERY_REPLICATED_CALL=$(dfx canister call --update dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
   address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
 })' 2>&1)
@@ -120,7 +120,7 @@ if [[ $GET_UTXOS_QUERY_REPLICATED_CALL != *"CanisterReject"* ]]; then
   exit 1
 fi
 
-BALANCE=$(dfx canister call --query bitcoin bitcoin_get_balance_query '(record {
+BALANCE=$(dfx canister call --query dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
   address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
 })')
@@ -132,7 +132,7 @@ fi
 
 # Check that 'bitcoin_get_balance_query' cannot be called in replicated mode.
 set +e
-GET_BALANCE_QUERY_REPLICATED_CALL=$(dfx canister call --update bitcoin bitcoin_get_balance_query '(record {
+GET_BALANCE_QUERY_REPLICATED_CALL=$(dfx canister call --update dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
   address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
 })' 2>&1)
@@ -143,7 +143,7 @@ if [[ $GET_BALANCE_QUERY_REPLICATED_CALL != *"CanisterReject"* ]]; then
   exit 1
 fi
 
-BALANCE=$(dfx canister call bitcoin bitcoin_get_balance '(record {
+BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
   address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
 })')
@@ -153,7 +153,7 @@ if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
   exit 1
 fi
 
-BALANCE=$(dfx canister call --query bitcoin bitcoin_get_balance_query '(record {
+BALANCE=$(dfx canister call --query dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
   address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
 })')
@@ -164,15 +164,15 @@ if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
 fi
 
 # Request the current fee percentiles. This is only for profiling purposes.
-dfx canister call bitcoin bitcoin_get_current_fee_percentiles '(record {
+dfx canister call dogecoin bitcoin_get_current_fee_percentiles '(record {
   network = variant { regtest };
 })'
-dfx canister call bitcoin bitcoin_get_current_fee_percentiles '(record {
+dfx canister call dogecoin bitcoin_get_current_fee_percentiles '(record {
   network = variant { regtest };
 })'
 
 # Verify that we can fetch the block headers.
-ACTUAL_HEADERS=$(dfx canister call bitcoin bitcoin_get_block_headers '(record {
+ACTUAL_HEADERS=$(dfx canister call dogecoin bitcoin_get_block_headers '(record {
   start_height = 0;
   network = variant { regtest };
 })');

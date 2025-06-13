@@ -13,8 +13,8 @@ dfx start --background --clean
 # to the Bitcoin network when calling bitcoin_send_transaction.
 dfx deploy e2e-scenario-1
 
-# Deploy the bitcoin canister.
-dfx deploy bitcoin --argument "(record {
+# Deploy the dogecoin canister.
+dfx deploy dogecoin --argument "(record {
   stability_threshold = opt 2;
   network = opt variant { regtest };
   blocks_source = opt principal \"$(dfx canister id e2e-scenario-1)\";
@@ -47,7 +47,7 @@ check_charging()
 
   # Send invalid transaction.
   set +e
-  SEND_TX_OUTPUT=$(dfx canister call --wallet "${WALLET}" --with-cycles "${EXPECTED_FEE}" bitcoin "${METHOD}" "${RECORD}" 2>&1);
+  SEND_TX_OUTPUT=$(dfx canister call --wallet "${WALLET}" --with-cycles "${EXPECTED_FEE}" dogecoin "${METHOD}" "${RECORD}" 2>&1);
   set -e
 
 

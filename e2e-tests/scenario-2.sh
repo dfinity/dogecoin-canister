@@ -16,8 +16,8 @@ dfx start --background --clean
 # Deploy the canister that returns the blocks for scenario 2.
 dfx deploy --no-wallet e2e-scenario-2
 
-# Deploy the bitcoin canister, setting the blocks_source to be the source above.
-dfx deploy --no-wallet bitcoin --argument "(record {
+# Deploy the dogecoin canister, setting the blocks_source to be the source above.
+dfx deploy --no-wallet dogecoin --argument "(record {
   stability_threshold = opt 1;
   network = opt variant { regtest };
   blocks_source = opt principal \"$(dfx canister id e2e-scenario-2)\";
@@ -26,7 +26,7 @@ dfx deploy --no-wallet bitcoin --argument "(record {
 # Wait until the ingestion of stable blocks is complete.
 wait_until_main_chain_height 4 60
 
-BALANCE=$(dfx canister call bitcoin bitcoin_get_balance '(record {
+BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
   address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
 })')
@@ -40,7 +40,7 @@ fi
 # We temporarily pause outputting the commands to the terminal as
 # this command would print thousands of UTXOs.
 set +x
-UTXOS=$(dfx canister call bitcoin bitcoin_get_utxos '(record {
+UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
   network = variant { regtest };
   address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
 })')
