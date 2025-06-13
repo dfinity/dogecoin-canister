@@ -25,7 +25,7 @@ pushd "$PARENT_DIR"
 # Get the URL of the latest release.
 get_latest_release_url() {
   curl -s https://api.github.com/repos/dfinity/bitcoin-canister/releases/latest | 
-  grep "browser_download_url.*ic-doge-canister.wasm.gz" | 
+  grep "browser_download_url.*ic-btc-canister.wasm.gz" |
   cut -d '"' -f 4
 }
 
