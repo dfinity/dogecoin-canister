@@ -1,11 +1,11 @@
+use ic_cdk::api::call::ManualReply;
+use ic_cdk_macros::{heartbeat, init, inspect_message, post_upgrade, pre_upgrade, query, update};
 use ic_doge_canister::types::{HttpRequest, HttpResponse};
 use ic_doge_interface::{
     Config, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
     GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig,
     MillisatoshiPerByte, Satoshi, SendTransactionRequest, SetConfigRequest,
 };
-use ic_cdk::api::call::ManualReply;
-use ic_cdk_macros::{heartbeat, init, inspect_message, post_upgrade, pre_upgrade, query, update};
 
 #[cfg(target_arch = "wasm32")]
 mod printer;
