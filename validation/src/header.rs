@@ -339,7 +339,7 @@ fn compute_next_difficulty_dogecoin(
 ) -> CompactTarget {
     // Difficulty is adjusted only once in every interval of 4 hours (240 blocks)
     // If an interval boundary is not reached, then previous difficulty target is
-    // returned Regtest network doesn't adjust PoW difficulty levels. For
+    // returned. Regtest network doesn't adjust PoW difficulty levels. For
     // regtest, simply return the previous difficulty target.
 
     let height = prev_height + 1;
