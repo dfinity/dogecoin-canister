@@ -130,8 +130,8 @@ fn test_next_targets(network: BlockchainNetwork, headers_path: &str, up_to_heigh
     });
 }
 
-/// This function reads `num_headers` headers from `tests/data/headers.csv`
-/// and returns them.
+/// This function reads all headers from the specified CSV file in `tests/data/`
+/// and returns them as a `Vec<Header>`.
 fn get_headers(file: &str) -> Vec<Header> {
     let rdr = Reader::from_path(
         PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
