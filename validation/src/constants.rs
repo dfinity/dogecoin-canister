@@ -12,6 +12,7 @@ pub const DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN: BlockHeight = 4 * 60;
 
 /// Needed to help test check for the 20 minute testnet/regtest rule
 pub const TEN_MINUTES: u32 = 60 * 10;
+pub const ONE_MINUTE: u32 = 60;
 
 /// Returns the maximum difficulty target depending on the network
 pub fn max_target(network: &BlockchainNetwork) -> Target {
@@ -101,4 +102,8 @@ pub mod test {
     pub const MAINNET_HEADER_DOGE_151556: &str = "02000000c145aa6d9acdbeb6d3196e1dd4a21fd976cbbaf10d520f1e67f933ebc669b7f0748f9b1f40c1a60740c8f47d506c6de6b9f415d00c8a9c4484ef36abe593a39fe4e72d5301cf241b00220241";
     /// Mainnet d3b4205b9cab0c969d0e96ff924ab4e3acd8779c2ce1669b94c98d6f2f0365f4
     pub const MAINNET_HEADER_DOGE_151557: &str = "02000000d62a5ceb92608e13198e3e8e78eb9a83bdf07765880a304c54344d749253593b9debfe3e9ead5f19238f3ec5bb321de36acf69f0680d0231c4612961fd2e0fa91ae82d53b4652d1b00adb73b";
+    /// Testnet 7214c118466d8e2d63e7c50ede083816fbf4e0d75e3e8ec7c3ce1312ae7e77ab
+    pub const TESTNET_HEADER_DOGE_88: &str = "0200000052208696e97fb9cc8088399db53791fe668a401f549eb949d5cd16dec5190809bc987206bfe6ee60efab462316a5d127b8697cc3f75cf859c96b480819e46e0f880afb52f0ff0f1e00141ed2";
+    /// Testnet 4fc5fc1a5e5db47ab33f3626c4456c0cbcf69dc4db6cd64ef5917d703db45a27
+    pub const TESTNET_HEADER_DOGE_89: &str = "02000000ab777eae1213cec3c78e3e5ed7e0f4fb163808de0ec5e7632d8e6d4618c114729053d47099f1b595cc742f80a1164520eff7284cd0be18d9bbc5d265f04766e9970afb52f0ff0f1e00021648";
 }

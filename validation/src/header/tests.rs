@@ -273,8 +273,7 @@ mod bitcoin_header {
         let mut store = SimpleHeaderStore::new(h0, 0);
         store.add(h1);
         store.add(h2);
-        // In regtest, this will use the previous difficulty target that is not equal to the
-        // maximum difficulty target (`pow_regtest`), meaning `pow_bitcoin`.
+        // In regtest, this will go back the chain until h0.
         // See [`crate::header::find_next_difficulty_in_chain`]
         let result = validate_header(
             &BlockchainNetwork::Bitcoin(Regtest),
@@ -422,22 +421,42 @@ mod dogecoin_header {
     };
     use crate::constants::test::{
         MAINNET_HEADER_DOGE_151556, MAINNET_HEADER_DOGE_151557, MAINNET_HEADER_DOGE_17,
-        MAINNET_HEADER_DOGE_18,
+        MAINNET_HEADER_DOGE_18, TESTNET_HEADER_DOGE_88, TESTNET_HEADER_DOGE_89,
     };
-    use crate::header::{pow_limit_bits, BlockchainNetwork};
+    use crate::constants::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
+    use crate::header::{
+        compute_next_difficulty_dogecoin, pow_limit_bits, BlockchainNetwork, DogecoinNetwork,
+        ONE_MINUTE,
+    };
     use crate::{validate_header, ValidateHeaderError};
+    use bitcoin::block::Header;
     use bitcoin::dogecoin::constants::genesis_block;
-    use bitcoin::dogecoin::Network::{Dogecoin, Regtest};
+    use bitcoin::dogecoin::Network::{Dogecoin, Regtest, Testnet};
+    use bitcoin::{CompactTarget, Target};
 
     #[test]
     fn test_simple_mainnet() {
-        let header_151555 = deserialize_header(MAINNET_HEADER_DOGE_17);
-        let header_151556 = deserialize_header(MAINNET_HEADER_DOGE_18);
-        let store = SimpleHeaderStore::new(header_151555, 151_555);
+        let header_17 = deserialize_header(MAINNET_HEADER_DOGE_17);
+        let header_18 = deserialize_header(MAINNET_HEADER_DOGE_18);
+        let store = SimpleHeaderStore::new(header_17, 17);
         let result = validate_header(
             &BlockchainNetwork::Dogecoin(Dogecoin),
             &store,
-            &header_151556,
+            &header_18,
+            MOCK_CURRENT_TIME,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_simple_testnet() {
+        let header_88 = deserialize_header(TESTNET_HEADER_DOGE_88);
+        let header_89 = deserialize_header(TESTNET_HEADER_DOGE_89);
+        let store = SimpleHeaderStore::new(header_88, 88);
+        let result = validate_header(
+            &BlockchainNetwork::Dogecoin(Testnet),
+            &store,
+            &header_89,
             MOCK_CURRENT_TIME,
         );
         assert!(result.is_ok());
@@ -484,6 +503,31 @@ mod dogecoin_header {
     }
 
     #[test]
+    fn test_is_header_valid_invalid_computed_target() {
+        let pow_bitcoin = pow_limit_bits(&BlockchainNetwork::Dogecoin(Dogecoin));
+        let pow_regtest = pow_limit_bits(&BlockchainNetwork::Dogecoin(Regtest));
+        let h0 = genesis_header(Dogecoin, pow_bitcoin);
+        let h1 = next_block_header(h0, pow_regtest);
+        let h2 = next_block_header(h1, pow_regtest);
+        let h3 = next_block_header(h2, pow_regtest);
+        let mut store = SimpleHeaderStore::new(h0, 0);
+        store.add(h1);
+        store.add(h2);
+        // In regtest, this will go back the chain until h0.
+        // See [`crate::header::find_next_difficulty_in_chain`]
+        let result = validate_header(
+            &BlockchainNetwork::Dogecoin(Regtest),
+            &store,
+            &h3,
+            MOCK_CURRENT_TIME,
+        );
+        assert!(matches!(
+            result,
+            Err(ValidateHeaderError::InvalidPoWForComputedTarget)
+        ));
+    }
+
+    #[test]
     fn test_is_header_valid_target_difficulty_above_max() {
         let header_705600 = deserialize_header(MAINNET_HEADER_DOGE_151556);
         let mut header = deserialize_header(MAINNET_HEADER_DOGE_151557);
@@ -501,12 +545,72 @@ mod dogecoin_header {
         ));
     }
 
+    fn genesis_header(network: DogecoinNetwork, bits: CompactTarget) -> Header {
+        Header {
+            bits,
+            ..genesis_block(network).header
+        }
+    }
+
+    fn next_block_header(prev: Header, bits: CompactTarget) -> Header {
+        Header {
+            prev_blockhash: prev.block_hash(),
+            time: prev.time + ONE_MINUTE,
+            bits,
+            ..prev
+        }
+    }
+
     #[test]
     fn mainnet_next_targets() {
         test_next_targets(
             BlockchainNetwork::Dogecoin(Dogecoin),
             "tests/data/block_headers_mainnet_doge.csv",
             5_000,
+        );
+    }
+
+    #[test]
+    fn testnet_next_targets() {
+        test_next_targets(
+            BlockchainNetwork::Dogecoin(Testnet),
+            "tests/data/block_headers_testnet_doge.csv",
+            5_000,
+        );
+    }
+
+    #[test]
+    fn test_compute_next_difficulty_for_backdated_blocks() {
+        // Arrange: Set up the test network and parameters
+        let network = Testnet;
+        let chain_length = DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN - 1; // To trigger the difficulty adjustment.
+        let genesis_compact_target = CompactTarget::from_consensus(0x1e0ffff0);
+
+        // Create the genesis header and initialize the header store
+        let genesis_header = genesis_header(network, genesis_compact_target);
+        let mut store = SimpleHeaderStore::new(genesis_header, 0);
+        let mut last_header = genesis_header;
+        for _ in 1..chain_length {
+            let new_header = Header {
+                prev_blockhash: last_header.block_hash(),
+                time: last_header.time - 1, // Each new block is 1 second earlier
+                ..last_header
+            };
+            store.add(new_header);
+            last_header = new_header;
+        }
+
+        // Act.
+        let difficulty =
+            compute_next_difficulty_dogecoin(&network, &store, &last_header, chain_length);
+
+        let genesis_target: Target = genesis_compact_target.into();
+        // Assert.
+        assert_eq!(
+            difficulty,
+            genesis_target
+                .min_transition_threshold_dogecoin(0)
+                .to_compact_lossy()
         );
     }
 }
