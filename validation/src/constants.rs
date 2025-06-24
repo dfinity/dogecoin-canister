@@ -65,6 +65,7 @@ pub fn pow_limit_bits(network: &BlockchainNetwork) -> CompactTarget {
             BitcoinNetwork::Bitcoin => 0x1d00ffff,
             BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 => 0x1d00ffff,
             BitcoinNetwork::Regtest => 0x207fffff,
+            BitcoinNetwork::Signet => 0x1e0377ae,
             _ => unreachable!("Unsupported Bitcoin network variant: {:?}", net),
         },
         Dogecoin(net) => match net {
