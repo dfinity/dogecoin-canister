@@ -3,7 +3,7 @@ Dogecoin Block Header Extractor
 
 This script extracts block headers from Dogecoin blockchain data files (blk*.dat) and
 reconstructs the blockchain chain starting from the genesis block. It can output headers
-in either raw hex format or parsed CSV format.
+in either raw hex format or parsed format.
 
 The script supports mainnet, testnet, and regtest networks. It reads binary blockchain data,
 identifies blocks using the appropriate network magic bytes, extracts 80-byte headers, and
@@ -61,21 +61,21 @@ def read_headers_from_blk_files(file_paths, include_parsed_headers, network_conf
         network_config (dict): Network configuration containing magic bytes and genesis hash
     
     Returns:
-        tuple: (headers_dict, prev_map_dict)
-            - headers_dict: Maps block_hash -> parsed_header_tuple or hex_string
-            - prev_map_dict: Maps block_hash -> previous_block_hash for chain building
+        tuple: (headers, prev_hash)
+            - headers: Maps block_hash -> parsed_header_tuple or hex_string
+            - prev_hash: Maps block_hash -> previous_block_hash for chain building
     """
     headers = {}
-    prev_map = {}
+    prev_hash = {}
     
     for file_path in file_paths:
         print(f"Reading from {file_path}...")
-        file_headers, file_prev_map = read_headers_from_single_blk(file_path, include_parsed_headers, network_config)
+        file_headers, file_prev_hash = read_headers_from_single_blk(file_path, include_parsed_headers, network_config)
         headers.update(file_headers)
-        prev_map.update(file_prev_map)
+        prev_hash.update(file_prev_hash)
         print(f"  Found {len(file_headers)} headers in {file_path}")
     
-    return headers, prev_map
+    return headers, prev_hash
 
 def read_headers_from_single_blk(file_path, include_parsed_headers, network_config):
     """
@@ -92,12 +92,12 @@ def read_headers_from_single_blk(file_path, include_parsed_headers, network_conf
         network_config (dict): Network configuration containing magic bytes and genesis hash
     
     Returns:
-        tuple: (headers_dict, prev_map_dict)
-            - headers_dict: Maps block_hash -> parsed_header_tuple or hex_string
-            - prev_map_dict: Maps block_hash -> previous_block_hash for chain building
+        tuple: (headers, prev_hash)
+            - headers: Maps block_hash -> parsed_header_tuple or hex_string
+            - prev_hash: Maps block_hash -> previous_block_hash for chain building
     """
     headers = {}
-    prev_map = {}
+    prev_hash = {}
     magic_bytes = network_config['magic']
     
     with open(file_path, 'rb') as f:
@@ -133,9 +133,6 @@ def read_headers_from_single_blk(file_path, include_parsed_headers, network_conf
         
         # Calculate block hash using double SHA-256 (Bitcoin/Dogecoin standard)
         block_hash = double_sha256(header)
-        
-        # Extract previous block hash from header (bytes 4-36)
-        prev_hash = header[4:36]
 
         # Store header (parsed tuple or hex string) and previous hash mapping
         if include_parsed_headers:
@@ -143,20 +140,21 @@ def read_headers_from_single_blk(file_path, include_parsed_headers, network_conf
         else:
             headers[block_hash] = header.hex()
 
-        prev_map[block_hash] = prev_hash
+        # Map block hash to previous block hash extracted from header (bytes 4-36)
+        prev_hash[block_hash] = header[4:36]
 
         # Move to next potential block
         offset = block_end
 
-    return headers, prev_map
+    return headers, prev_hash
 
-def reconstruct_chain(headers, prev_map, genesis_hash, start_block=0, end_block=None):
+def reconstruct_chain(headers, prev_hash, genesis_hash, start_block=0, end_block=None):
     """
     Reconstruct the blockchain chain starting from genesis block.
     
     Args:
         headers (dict): Map of block_hash -> header_data
-        prev_map (dict): Map of block_hash -> previous_block_hash
+        prev_hash (dict): Map of block_hash -> previous_block_hash
         genesis_hash (bytes): Hash of the genesis block to start from
         start_block (int): Block number to start extraction from (0-indexed)
         end_block (int): Block number to end extraction at (inclusive), None for no limit
@@ -185,10 +183,10 @@ def reconstruct_chain(headers, prev_map, genesis_hash, start_block=0, end_block=
             elif block_number > end_block:
                 break  # Reached end of desired range
         
-        # Find the next block in the chain (block that has current_hash as prev_hash)
+        # Find the next block in the chain (block that has current_hash as previous_block_hash)
         next_hash = None
-        for block_hash, prev_hash in prev_map.items():
-            if prev_hash == current_hash:
+        for block_hash, previous_block_hash in prev_hash.items():
+            if previous_block_hash == current_hash:
                 next_hash = block_hash
                 break
                 
@@ -251,11 +249,11 @@ def main():
     for f in args.blk_files:
         print(f"  - {f}")
     
-    headers, prev_map = read_headers_from_blk_files(args.blk_files, args.parsed, network_config)
+    headers, prev_hash = read_headers_from_blk_files(args.blk_files, args.parsed, network_config)
     print(f"Total parsed {len(headers)} headers from all files.")
 
     # Reconstruct the blockchain chain starting from genesis
-    chain_headers = reconstruct_chain(headers, prev_map, genesis_hash, args.start_block, args.end_block)
+    chain_headers = reconstruct_chain(headers, prev_hash, genesis_hash, args.start_block, args.end_block)
     
     # Display range information
     if args.end_block is not None:
