@@ -2,14 +2,16 @@
 mod tests;
 
 #[cfg(feature = "btc")]
-use crate::constants::{DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES};
-#[cfg(feature = "btc")]
-use bitcoin::network::Network as BitcoinNetwork;
+use {
+    crate::constants::{DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES},
+    bitcoin::network::Network as BitcoinNetwork,
+};
 
 #[cfg(feature = "doge")]
-use crate::constants::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
-#[cfg(feature = "doge")]
-use bitcoin::dogecoin::Network as DogecoinNetwork;
+use {
+    crate::constants::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN,
+    bitcoin::dogecoin::Network as DogecoinNetwork,
+};
 
 use crate::{
     constants::{max_target, no_pow_retargeting, pow_limit_bits},

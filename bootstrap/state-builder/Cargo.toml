@@ -34,7 +34,7 @@ clap = { workspace = true }
 hex = { workspace = true }
 ic-doge-canister = { workspace = true, optional = true }
 ic-doge-interface = { workspace = true }
-ic-doge-types = { workspace = true }
+ic-doge-types = { workspace = true, features = ["btc"] }
 ic-stable-structures = { workspace = true }
 integer-encoding = "3.0.4"
 rand = "0.8.5"
