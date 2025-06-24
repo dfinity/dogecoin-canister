@@ -91,6 +91,7 @@ pub fn pow_limit_bits(network: &DogecoinNetwork) -> CompactTarget {
     CompactTarget::from_consensus(bits)
 }
 
+#[cfg(feature = "btc")]
 #[cfg(test)]
 pub mod test {
     /// Mainnet 000000000000000000063108ecc1f03f7fd1481eb20f97307d532a612bc97f04
@@ -106,7 +107,11 @@ pub mod test {
     pub const TESTNET_HEADER_2132555: &str = "004000200e1ff99438666c67c649def743fb82117537c2017bcc6ad617000000000000007fa40cf82bf224909e3174281a57af2eb3a4a2a961d33f50ec0772c1221c9e61ddfdc061ffff001a64526636";
     /// Testnet 00000000383cd7fff4692410ccd9bd6201790043bb41b93bacb21e9b85620767
     pub const TESTNET_HEADER_2132556: &str = "00000020974f55e77dff100bc252a01aa7b00d16736c6e04a091b03be200000000000000c44f2d69fc200c4a2211885000b6b67512f42c1bec550f3754e103b6c4046e05a202c161ffff001d09ec1bc4";
+}
 
+#[cfg(feature = "doge")]
+#[cfg(test)]
+pub mod test {
     /// Mainnet 0c120ab190655673a709bc92ad86f80dc1cd9f11f9e0f09ebc5e6a3058b73002
     pub const MAINNET_HEADER_DOGE_17: &str = "01000000fbc172c83b7e535390cfd7807118a7fc799cdbda9da0cbd390f4b70c0f62c2fb155fa2e0ad11cfd91cd0f47049c0fcf5dfabd2fe1a3a406c0350e89f14618bb1f4eda352f0ff0f1e00067505";
     /// Mainnet da0e2362cc1d1cd48c8eb70e578c97f00d9a530985ba36027eb7e3fba98c74ae
