@@ -14,7 +14,7 @@ use crate::{
 use bitcoin::{block::Header, consensus::Decodable};
 use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
-use ic_doge_types::{Block, BlockHash, BlockchainNetwork, OutPoint};
+use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{validate_header, ValidateHeaderError as InsertBlockError};
 use serde::{Deserialize, Serialize};
 
@@ -126,7 +126,7 @@ impl State {
 pub fn insert_block(state: &mut State, block: Block) -> Result<(), InsertBlockError> {
     let start = performance_counter();
     validate_header(
-        &BlockchainNetwork::Bitcoin(into_bitcoin_network(state.network())),
+        &into_bitcoin_network(state.network()),
         &ValidationContext::new(state, block.header())
             .map_err(|_| InsertBlockError::PrevHeaderNotFound)?,
         block.header(),
@@ -234,7 +234,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
                 .map_err(|_| InsertBlockError::PrevHeaderNotFound)
             {
                 Ok(store) => validate_header(
-                    &BlockchainNetwork::Bitcoin(into_bitcoin_network(state.network())),
+                    &into_bitcoin_network(state.network()),
                     &store,
                     &block_header,
                     time_secs(),

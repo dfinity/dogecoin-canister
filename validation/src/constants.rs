@@ -1,79 +1,92 @@
-use bitcoin::{dogecoin::Network as DogecoinNetwork, Network as BitcoinNetwork};
+#[cfg(feature = "btc")]
+use bitcoin::Network as BitcoinNetwork;
+
+#[cfg(feature = "doge")]
+use bitcoin::dogecoin::Network as DogecoinNetwork;
 
 use crate::BlockHeight;
 use bitcoin::{CompactTarget, Target};
-use ic_doge_types::BlockchainNetwork;
 
+#[cfg(feature = "btc")]
 /// Expected number of blocks for 2 weeks in Bitcoin (2_016).
 pub const DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN: BlockHeight = 6 * 24 * 14;
 
+#[cfg(feature = "doge")]
 /// Expected number of blocks for 4 hours in Dogecoin (240).
 pub const DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN: BlockHeight = 4 * 60;
 
 /// Needed to help test check for the 20 minute testnet/regtest rule
 pub const TEN_MINUTES: u32 = 60 * 10;
 
+#[cfg(feature = "btc")]
 /// Returns the maximum difficulty target depending on the network
-pub fn max_target(network: &BlockchainNetwork) -> Target {
-    use ic_doge_types::BlockchainNetwork::*;
-
+pub fn max_target(network: &BitcoinNetwork) -> Target {
     match network {
-        Bitcoin(network) => match network {
-            BitcoinNetwork::Bitcoin => Target::MAX_ATTAINABLE_MAINNET,
-            BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 => Target::MAX_ATTAINABLE_TESTNET,
-            BitcoinNetwork::Regtest => Target::MAX_ATTAINABLE_REGTEST,
-            BitcoinNetwork::Signet => Target::MAX_ATTAINABLE_SIGNET,
-            _ => unreachable!("Unsupported Bitcoin network variant: {:?}", network),
-        },
-        Dogecoin(network) => match network {
-            DogecoinNetwork::Dogecoin => Target::MAX_ATTAINABLE_MAINNET_DOGE,
-            DogecoinNetwork::Testnet => Target::MAX_ATTAINABLE_TESTNET_DOGE,
-            DogecoinNetwork::Regtest => Target::MAX_ATTAINABLE_REGTEST_DOGE,
-            _ => unreachable!("Unsupported Dogecoin network variant: {:?}", network),
-        },
+        BitcoinNetwork::Bitcoin => Target::MAX_ATTAINABLE_MAINNET,
+        BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 => Target::MAX_ATTAINABLE_TESTNET,
+        BitcoinNetwork::Regtest => Target::MAX_ATTAINABLE_REGTEST,
+        BitcoinNetwork::Signet => Target::MAX_ATTAINABLE_SIGNET,
+        &other => unreachable!("Unsupported network: {:?}", other),
     }
 }
 
+#[cfg(feature = "doge")]
+/// Returns the maximum difficulty target depending on the network
+pub fn max_target(network: &DogecoinNetwork) -> Target {
+    match network {
+        DogecoinNetwork::Dogecoin => Target::MAX_ATTAINABLE_MAINNET_DOGE,
+        DogecoinNetwork::Testnet => Target::MAX_ATTAINABLE_TESTNET_DOGE,
+        DogecoinNetwork::Regtest => Target::MAX_ATTAINABLE_REGTEST_DOGE,
+        &other => unreachable!("Unsupported network: {:?}", other),
+    }
+}
+
+#[cfg(feature = "btc")]
 /// Returns false iff PoW difficulty level of blocks can be
 /// readjusted in the network after a fixed time interval.
-pub fn no_pow_retargeting(network: &BlockchainNetwork) -> bool {
-    use ic_doge_types::BlockchainNetwork::*;
-
+pub fn no_pow_retargeting(network: &BitcoinNetwork) -> bool {
     match network {
-        Bitcoin(network) => match network {
-            BitcoinNetwork::Bitcoin
-            | BitcoinNetwork::Testnet
-            | BitcoinNetwork::Testnet4
-            | BitcoinNetwork::Signet => false,
-            BitcoinNetwork::Regtest => true,
-            _ => unreachable!("Unsupported Bitcoin network variant: {:?}", network),
-        },
-        Dogecoin(network) => match network {
-            DogecoinNetwork::Dogecoin | DogecoinNetwork::Testnet => false,
-            DogecoinNetwork::Regtest => true,
-            _ => unreachable!("Unsupported Dogecoin network variant: {:?}", network),
-        },
+        BitcoinNetwork::Bitcoin
+        | BitcoinNetwork::Testnet
+        | BitcoinNetwork::Testnet4
+        | BitcoinNetwork::Signet => false,
+        BitcoinNetwork::Regtest => true,
+        &other => unreachable!("Unsupported network: {:?}", other),
     }
 }
 
-/// Returns the PoW limit bits depending on the network
-pub fn pow_limit_bits(network: &BlockchainNetwork) -> CompactTarget {
-    use ic_doge_types::BlockchainNetwork::*;
+#[cfg(feature = "doge")]
+/// Returns false iff PoW difficulty level of blocks can be
+/// readjusted in the network after a fixed time interval.
+pub fn no_pow_retargeting(network: &DogecoinNetwork) -> bool {
+    match network {
+        DogecoinNetwork::Dogecoin | DogecoinNetwork::Testnet => false,
+        DogecoinNetwork::Regtest => true,
+        &other => unreachable!("Unsupported network: {:?}", other),
+    }
+}
 
+#[cfg(feature = "btc")]
+/// Returns the PoW limit bits depending on the network
+pub fn pow_limit_bits(network: &BitcoinNetwork) -> CompactTarget {
     let bits = match network {
-        Bitcoin(net) => match net {
-            BitcoinNetwork::Bitcoin => 0x1d00ffff,
-            BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 => 0x1d00ffff,
-            BitcoinNetwork::Regtest => 0x207fffff,
-            BitcoinNetwork::Signet => 0x1e0377ae,
-            _ => unreachable!("Unsupported Bitcoin network variant: {:?}", net),
-        },
-        Dogecoin(net) => match net {
-            DogecoinNetwork::Dogecoin => 0x1e0fffff, // In Dogecoin this is higher than the Genesis compact target (0x1e0ffff0)
-            DogecoinNetwork::Testnet => 0x1e0fffff,
-            DogecoinNetwork::Regtest => 0x207fffff,
-            _ => unreachable!("Unsupported Dogecoin network variant: {:?}", net),
-        },
+        BitcoinNetwork::Bitcoin => 0x1d00ffff,
+        BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 => 0x1d00ffff,
+        BitcoinNetwork::Regtest => 0x207fffff,
+        BitcoinNetwork::Signet => 0x1e0377ae,
+        &other => unreachable!("Unsupported network: {:?}", other),
+    };
+    CompactTarget::from_consensus(bits)
+}
+
+#[cfg(feature = "doge")]
+/// Returns the PoW limit bits depending on the network
+pub fn pow_limit_bits(network: &DogecoinNetwork) -> CompactTarget {
+    let bits = match network {
+        DogecoinNetwork::Dogecoin => 0x1e0fffff, // In Dogecoin this is higher than the Genesis compact target (0x1e0ffff0)
+        DogecoinNetwork::Testnet => 0x1e0fffff,
+        DogecoinNetwork::Regtest => 0x207fffff,
+        &other => unreachable!("Unsupported network: {:?}", other),
     };
     CompactTarget::from_consensus(bits)
 }

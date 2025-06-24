@@ -1,18 +1,21 @@
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "btc")]
+use crate::constants::{DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES};
+#[cfg(feature = "btc")]
+use bitcoin::network::Network as BitcoinNetwork;
+
+#[cfg(feature = "doge")]
+use crate::constants::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
+#[cfg(feature = "doge")]
+use bitcoin::dogecoin::Network as DogecoinNetwork;
+
 use crate::{
-    constants::{
-        max_target, no_pow_retargeting, pow_limit_bits, DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN,
-        DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN, TEN_MINUTES,
-    },
+    constants::{max_target, no_pow_retargeting, pow_limit_bits},
     BlockHeight,
 };
-use bitcoin::{
-    block::Header, dogecoin::Network as DogecoinNetwork, BlockHash, CompactTarget,
-    Network as BitcoinNetwork, Target,
-};
-use ic_doge_types::BlockchainNetwork;
+use bitcoin::{block::Header, BlockHash, CompactTarget, Target};
 
 /// An error thrown when trying to validate a header.
 #[derive(Debug, PartialEq)]
@@ -60,10 +63,11 @@ pub trait HeaderStore {
     }
 }
 
+#[cfg(feature = "btc")]
 /// Validates a header. If a failure occurs, a
 /// [ValidateHeaderError](ValidateHeaderError) will be returned.
 pub fn validate_header(
-    network: &BlockchainNetwork,
+    network: &BitcoinNetwork,
     store: &impl HeaderStore,
     header: &Header,
     current_time: u64,
@@ -76,10 +80,7 @@ pub fn validate_header(
         }
     };
 
-    if !matches!(
-        network,
-        BlockchainNetwork::Bitcoin(BitcoinNetwork::Testnet4)
-    ) {
+    if *network != BitcoinNetwork::Testnet4 {
         // Skip timestamp validation for Testnet4; the first 2 blocks are 2 days apart.
         // https://mempool.space/testnet4/block/00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0da8bf043
         is_timestamp_valid(store, header, current_time)?;
@@ -90,26 +91,62 @@ pub fn validate_header(
         return Err(ValidateHeaderError::TargetDifficultyAboveMax);
     }
 
-    match network {
-        BlockchainNetwork::Bitcoin(_) => header.validate_pow(header_target),
-        BlockchainNetwork::Dogecoin(_) => header.validate_pow_with_scrypt(header_target),
+    if header.validate_pow(header_target).is_err() {
+        return Err(ValidateHeaderError::InvalidPoWForHeaderTarget);
     }
-    .map_err(|_| ValidateHeaderError::InvalidPoWForHeaderTarget)?;
 
     let target = get_next_target(network, store, &prev_header, prev_height, header.time);
 
-    match network {
-        BlockchainNetwork::Bitcoin(_) => header.validate_pow(target),
-        BlockchainNetwork::Dogecoin(_) => header.validate_pow_with_scrypt(target),
-    }
-    .map_err(|err| {
+    if let Err(err) = header.validate_pow(target) {
         match err {
             bitcoin::block::ValidationError::BadProofOfWork => println!("bad proof of work"),
             bitcoin::block::ValidationError::BadTarget => println!("bad target"),
             _ => {}
         };
-        ValidateHeaderError::InvalidPoWForComputedTarget
-    })?;
+        return Err(ValidateHeaderError::InvalidPoWForComputedTarget);
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "doge")]
+/// Validates a header. If a failure occurs, a
+/// [ValidateHeaderError](ValidateHeaderError) will be returned.
+pub fn validate_header(
+    network: &DogecoinNetwork,
+    store: &impl HeaderStore,
+    header: &Header,
+    current_time: u64,
+) -> Result<(), ValidateHeaderError> {
+    let prev_height = store.height();
+    let prev_header = match store.get_with_block_hash(&header.prev_blockhash) {
+        Some(result) => result,
+        None => {
+            return Err(ValidateHeaderError::PrevHeaderNotFound);
+        }
+    };
+
+    is_timestamp_valid(store, header, current_time)?;
+
+    let header_target = header.target();
+    if header_target > max_target(network) {
+        return Err(ValidateHeaderError::TargetDifficultyAboveMax);
+    }
+
+    if header.validate_pow_with_scrypt(header_target).is_err() {
+        return Err(ValidateHeaderError::InvalidPoWForHeaderTarget);
+    }
+
+    let target = get_next_target(network, store, &prev_header, prev_height);
+
+    if let Err(err) = header.validate_pow_with_scrypt(target) {
+        match err {
+            bitcoin::block::ValidationError::BadProofOfWork => println!("bad proof of work"),
+            bitcoin::block::ValidationError::BadTarget => println!("bad target"),
+            _ => {}
+        };
+        return Err(ValidateHeaderError::InvalidPoWForComputedTarget);
+    }
 
     Ok(())
 }
@@ -162,65 +199,75 @@ fn is_timestamp_valid(
     Ok(())
 }
 
+#[cfg(feature = "btc")]
 // Returns the next required target at the given timestamp.
 // The target is the number that a block hash must be below for it to be accepted.
 fn get_next_target(
-    network: &BlockchainNetwork,
+    network: &BitcoinNetwork,
     store: &impl HeaderStore,
     prev_header: &Header,
     prev_height: BlockHeight,
     timestamp: u32,
 ) -> Target {
     match network {
-        BlockchainNetwork::Bitcoin(network) => {
-            match network {
-                BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
-                    if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 {
-                        // This if statements is reached only for Regtest and Testnet networks
-                        // Here is the quote from "https://en.bitcoin.it/wiki/Testnet"
-                        // "If no block has been found in 20 minutes, the difficulty automatically
-                        // resets back to the minimum for a single block, after which it
-                        // returns to its previous value."
-                        if timestamp > prev_header.time + TEN_MINUTES * 2 {
-                            // If no block has been found in 20 minutes, then use the maximum difficulty
-                            // target
-                            max_target(&BlockchainNetwork::Bitcoin(*network))
-                        } else {
-                            // If the block has been found within 20 minutes, then use the previous
-                            // difficulty target that is not equal to the maximum difficulty target
-                            Target::from_compact(find_next_difficulty_in_chain(
-                                network,
-                                store,
-                                prev_header,
-                                prev_height,
-                            ))
-                        }
-                    } else {
-                        Target::from_compact(compute_next_difficulty(
-                            network,
-                            store,
-                            prev_header,
-                            prev_height,
-                        ))
-                    }
+        BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
+            if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 {
+                // This if statements is reached only for Regtest and Testnet networks
+                // Here is the quote from "https://en.bitcoin.it/wiki/Testnet"
+                // "If no block has been found in 20 minutes, the difficulty automatically
+                // resets back to the minimum for a single block, after which it
+                // returns to its previous value."
+                if timestamp > prev_header.time + TEN_MINUTES * 2 {
+                    // If no block has been found in 20 minutes, then use the maximum difficulty
+                    // target
+                    max_target(network)
+                } else {
+                    // If the block has been found within 20 minutes, then use the previous
+                    // difficulty target that is not equal to the maximum difficulty target
+                    Target::from_compact(find_next_difficulty_in_chain(
+                        network,
+                        store,
+                        prev_header,
+                        prev_height,
+                    ))
                 }
-                BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => Target::from_compact(
-                    compute_next_difficulty(network, store, prev_header, prev_height),
-                ),
-                &other => unreachable!("Unsupported network: {:?}", other),
+            } else {
+                Target::from_compact(compute_next_difficulty(
+                    network,
+                    store,
+                    prev_header,
+                    prev_height,
+                ))
             }
         }
-        BlockchainNetwork::Dogecoin(network) => {
-            match network {
-                DogecoinNetwork::Dogecoin => Target::from_compact(
-                    compute_next_difficulty_dogecoin(network, store, prev_header, prev_height),
-                ),
-                &other => unreachable!("Unsupported network: {:?}", other),
-            }
-        }
+        BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => Target::from_compact(
+            compute_next_difficulty(network, store, prev_header, prev_height),
+        ),
+        &other => unreachable!("Unsupported network: {:?}", other),
     }
 }
 
+#[cfg(feature = "doge")]
+// Returns the next required target at the given timestamp.
+// The target is the number that a block hash must be below for it to be accepted.
+fn get_next_target(
+    network: &DogecoinNetwork,
+    store: &impl HeaderStore,
+    prev_header: &Header,
+    prev_height: BlockHeight,
+) -> Target {
+    match network {
+        DogecoinNetwork::Dogecoin => Target::from_compact(compute_next_difficulty(
+            network,
+            store,
+            prev_header,
+            prev_height,
+        )),
+        &other => unreachable!("Unsupported network: {:?}", other),
+    }
+}
+
+#[cfg(feature = "btc")]
 /// This method is only valid when used for testnet and regtest networks.
 /// As per "https://en.bitcoin.it/wiki/Testnet",
 /// "If no block has been found in 20 minutes, the difficulty automatically
@@ -235,7 +282,7 @@ fn find_next_difficulty_in_chain(
     prev_height: BlockHeight,
 ) -> CompactTarget {
     // This is the maximum difficulty target for the network
-    let pow_limit_bits = pow_limit_bits(&BlockchainNetwork::Bitcoin(*network));
+    let pow_limit_bits = pow_limit_bits(network);
     match network {
         BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
             let mut current_header = *prev_header;
@@ -274,6 +321,7 @@ fn find_next_difficulty_in_chain(
     }
 }
 
+#[cfg(feature = "btc")]
 /// This function returns the difficulty target to be used for the current
 /// header given the previous header in the Bitcoin network
 fn compute_next_difficulty(
@@ -288,9 +336,7 @@ fn compute_next_difficulty(
     // regtest, simply return the previous difficulty target.
 
     let height = prev_height + 1;
-    if height % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0
-        || no_pow_retargeting(&BlockchainNetwork::Bitcoin(*network))
-    {
+    if height % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 || no_pow_retargeting(network) {
         return prev_header.bits;
     }
     // Computing the `last_adjustment_header`.
@@ -329,9 +375,10 @@ fn compute_next_difficulty(
     CompactTarget::from_next_work_required(last, timespan, *network)
 }
 
+#[cfg(feature = "doge")]
 /// This function returns the difficulty target to be used for the current
 /// header given the previous header in the Dogecoin network
-fn compute_next_difficulty_dogecoin(
+fn compute_next_difficulty(
     network: &DogecoinNetwork,
     store: &impl HeaderStore,
     prev_header: &Header,
@@ -343,9 +390,7 @@ fn compute_next_difficulty_dogecoin(
     // regtest, simply return the previous difficulty target.
 
     let height = prev_height + 1;
-    if height % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0
-        || no_pow_retargeting(&BlockchainNetwork::Dogecoin(*network))
-    {
+    if height % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0 || no_pow_retargeting(network) {
         return prev_header.bits;
     }
     // Computing the `last_adjustment_header`.

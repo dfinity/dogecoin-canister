@@ -1,9 +1,10 @@
-use crate::header::{get_next_target, BlockchainNetwork};
+use crate::{validate_header, ValidateHeaderError};
 use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::hex::FromHex;
-use bitcoin::{BlockHash, CompactTarget, Target, TxMerkleNode};
+
+use bitcoin::{BlockHash, CompactTarget, TxMerkleNode};
 use csv::Reader;
 use proptest::proptest;
 use std::collections::HashMap;
@@ -90,46 +91,6 @@ impl HeaderStore for SimpleHeaderStore {
     }
 }
 
-fn test_next_targets(network: BlockchainNetwork, headers_path: &str, up_to_height: usize) {
-    use bitcoin::consensus::Decodable;
-    use std::io::BufRead;
-    let file = std::fs::File::open(
-        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(headers_path),
-    )
-    .unwrap();
-
-    let rdr = std::io::BufReader::new(file);
-
-    println!("Loading headers...");
-    let mut headers = vec![];
-    for line in rdr.lines() {
-        let header = line.unwrap();
-        // If this line fails make sure you install git-lfs.
-        let decoded = hex::decode(header.trim()).unwrap();
-        let header = Header::consensus_decode(&mut &decoded[..]).unwrap();
-        headers.push(header);
-    }
-
-    println!("Creating header store...");
-    let mut store = SimpleHeaderStore::new(headers[0], 0);
-    for header in headers[1..].iter() {
-        store.add(*header);
-    }
-
-    println!("Verifying next targets...");
-    proptest!(|(i in 0..up_to_height)| {
-        // Compute what the target of the next header should be.
-        let expected_next_target =
-            get_next_target(&network, &store, &headers[i], i as u32, headers[i + 1].time);
-
-        // Assert that the expected next target matches the next header's target.
-        assert_eq!(
-            expected_next_target,
-            Target::from_compact(headers[i + 1].bits)
-        );
-    });
-}
-
 /// This function reads all headers from the specified CSV file in `tests/data/`
 /// and returns them as a `Vec<Header>`.
 fn get_headers(file: &str) -> Vec<Header> {
@@ -160,34 +121,69 @@ fn get_headers(file: &str) -> Vec<Header> {
     headers
 }
 
+#[cfg(feature = "btc")]
 mod bitcoin_header {
     use super::{
-        deserialize_header, get_headers, test_next_targets, SimpleHeaderStore, MOCK_CURRENT_TIME,
+        deserialize_header, get_headers, proptest, validate_header, PathBuf, SimpleHeaderStore,
+        ValidateHeaderError, MOCK_CURRENT_TIME,
     };
     use crate::constants::test::{
         MAINNET_HEADER_586656, MAINNET_HEADER_705600, MAINNET_HEADER_705601, MAINNET_HEADER_705602,
         TESTNET_HEADER_2132555, TESTNET_HEADER_2132556,
     };
     use crate::header::{
-        compute_next_difficulty, get_next_target, pow_limit_bits, BitcoinNetwork,
-        BlockchainNetwork, CompactTarget, Header, HeaderStore, Target,
-        DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES,
+        compute_next_difficulty, get_next_target, pow_limit_bits, BitcoinNetwork, CompactTarget,
+        Header, HeaderStore, Target, DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES,
     };
-    use crate::{validate_header, ValidateHeaderError};
     use bitcoin::constants::genesis_block;
-    use bitcoin::Network::{Bitcoin, Regtest, Testnet};
+    use bitcoin::Network;
+
+    fn test_next_targets(network: Network, headers_path: &str, up_to_height: usize) {
+        use bitcoin::consensus::Decodable;
+        use std::io::BufRead;
+        let file = std::fs::File::open(
+            PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(headers_path),
+        )
+        .unwrap();
+
+        let rdr = std::io::BufReader::new(file);
+
+        println!("Loading headers...");
+        let mut headers = vec![];
+        for line in rdr.lines() {
+            let header = line.unwrap();
+            // If this line fails make sure you install git-lfs.
+            let decoded = hex::decode(header.trim()).unwrap();
+            let header = Header::consensus_decode(&mut &decoded[..]).unwrap();
+            headers.push(header);
+        }
+
+        println!("Creating header store...");
+        let mut store = SimpleHeaderStore::new(headers[0], 0);
+        for header in headers[1..].iter() {
+            store.add(*header);
+        }
+
+        println!("Verifying next targets...");
+        proptest!(|(i in 0..up_to_height)| {
+            // Compute what the target of the next header should be.
+            let expected_next_target =
+                get_next_target(&network, &store, &headers[i], i as u32, headers[i + 1].time);
+
+            // Assert that the expected next target matches the next header's target.
+            assert_eq!(
+                expected_next_target,
+                Target::from_compact(headers[i + 1].bits)
+            );
+        });
+    }
 
     #[test]
     fn test_simple_mainnet() {
         let header_705600 = deserialize_header(MAINNET_HEADER_705600);
         let header_705601 = deserialize_header(MAINNET_HEADER_705601);
         let store = SimpleHeaderStore::new(header_705600, 705_600);
-        let result = validate_header(
-            &BlockchainNetwork::Bitcoin(Bitcoin),
-            &store,
-            &header_705601,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Bitcoin, &store, &header_705601, MOCK_CURRENT_TIME);
         assert!(result.is_ok());
     }
 
@@ -197,7 +193,7 @@ mod bitcoin_header {
         let header_2132556 = deserialize_header(TESTNET_HEADER_2132556);
         let store = SimpleHeaderStore::new(header_2132555, 2_132_555);
         let result = validate_header(
-            &BlockchainNetwork::Bitcoin(Testnet),
+            &Network::Testnet,
             &store,
             &header_2132556,
             MOCK_CURRENT_TIME,
@@ -211,12 +207,7 @@ mod bitcoin_header {
         let mut store = SimpleHeaderStore::new(header_586656, 586_656);
         let headers = get_headers("headers.csv");
         for (i, header) in headers.iter().enumerate() {
-            let result = validate_header(
-                &BlockchainNetwork::Bitcoin(Bitcoin),
-                &store,
-                header,
-                MOCK_CURRENT_TIME,
-            );
+            let result = validate_header(&Network::Bitcoin, &store, header, MOCK_CURRENT_TIME);
             assert!(
                 result.is_ok(),
                 "Failed to validate header on line {}: {:?}",
@@ -232,12 +223,7 @@ mod bitcoin_header {
         let header_705600 = deserialize_header(MAINNET_HEADER_705600);
         let header_705602 = deserialize_header(MAINNET_HEADER_705602);
         let store = SimpleHeaderStore::new(header_705600, 705_600);
-        let result = validate_header(
-            &BlockchainNetwork::Bitcoin(Bitcoin),
-            &store,
-            &header_705602,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Bitcoin, &store, &header_705602, MOCK_CURRENT_TIME);
         assert!(matches!(
             result,
             Err(ValidateHeaderError::PrevHeaderNotFound)
@@ -248,14 +234,9 @@ mod bitcoin_header {
     fn test_is_header_valid_invalid_header_target() {
         let header_705600 = deserialize_header(MAINNET_HEADER_705600);
         let mut header = deserialize_header(MAINNET_HEADER_705601);
-        header.bits = pow_limit_bits(&BlockchainNetwork::Bitcoin(Bitcoin));
+        header.bits = pow_limit_bits(&Network::Bitcoin);
         let store = SimpleHeaderStore::new(header_705600, 705_600);
-        let result = validate_header(
-            &BlockchainNetwork::Bitcoin(Bitcoin),
-            &store,
-            &header,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Bitcoin, &store, &header, MOCK_CURRENT_TIME);
         assert!(matches!(
             result,
             Err(ValidateHeaderError::InvalidPoWForHeaderTarget)
@@ -264,9 +245,9 @@ mod bitcoin_header {
 
     #[test]
     fn test_is_header_valid_invalid_computed_target() {
-        let pow_bitcoin = pow_limit_bits(&BlockchainNetwork::Bitcoin(Bitcoin));
-        let pow_regtest = pow_limit_bits(&BlockchainNetwork::Bitcoin(Regtest));
-        let h0 = genesis_header(Bitcoin, pow_bitcoin);
+        let pow_bitcoin = pow_limit_bits(&Network::Bitcoin);
+        let pow_regtest = pow_limit_bits(&Network::Regtest);
+        let h0 = genesis_header(Network::Bitcoin, pow_bitcoin);
         let h1 = next_block_header(h0, pow_regtest);
         let h2 = next_block_header(h1, pow_regtest);
         let h3 = next_block_header(h2, pow_regtest);
@@ -276,12 +257,7 @@ mod bitcoin_header {
         // In regtest, this will use the previous difficulty target that is not equal to the
         // maximum difficulty target (`pow_regtest`), meaning `pow_bitcoin`.
         // See [`crate::header::find_next_difficulty_in_chain`]
-        let result = validate_header(
-            &BlockchainNetwork::Bitcoin(Regtest),
-            &store,
-            &h3,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Regtest, &store, &h3, MOCK_CURRENT_TIME);
         assert!(matches!(
             result,
             Err(ValidateHeaderError::InvalidPoWForComputedTarget)
@@ -292,14 +268,9 @@ mod bitcoin_header {
     fn test_is_header_valid_target_difficulty_above_max() {
         let header_705600 = deserialize_header(MAINNET_HEADER_705600);
         let mut header = deserialize_header(MAINNET_HEADER_705601);
-        header.bits = pow_limit_bits(&BlockchainNetwork::Bitcoin(Regtest));
+        header.bits = pow_limit_bits(&Network::Regtest);
         let store = SimpleHeaderStore::new(header_705600, 705_600);
-        let result = validate_header(
-            &BlockchainNetwork::Bitcoin(Bitcoin),
-            &store,
-            &header,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Bitcoin, &store, &header, MOCK_CURRENT_TIME);
         assert!(matches!(
             result,
             Err(ValidateHeaderError::TargetDifficultyAboveMax)
@@ -325,7 +296,7 @@ mod bitcoin_header {
     #[test]
     fn mainnet_next_targets() {
         test_next_targets(
-            BlockchainNetwork::Bitcoin(Bitcoin),
+            Network::Bitcoin,
             "tests/data/block_headers_mainnet.csv",
             700_000,
         );
@@ -334,7 +305,7 @@ mod bitcoin_header {
     #[test]
     fn testnet_next_targets() {
         test_next_targets(
-            BlockchainNetwork::Bitcoin(Testnet),
+            Network::Testnet,
             "tests/data/block_headers_testnet.csv",
             2_400_000,
         );
@@ -347,7 +318,7 @@ mod bitcoin_header {
         initial_pow: CompactTarget,
         chain_length: u32,
     ) -> (SimpleHeaderStore, Header) {
-        let pow_limit = pow_limit_bits(&BlockchainNetwork::Bitcoin(*network));
+        let pow_limit = pow_limit_bits(network);
         let h0 = genesis_header(*network, initial_pow);
         let mut store = SimpleHeaderStore::new(h0, 0);
         let mut last_header = h0;
@@ -369,14 +340,14 @@ mod bitcoin_header {
         // Expect difficulty to be equal to the non-limit PoW.
 
         // Arrange.
-        let network = Regtest;
+        let network = Network::Regtest;
         let expected_pow = CompactTarget::from_consensus(7); // Some non-limit PoW, the actual value is not important.
         for chain_length in 1..10 {
             let (store, last_header) = create_chain(&network, expected_pow, chain_length);
             assert_eq!(store.height() + 1, chain_length);
             // Act.
             let target = get_next_target(
-                &BlockchainNetwork::Bitcoin(network),
+                &network,
                 &store,
                 &last_header,
                 chain_length - 1,
@@ -390,7 +361,7 @@ mod bitcoin_header {
     #[test]
     fn test_compute_next_difficulty_for_backdated_blocks() {
         // Arrange: Set up the test network and parameters
-        let network = Testnet;
+        let network = Network::Testnet;
         let chain_length = DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN - 1; // To trigger the difficulty adjustment.
         let genesis_difficulty = CompactTarget::from_consensus(486604799);
 
@@ -416,18 +387,59 @@ mod bitcoin_header {
     }
 }
 
+#[cfg(feature = "doge")]
 mod dogecoin_header {
     use super::{
-        deserialize_header, get_headers, test_next_targets, SimpleHeaderStore, MOCK_CURRENT_TIME,
+        deserialize_header, get_headers, proptest, validate_header, PathBuf, SimpleHeaderStore,
+        ValidateHeaderError, MOCK_CURRENT_TIME,
     };
     use crate::constants::test::{
         MAINNET_HEADER_DOGE_151556, MAINNET_HEADER_DOGE_151557, MAINNET_HEADER_DOGE_17,
         MAINNET_HEADER_DOGE_18,
     };
-    use crate::header::{pow_limit_bits, BlockchainNetwork};
-    use crate::{validate_header, ValidateHeaderError};
+    use crate::header::{get_next_target, pow_limit_bits, Header, Target};
     use bitcoin::dogecoin::constants::genesis_block;
-    use bitcoin::dogecoin::Network::{Dogecoin, Regtest};
+    use bitcoin::dogecoin::Network;
+
+    fn test_next_targets(network: Network, headers_path: &str, up_to_height: usize) {
+        use bitcoin::consensus::Decodable;
+        use std::io::BufRead;
+        let file = std::fs::File::open(
+            PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(headers_path),
+        )
+        .unwrap();
+
+        let rdr = std::io::BufReader::new(file);
+
+        println!("Loading headers...");
+        let mut headers = vec![];
+        for line in rdr.lines() {
+            let header = line.unwrap();
+            // If this line fails make sure you install git-lfs.
+            let decoded = hex::decode(header.trim()).unwrap();
+            let header = Header::consensus_decode(&mut &decoded[..]).unwrap();
+            headers.push(header);
+        }
+
+        println!("Creating header store...");
+        let mut store = SimpleHeaderStore::new(headers[0], 0);
+        for header in headers[1..].iter() {
+            store.add(*header);
+        }
+
+        println!("Verifying next targets...");
+        proptest!(|(i in 0..up_to_height)| {
+            // Compute what the target of the next header should be.
+            let expected_next_target =
+                get_next_target(&network, &store, &headers[i], i as u32, headers[i + 1].time);
+
+            // Assert that the expected next target matches the next header's target.
+            assert_eq!(
+                expected_next_target,
+                Target::from_compact(headers[i + 1].bits)
+            );
+        });
+    }
 
     #[test]
     fn test_simple_mainnet() {
@@ -435,7 +447,7 @@ mod dogecoin_header {
         let header_151556 = deserialize_header(MAINNET_HEADER_DOGE_18);
         let store = SimpleHeaderStore::new(header_151555, 151_555);
         let result = validate_header(
-            &BlockchainNetwork::Dogecoin(Dogecoin),
+            &Network::Dogecoin,
             &store,
             &header_151556,
             MOCK_CURRENT_TIME,
@@ -445,16 +457,11 @@ mod dogecoin_header {
 
     #[test]
     fn test_is_header_valid() {
-        let genesis_header = genesis_block(Dogecoin).header;
+        let genesis_header = genesis_block(Network::Dogecoin).header;
         let mut store = SimpleHeaderStore::new(genesis_header, 0);
         let headers = get_headers("headers_doge_1_5000.csv");
         for (i, header) in headers.iter().enumerate() {
-            let result = validate_header(
-                &BlockchainNetwork::Dogecoin(Dogecoin),
-                &store,
-                header,
-                MOCK_CURRENT_TIME,
-            );
+            let result = validate_header(&Network::Dogecoin, &store, header, MOCK_CURRENT_TIME);
             assert!(
                 result.is_ok(),
                 "Failed to validate header on line {}: {:?}",
@@ -469,14 +476,9 @@ mod dogecoin_header {
     fn test_is_header_valid_invalid_header_target() {
         let header_151556 = deserialize_header(MAINNET_HEADER_DOGE_151556);
         let mut header = deserialize_header(MAINNET_HEADER_DOGE_151557);
-        header.bits = pow_limit_bits(&BlockchainNetwork::Dogecoin(Dogecoin)); // Modify header to invalidate PoW
+        header.bits = pow_limit_bits(&Network::Dogecoin); // Modify header to invalidate PoW
         let store = SimpleHeaderStore::new(header_151556, 151556);
-        let result = validate_header(
-            &BlockchainNetwork::Dogecoin(Dogecoin),
-            &store,
-            &header,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Dogecoin, &store, &header, MOCK_CURRENT_TIME);
         assert!(matches!(
             result,
             Err(ValidateHeaderError::InvalidPoWForHeaderTarget)
@@ -487,14 +489,9 @@ mod dogecoin_header {
     fn test_is_header_valid_target_difficulty_above_max() {
         let header_705600 = deserialize_header(MAINNET_HEADER_DOGE_151556);
         let mut header = deserialize_header(MAINNET_HEADER_DOGE_151557);
-        header.bits = pow_limit_bits(&BlockchainNetwork::Dogecoin(Regtest)); // Target exceeds what is allowed on mainnet
+        header.bits = pow_limit_bits(&Network::Regtest); // Target exceeds what is allowed on mainnet
         let store = SimpleHeaderStore::new(header_705600, 705_600);
-        let result = validate_header(
-            &BlockchainNetwork::Dogecoin(Dogecoin),
-            &store,
-            &header,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Dogecoin, &store, &header, MOCK_CURRENT_TIME);
         assert!(matches!(
             result,
             Err(ValidateHeaderError::TargetDifficultyAboveMax)
@@ -504,24 +501,25 @@ mod dogecoin_header {
     #[test]
     fn mainnet_next_targets() {
         test_next_targets(
-            BlockchainNetwork::Dogecoin(Dogecoin),
+            Network::Dogecoin,
             "tests/data/block_headers_mainnet_doge.csv",
             5_000,
         );
     }
 }
 
+#[cfg(feature = "btc")]
 mod timestamp {
-    use super::{deserialize_header, SimpleHeaderStore, MOCK_CURRENT_TIME};
+    use super::{
+        deserialize_header, validate_header, SimpleHeaderStore, ValidateHeaderError,
+        MOCK_CURRENT_TIME,
+    };
     use crate::constants::test::{
         MAINNET_HEADER_705600, MAINNET_HEADER_705601, MAINNET_HEADER_705602,
     };
-    use crate::header::{
-        is_timestamp_valid, timestamp_is_less_than_2h_in_future, BlockchainNetwork, ONE_HOUR,
-    };
-    use crate::{validate_header, ValidateHeaderError};
+    use crate::header::{is_timestamp_valid, timestamp_is_less_than_2h_in_future, ONE_HOUR};
     use bitcoin::block::{Header, Version};
-    use bitcoin::Network::Bitcoin;
+    use bitcoin::network::Network;
     use bitcoin::{BlockHash, CompactTarget, TxMerkleNode};
     use std::str::FromStr;
 
@@ -599,12 +597,7 @@ mod timestamp {
             Err(ValidateHeaderError::HeaderIsOld)
         ));
 
-        let result = validate_header(
-            &BlockchainNetwork::Bitcoin(Bitcoin),
-            &store,
-            &header,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Bitcoin, &store, &header, MOCK_CURRENT_TIME);
         assert!(matches!(result, Err(ValidateHeaderError::HeaderIsOld)));
 
         header.time = (MOCK_CURRENT_TIME - ONE_HOUR) as u32;
@@ -620,12 +613,7 @@ mod timestamp {
             })
         );
 
-        let result = validate_header(
-            &BlockchainNetwork::Bitcoin(Bitcoin),
-            &store,
-            &header,
-            MOCK_CURRENT_TIME,
-        );
+        let result = validate_header(&Network::Bitcoin, &store, &header, MOCK_CURRENT_TIME);
         assert_eq!(
             result,
             Err(ValidateHeaderError::HeaderIsTooFarInFuture {

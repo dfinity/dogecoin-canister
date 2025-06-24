@@ -14,8 +14,7 @@ use bitcoin::block::Block as BlockData;
 use bitcoin::dogecoin::Block as BlockData;
 
 use bitcoin::{
-    block::Header, dogecoin::Network as DogecoinNetwork, hashes::Hash, Network as BitcoinNetwork,
-    OutPoint as BitcoinOutPoint, Target,
+    block::Header, hashes::Hash, Network as BitcoinNetwork, OutPoint as BitcoinOutPoint, Target,
 };
 use candid::CandidType;
 use datasize::DataSize;
@@ -450,10 +449,4 @@ fn target_difficulty() {
         ),
         1_032
     );
-}
-
-#[derive(Debug)]
-pub enum BlockchainNetwork {
-    Bitcoin(BitcoinNetwork),
-    Dogecoin(DogecoinNetwork),
 }

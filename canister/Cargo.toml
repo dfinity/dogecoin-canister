@@ -14,8 +14,8 @@ ciborium = { workspace = true }
 datasize = { workspace = true }
 hex = { workspace = true }
 ic-doge-interface = { workspace = true }
-ic-doge-types = { workspace = true }
-ic-doge-validation = { workspace = true }
+ic-doge-types = { workspace = true, features = ["btc"] }
+ic-doge-validation = { workspace = true, features = ["btc"] }
 ic-cdk = { workspace = true }
 ic-cdk-macros = { workspace = true }
 ic-metrics-encoder = { workspace = true }
