@@ -1945,7 +1945,6 @@ dependencies = [
  "bitcoin",
  "csv",
  "hex",
- "ic-doge-types",
  "proptest 0.9.6",
 ]
 

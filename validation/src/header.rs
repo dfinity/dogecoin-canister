@@ -3,7 +3,7 @@ mod tests;
 
 #[cfg(feature = "btc")]
 use {
-    crate::constants::{DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES},
+    crate::constants::{pow_limit_bits, DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES},
     bitcoin::network::Network as BitcoinNetwork,
 };
 
@@ -14,7 +14,7 @@ use {
 };
 
 use crate::{
-    constants::{max_target, no_pow_retargeting, pow_limit_bits},
+    constants::{max_target, no_pow_retargeting},
     BlockHeight,
 };
 use bitcoin::{block::Header, BlockHash, CompactTarget, Target};
@@ -98,7 +98,6 @@ pub fn validate_header(
     }
 
     let target = get_next_target(network, store, &prev_header, prev_height, header.time);
-
     if let Err(err) = header.validate_pow(target) {
         match err {
             bitcoin::block::ValidationError::BadProofOfWork => println!("bad proof of work"),

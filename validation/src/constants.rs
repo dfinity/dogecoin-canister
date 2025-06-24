@@ -15,6 +15,7 @@ pub const DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN: BlockHeight = 6 * 24 * 14;
 /// Expected number of blocks for 4 hours in Dogecoin (240).
 pub const DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN: BlockHeight = 4 * 60;
 
+#[cfg(feature = "btc")]
 /// Needed to help test check for the 20 minute testnet/regtest rule
 pub const TEN_MINUTES: u32 = 60 * 10;
 

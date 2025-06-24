@@ -393,11 +393,12 @@ mod dogecoin_header {
         deserialize_header, get_headers, proptest, validate_header, PathBuf, SimpleHeaderStore,
         ValidateHeaderError, MOCK_CURRENT_TIME,
     };
+    use crate::constants::pow_limit_bits;
     use crate::constants::test::{
         MAINNET_HEADER_DOGE_151556, MAINNET_HEADER_DOGE_151557, MAINNET_HEADER_DOGE_17,
         MAINNET_HEADER_DOGE_18,
     };
-    use crate::header::{get_next_target, pow_limit_bits, Header, Target};
+    use crate::header::{get_next_target, Header, Target};
     use bitcoin::dogecoin::constants::genesis_block;
     use bitcoin::dogecoin::Network;
 
@@ -431,7 +432,7 @@ mod dogecoin_header {
         proptest!(|(i in 0..up_to_height)| {
             // Compute what the target of the next header should be.
             let expected_next_target =
-                get_next_target(&network, &store, &headers[i], i as u32, headers[i + 1].time);
+                get_next_target(&network, &store, &headers[i], i as u32);
 
             // Assert that the expected next target matches the next header's target.
             assert_eq!(
