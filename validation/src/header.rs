@@ -1,22 +1,11 @@
+#[cfg(feature = "btc")]
+pub mod btc;
+#[cfg(feature = "doge")]
+pub mod doge;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "btc")]
-use {
-    crate::constants::{pow_limit_bits, DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN, TEN_MINUTES},
-    bitcoin::network::Network as BitcoinNetwork,
-};
-
-#[cfg(feature = "doge")]
-use {
-    crate::constants::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN,
-    bitcoin::dogecoin::Network as DogecoinNetwork,
-};
-
-use crate::{
-    constants::{max_target, no_pow_retargeting},
-    BlockHeight,
-};
+use crate::BlockHeight;
 use bitcoin::{block::Header, BlockHash, CompactTarget, Target};
 
 /// An error thrown when trying to validate a header.
@@ -63,93 +52,6 @@ pub trait HeaderStore {
             .expect("genesis block header not found")
             .block_hash()
     }
-}
-
-#[cfg(feature = "btc")]
-/// Validates a header. If a failure occurs, a
-/// [ValidateHeaderError](ValidateHeaderError) will be returned.
-pub fn validate_header(
-    network: &BitcoinNetwork,
-    store: &impl HeaderStore,
-    header: &Header,
-    current_time: u64,
-) -> Result<(), ValidateHeaderError> {
-    let prev_height = store.height();
-    let prev_header = match store.get_with_block_hash(&header.prev_blockhash) {
-        Some(result) => result,
-        None => {
-            return Err(ValidateHeaderError::PrevHeaderNotFound);
-        }
-    };
-
-    if *network != BitcoinNetwork::Testnet4 {
-        // Skip timestamp validation for Testnet4; the first 2 blocks are 2 days apart.
-        // https://mempool.space/testnet4/block/00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0da8bf043
-        is_timestamp_valid(store, header, current_time)?;
-    }
-
-    let header_target = header.target();
-    if header_target > max_target(network) {
-        return Err(ValidateHeaderError::TargetDifficultyAboveMax);
-    }
-
-    if header.validate_pow(header_target).is_err() {
-        return Err(ValidateHeaderError::InvalidPoWForHeaderTarget);
-    }
-
-    let target = get_next_target(network, store, &prev_header, prev_height, header.time);
-    if let Err(err) = header.validate_pow(target) {
-        match err {
-            bitcoin::block::ValidationError::BadProofOfWork => println!("bad proof of work"),
-            bitcoin::block::ValidationError::BadTarget => println!("bad target"),
-            _ => {}
-        };
-        return Err(ValidateHeaderError::InvalidPoWForComputedTarget);
-    }
-
-    Ok(())
-}
-
-#[cfg(feature = "doge")]
-/// Validates a header. If a failure occurs, a
-/// [ValidateHeaderError](ValidateHeaderError) will be returned.
-pub fn validate_header(
-    network: &DogecoinNetwork,
-    store: &impl HeaderStore,
-    header: &Header,
-    current_time: u64,
-) -> Result<(), ValidateHeaderError> {
-    let prev_height = store.height();
-    let prev_header = match store.get_with_block_hash(&header.prev_blockhash) {
-        Some(result) => result,
-        None => {
-            return Err(ValidateHeaderError::PrevHeaderNotFound);
-        }
-    };
-
-    is_timestamp_valid(store, header, current_time)?;
-
-    let header_target = header.target();
-    if header_target > max_target(network) {
-        return Err(ValidateHeaderError::TargetDifficultyAboveMax);
-    }
-
-    if header.validate_pow_with_scrypt(header_target).is_err() {
-        return Err(ValidateHeaderError::InvalidPoWForHeaderTarget);
-    }
-
-    let target = get_next_target(network, store, &prev_header, prev_height);
-
-    if let Err(err) = header.validate_pow_with_scrypt(target) {
-        match err {
-            bitcoin::block::ValidationError::BadProofOfWork => println!("bad proof of work"),
-            bitcoin::block::ValidationError::BadTarget => println!("bad target"),
-            _ => {}
-        };
-        return Err(ValidateHeaderError::InvalidPoWForComputedTarget);
-    }
-
-    Ok(())
 }
 
 fn timestamp_is_less_than_2h_in_future(
@@ -200,226 +102,57 @@ fn is_timestamp_valid(
     Ok(())
 }
 
-#[cfg(feature = "btc")]
-// Returns the next required target at the given timestamp.
-// The target is the number that a block hash must be below for it to be accepted.
-fn get_next_target(
-    network: &BitcoinNetwork,
-    store: &impl HeaderStore,
-    prev_header: &Header,
-    prev_height: BlockHeight,
-    timestamp: u32,
-) -> Target {
-    match network {
-        BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
-            if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 {
-                // This if statements is reached only for Regtest and Testnet networks
-                // Here is the quote from "https://en.bitcoin.it/wiki/Testnet"
-                // "If no block has been found in 20 minutes, the difficulty automatically
-                // resets back to the minimum for a single block, after which it
-                // returns to its previous value."
-                if timestamp > prev_header.time + TEN_MINUTES * 2 {
-                    // If no block has been found in 20 minutes, then use the maximum difficulty
-                    // target
-                    max_target(network)
-                } else {
-                    // If the block has been found within 20 minutes, then use the previous
-                    // difficulty target that is not equal to the maximum difficulty target
-                    Target::from_compact(find_next_difficulty_in_chain(
-                        network,
-                        store,
-                        prev_header,
-                        prev_height,
-                    ))
-                }
-            } else {
-                Target::from_compact(compute_next_difficulty(
-                    network,
-                    store,
-                    prev_header,
-                    prev_height,
-                ))
-            }
-        }
-        BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => Target::from_compact(
-            compute_next_difficulty(network, store, prev_header, prev_height),
-        ),
-        &other => unreachable!("Unsupported network: {:?}", other),
-    }
-}
+pub trait HeaderValidator {
+    /// Returns the maximum difficulty target depending on the network
+    fn max_target(&self) -> Target;
 
-#[cfg(feature = "doge")]
-// Returns the next required target at the given timestamp.
-// The target is the number that a block hash must be below for it to be accepted.
-fn get_next_target(
-    network: &DogecoinNetwork,
-    store: &impl HeaderStore,
-    prev_header: &Header,
-    prev_height: BlockHeight,
-) -> Target {
-    match network {
-        DogecoinNetwork::Dogecoin => Target::from_compact(compute_next_difficulty(
-            network,
-            store,
-            prev_header,
-            prev_height,
-        )),
-        &other => unreachable!("Unsupported network: {:?}", other),
-    }
-}
+    /// Returns false iff PoW difficulty level of blocks can be
+    /// readjusted in the network after a fixed time interval.
+    fn no_pow_retargeting(&self) -> bool;
 
-#[cfg(feature = "btc")]
-/// This method is only valid when used for testnet and regtest networks.
-/// As per "https://en.bitcoin.it/wiki/Testnet",
-/// "If no block has been found in 20 minutes, the difficulty automatically
-/// resets back to the minimum for a single block, after which it
-/// returns to its previous value." This function is used to compute the
-/// difficulty target in case the block has been found within 20
-/// minutes.
-fn find_next_difficulty_in_chain(
-    network: &BitcoinNetwork,
-    store: &impl HeaderStore,
-    prev_header: &Header,
-    prev_height: BlockHeight,
-) -> CompactTarget {
-    // This is the maximum difficulty target for the network
-    let pow_limit_bits = pow_limit_bits(network);
-    match network {
-        BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
-            let mut current_header = *prev_header;
-            let mut current_height = prev_height;
-            let mut current_hash = current_header.block_hash();
-            let initial_header_hash = store.get_initial_hash();
+    /// Returns the PoW limit bits depending on the network
+    fn pow_limit_bits(&self) -> CompactTarget;
 
-            // Keep traversing the blockchain backwards from the recent block to initial
-            // header hash.
-            loop {
-                // Check if non-limit PoW found or it's time to adjust difficulty.
-                if current_header.bits != pow_limit_bits
-                    || current_height % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN == 0
-                {
-                    return current_header.bits;
-                }
+    /// Validates a header. If a failure occurs, a
+    /// [ValidateHeaderError](ValidateHeaderError) will be returned.
+    fn validate_header(
+        &self,
+        store: &impl HeaderStore,
+        header: &Header,
+        current_time: u64,
+    ) -> Result<(), ValidateHeaderError>;
 
-                // Stop if we reach the initial header.
-                if current_hash == initial_header_hash {
-                    break;
-                }
+    /// Returns the next required target at the given timestamp.
+    /// The target is the number that a block hash must be below for it to be accepted.
+    fn get_next_target(
+        &self,
+        store: &impl HeaderStore,
+        prev_header: &Header,
+        prev_height: BlockHeight,
+        timestamp: u32,
+    ) -> Target;
 
-                // Traverse to the previous header.
-                let prev_blockhash = current_header.prev_blockhash;
-                current_header = store
-                    .get_with_block_hash(&prev_blockhash)
-                    .expect("previous header should be in the header store");
-                // Update the current height and hash.
-                current_height -= 1;
-                current_hash = prev_blockhash;
-            }
-            pow_limit_bits
-        }
-        BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => pow_limit_bits,
-        &other => unreachable!("Unsupported network: {:?}", other),
-    }
-}
+    /// This method is only valid when used for testnet and regtest networks.
+    /// As per "https://en.bitcoin.it/wiki/Testnet",
+    /// "If no block has been found in 20 minutes, the difficulty automatically
+    /// resets back to the minimum for a single block, after which it
+    /// returns to its previous value." This function is used to compute the
+    /// difficulty target in case the block has been found within 20
+    /// minutes.
+    #[allow(dead_code)]
+    fn find_next_difficulty_in_chain(
+        &self,
+        store: &impl HeaderStore,
+        prev_header: &Header,
+        prev_height: BlockHeight,
+    ) -> CompactTarget;
 
-#[cfg(feature = "btc")]
-/// This function returns the difficulty target to be used for the current
-/// header given the previous header in the Bitcoin network
-fn compute_next_difficulty(
-    network: &BitcoinNetwork,
-    store: &impl HeaderStore,
-    prev_header: &Header,
-    prev_height: BlockHeight,
-) -> CompactTarget {
-    // Difficulty is adjusted only once in every interval of 2 weeks (2016 blocks)
-    // If an interval boundary is not reached, then previous difficulty target is
-    // returned Regtest network doesn't adjust PoW difficulty levels. For
-    // regtest, simply return the previous difficulty target.
-
-    let height = prev_height + 1;
-    if height % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 || no_pow_retargeting(network) {
-        return prev_header.bits;
-    }
-    // Computing the `last_adjustment_header`.
-    // `last_adjustment_header` is the last header with height multiple of 2016
-    let last_adjustment_height = if height < DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN {
-        0
-    } else {
-        height - DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN
-    };
-    let last_adjustment_header = store
-        .get_with_height(last_adjustment_height)
-        .expect("Last adjustment header must exist");
-
-    // Block Storm Fix
-    // The mitigation consists of no longer applying the adjustment factor
-    // to the last block of the previous difficulty period. Instead,
-    // the first block of the difficulty period is used as the base.
-    // See https://github.com/bitcoin/bips/blob/master/bip-0094.mediawiki#block-storm-fix
-    let last = match network {
-        BitcoinNetwork::Testnet4 => last_adjustment_header.bits,
-        _ => prev_header.bits,
-    };
-
-    // Computing the time interval between the last adjustment header time and
-    // current time. The expected value timespan is 2 weeks assuming
-    // the expected block time is 10 mins. But most of the time, the
-    // timespan will deviate slightly from 2 weeks. Our goal is to
-    // readjust the difficulty target so that the expected time taken for the next
-    // 2016 blocks is again 2 weeks.
-    // IMPORTANT: The bitcoin protocol allows for a roughly 3-hour window around
-    // timestamp (1 hour in the past, 2 hours in the future) meaning that
-    // the timespan can be negative on testnet networks.
-    let last_adjustment_time = last_adjustment_header.time;
-    let timespan = prev_header.time.saturating_sub(last_adjustment_time) as u64;
-
-    CompactTarget::from_next_work_required(last, timespan, *network)
-}
-
-#[cfg(feature = "doge")]
-/// This function returns the difficulty target to be used for the current
-/// header given the previous header in the Dogecoin network
-fn compute_next_difficulty(
-    network: &DogecoinNetwork,
-    store: &impl HeaderStore,
-    prev_header: &Header,
-    prev_height: BlockHeight,
-) -> CompactTarget {
-    // Difficulty is adjusted only once in every interval of 4 hours (240 blocks)
-    // If an interval boundary is not reached, then previous difficulty target is
-    // returned. Regtest network doesn't adjust PoW difficulty levels. For
-    // regtest, simply return the previous difficulty target.
-
-    let height = prev_height + 1;
-    if height % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0 || no_pow_retargeting(network) {
-        return prev_header.bits;
-    }
-    // Computing the `last_adjustment_header`.
-    // `last_adjustment_header` is the last header with height multiple of 240 - 1
-    // Dogecoin solves the "off-by-one" or time wrap bug in Bitcoin by going back to the full
-    // retarget period (hence the - 1).
-    // See: <https://litecoin.info/docs/history/time-warp-attack>
-    let last_adjustment_height = if height <= DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN {
-        0
-    } else {
-        height - DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN - 1
-    };
-    let last_adjustment_header = store
-        .get_with_height(last_adjustment_height)
-        .expect("Last adjustment header must exist");
-
-    // Computing the time interval between the last adjustment header time and
-    // current time. The expected value timespan is 4 hours assuming
-    // the expected block time is 1 min. But most of the time, the
-    // timespan will deviate slightly from 4 hours. Our goal is to
-    // readjust the difficulty target so that the expected time taken for the next
-    // 240 blocks is again 4 hours.
-    // IMPORTANT: With the Median Time Past (MTP) rule, a block's timestamp
-    // is only required to be greater than the median of the previous 11 blocks.
-    // This allows individual block timestamps to decrease relative to their
-    // predecessor, which can result in a negative timespan.
-    let last_adjustment_time = last_adjustment_header.time;
-    let timespan = prev_header.time.saturating_sub(last_adjustment_time) as u64;
-
-    CompactTarget::from_next_work_required_dogecoin(prev_header.bits, timespan, *network)
+    /// This function returns the difficulty target to be used for the current
+    /// header given the previous header in the Bitcoin network
+    fn compute_next_difficulty(
+        &self,
+        store: &impl HeaderStore,
+        prev_header: &Header,
+        prev_height: BlockHeight,
+    ) -> CompactTarget;
 }
