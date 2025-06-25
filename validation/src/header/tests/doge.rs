@@ -1,4 +1,4 @@
-use crate::constants::doge::{
+use crate::constants::doge::test::{
     MAINNET_HEADER_DOGE_151556, MAINNET_HEADER_DOGE_151557, MAINNET_HEADER_DOGE_151558,
     MAINNET_HEADER_DOGE_17, MAINNET_HEADER_DOGE_18,
 };
