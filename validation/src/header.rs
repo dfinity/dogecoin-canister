@@ -414,9 +414,10 @@ fn compute_next_difficulty(
     // timespan will deviate slightly from 4 hours. Our goal is to
     // readjust the difficulty target so that the expected time taken for the next
     // 240 blocks is again 4 hours.
-    // IMPORTANT: The dogecoin protocol allows for a roughly 2-hour window around
-    // timestamp (6 min in the past, 2 hours in the future) meaning that
-    // the timespan can be negative on testnet networks.
+    // IMPORTANT: With the Median Time Past (MTP) rule, a block's timestamp
+    // is only required to be greater than the median of the previous 11 blocks.
+    // This allows individual block timestamps to decrease relative to their
+    // predecessor, which can result in a negative timespan.
     let last_adjustment_time = last_adjustment_header.time;
     let timespan = prev_header.time.saturating_sub(last_adjustment_time) as u64;
 
