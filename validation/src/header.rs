@@ -143,7 +143,6 @@ pub trait HeaderValidator {
     /// returns to its previous value." This function is used to compute the
     /// difficulty target in case the block has been found within 20
     /// minutes.
-    #[allow(dead_code)]
     fn find_next_difficulty_in_chain(
         &self,
         store: &impl HeaderStore,
