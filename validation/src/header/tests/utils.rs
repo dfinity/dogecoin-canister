@@ -3,9 +3,16 @@ use crate::header::HeaderValidator;
 use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
-use bitcoin::constants::genesis_block as bitcoin_genesis_block;
 use bitcoin::hashes::hex::FromHex;
-use bitcoin::network::Network as BitcoinNetwork;
+#[cfg(feature = "btc")]
+use bitcoin::{
+    constants::genesis_block as bitcoin_genesis_block, network::Network as BitcoinNetwork,
+};
+#[cfg(feature = "doge")]
+use bitcoin::{
+    dogecoin::constants::genesis_block as dogecoin_genesis_block,
+    dogecoin::Network as DogecoinNetwork,
+};
 use bitcoin::{BlockHash, CompactTarget, TxMerkleNode};
 use csv::Reader;
 use std::collections::HashMap;
@@ -122,10 +129,19 @@ pub fn get_headers(file: &str) -> Vec<Header> {
     headers
 }
 
+#[cfg(feature = "btc")]
 pub fn bitcoin_genesis_header(network: BitcoinNetwork, bits: CompactTarget) -> Header {
     Header {
         bits,
         ..bitcoin_genesis_block(network).header
+    }
+}
+
+#[cfg(feature = "doge")]
+pub fn dogecoin_genesis_header(network: DogecoinNetwork, bits: CompactTarget) -> Header {
+    Header {
+        bits,
+        ..dogecoin_genesis_block(network).header
     }
 }
 

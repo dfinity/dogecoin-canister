@@ -84,7 +84,7 @@ fn verify_with_invalid_pow<T: HeaderValidator>(
     ));
 }
 
-fn verify_with_wrong_computed_target<T: HeaderValidator>(
+fn verify_with_invalid_pow_for_computed_target<T: HeaderValidator>(
     validator_regtest: T,
     genesis_header: Header,
 ) {
@@ -198,7 +198,7 @@ fn verify_backdated_block_difficulty<T: HeaderValidator>(
     validator: T,
     difficulty_adjustment_interval: u32,
     genesis_header: Header,
-    expected_target: u32,
+    expected_target: CompactTarget,
 ) {
     let chain_length = difficulty_adjustment_interval - 1; // To trigger the difficulty adjustment.
 
@@ -219,7 +219,7 @@ fn verify_backdated_block_difficulty<T: HeaderValidator>(
     let difficulty = validator.compute_next_difficulty(&store, &last_header, chain_length);
 
     // Assert.
-    assert_eq!(difficulty, CompactTarget::from_consensus(expected_target));
+    assert_eq!(difficulty, expected_target);
 }
 
 fn verify_timestamp_rules<T: HeaderValidator>(

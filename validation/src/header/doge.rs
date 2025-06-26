@@ -1,4 +1,4 @@
-use crate::constants::doge::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
+use crate::constants::doge::{DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN, ONE_MINUTE};
 use crate::header::{is_timestamp_valid, HeaderStore, HeaderValidator, ValidateHeaderError};
 use crate::BlockHeight;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
@@ -107,9 +107,32 @@ impl HeaderValidator for DogecoinHeaderValidator {
         store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
-        _timestamp: u32,
+        timestamp: u32,
     ) -> Target {
         match &self.network {
+            DogecoinNetwork::Testnet | DogecoinNetwork::Regtest => {
+                if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0 {
+                    if timestamp > prev_header.time + ONE_MINUTE * 2 {
+                        // If no block has been found in 2 minutes, then use the maximum difficulty
+                        // target
+                        self.max_target()
+                    } else {
+                        // If the block has been found within 2 minutes, then use the previous
+                        // difficulty target that is not equal to the maximum difficulty target
+                        Target::from_compact(self.find_next_difficulty_in_chain(
+                            store,
+                            prev_header,
+                            prev_height,
+                        ))
+                    }
+                } else {
+                    Target::from_compact(self.compute_next_difficulty(
+                        store,
+                        prev_header,
+                        prev_height,
+                    ))
+                }
+            }
             DogecoinNetwork::Dogecoin => {
                 Target::from_compact(self.compute_next_difficulty(store, prev_header, prev_height))
             }

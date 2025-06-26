@@ -3,13 +3,12 @@ use crate::constants::btc::test::{
     TESTNET_HEADER_2132555, TESTNET_HEADER_2132556,
 };
 use crate::constants::btc::DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN;
-use crate::header::tests::utils::bitcoin_genesis_header;
-use crate::header::tests::utils::deserialize_header;
+use crate::header::tests::utils::{bitcoin_genesis_header, deserialize_header};
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
     verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,
-    verify_with_excessive_target, verify_with_invalid_pow, verify_with_missing_parent,
-    verify_with_wrong_computed_target,
+    verify_with_excessive_target, verify_with_invalid_pow,
+    verify_with_invalid_pow_for_computed_target, verify_with_missing_parent,
 };
 use crate::header::HeaderValidator;
 use crate::BitcoinHeaderValidator;
@@ -44,7 +43,7 @@ fn test_sequential_header_validation_mainnet() {
         deserialize_header(MAINNET_HEADER_586656),
         586_656,
     );
-}
+} // TODO: add test for testnet
 
 #[test]
 fn test_missing_previous_header() {
@@ -72,7 +71,10 @@ fn test_invalid_computed_target_regtest() {
         BitcoinNetwork::Bitcoin,
         BitcoinHeaderValidator::mainnet().pow_limit_bits(),
     );
-    verify_with_wrong_computed_target(BitcoinHeaderValidator::regtest(), bitcoin_genesis_header);
+    verify_with_invalid_pow_for_computed_target(
+        BitcoinHeaderValidator::regtest(),
+        bitcoin_genesis_header,
+    );
 }
 
 #[test]
@@ -95,6 +97,7 @@ fn test_difficulty_adjustments_mainnet() {
     );
 }
 
+#[test]
 fn test_difficulty_adjustments_testnet() {
     verify_difficulty_adjustment(
         BitcoinHeaderValidator::testnet(),
@@ -116,14 +119,13 @@ fn test_difficulty_regtest() {
 
 #[test]
 fn test_backdated_difficulty_adjustment_testnet() {
-    let genesis_target = 486604799;
-    let genesis_difficulty = CompactTarget::from_consensus(genesis_target);
-    let genesis_header = bitcoin_genesis_header(BitcoinNetwork::Testnet, genesis_difficulty);
+    let genesis_target = CompactTarget::from_consensus(486604799);
+    let genesis_header = bitcoin_genesis_header(BitcoinNetwork::Testnet, genesis_target);
     verify_backdated_block_difficulty(
         BitcoinHeaderValidator::testnet(),
         DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN,
         genesis_header,
-        473956288,
+        CompactTarget::from_consensus(473956288),
     );
 }
 
