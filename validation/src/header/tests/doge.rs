@@ -12,7 +12,7 @@ use bitcoin::dogecoin::constants::genesis_block as dogecoin_genesis_block;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
 
 #[test]
-fn test_basic_header_validation() {
+fn test_basic_header_validation_mainnet() {
     verify_consecutive_headers(
         DogecoinHeaderValidator::mainnet(),
         MAINNET_HEADER_DOGE_17,
@@ -22,7 +22,7 @@ fn test_basic_header_validation() {
 }
 
 #[test]
-fn test_sequential_header_validation() {
+fn test_sequential_header_validation_mainnet() {
     verify_header_sequence(
         DogecoinHeaderValidator::mainnet(),
         "headers_doge_1_5000.csv",
@@ -42,7 +42,7 @@ fn test_missing_previous_header() {
 }
 
 #[test]
-fn test_invalid_pow() {
+fn test_invalid_pow_mainnet() {
     verify_with_invalid_pow(
         DogecoinHeaderValidator::mainnet(),
         MAINNET_HEADER_DOGE_151556,
@@ -52,7 +52,7 @@ fn test_invalid_pow() {
 }
 
 #[test]
-fn test_target_exceeds_maximum() {
+fn test_target_exceeds_maximum_mainnet() {
     verify_with_excessive_target(
         DogecoinHeaderValidator::mainnet(),
         DogecoinHeaderValidator::regtest(),
@@ -63,7 +63,7 @@ fn test_target_exceeds_maximum() {
 }
 
 #[test]
-fn test_difficulty_adjustments() {
+fn test_difficulty_adjustments_mainnet() {
     verify_difficulty_adjustment(
         DogecoinHeaderValidator::mainnet(),
         "tests/data/block_headers_mainnet_doge.csv",
@@ -72,7 +72,7 @@ fn test_difficulty_adjustments() {
 }
 
 #[test]
-fn test_timestamp_validation() {
+fn test_timestamp_validation_mainnet() {
     verify_timestamp_rules(
         DogecoinHeaderValidator::mainnet(),
         MAINNET_HEADER_DOGE_151556,
