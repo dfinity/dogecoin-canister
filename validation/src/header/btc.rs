@@ -3,7 +3,7 @@ use crate::constants::TEN_MINUTES;
 use crate::header::{is_timestamp_valid, HeaderStore, HeaderValidator, ValidateHeaderError};
 use crate::BlockHeight;
 use bitcoin::network::Network as BitcoinNetwork;
-use bitcoin::{block::Header, CompactTarget, Network, Target};
+use bitcoin::{block::Header, CompactTarget, Target};
 
 pub struct BitcoinHeaderValidator {
     network: BitcoinNetwork,
@@ -35,32 +35,39 @@ impl HeaderValidator for BitcoinHeaderValidator {
     }
 
     fn max_target(&self) -> Target {
-        match &self.network {
-            Network::Bitcoin => Target::MAX_ATTAINABLE_MAINNET,
-            Network::Testnet | Network::Testnet4 => Target::MAX_ATTAINABLE_TESTNET,
-            Network::Regtest => Target::MAX_ATTAINABLE_REGTEST,
-            Network::Signet => Target::MAX_ATTAINABLE_SIGNET,
+        match self.network() {
+            Self::Network::Bitcoin => Target::MAX_ATTAINABLE_MAINNET,
+            Self::Network::Testnet | Self::Network::Testnet4 => Target::MAX_ATTAINABLE_TESTNET,
+            Self::Network::Regtest => Target::MAX_ATTAINABLE_REGTEST,
+            Self::Network::Signet => Target::MAX_ATTAINABLE_SIGNET,
             &other => unreachable!("Unsupported network: {:?}", other),
         }
     }
 
     fn no_pow_retargeting(&self) -> bool {
-        match &self.network {
-            Network::Bitcoin | Network::Testnet | Network::Testnet4 | Network::Signet => false,
-            Network::Regtest => true,
+        match self.network() {
+            Self::Network::Bitcoin
+            | Self::Network::Testnet
+            | Self::Network::Testnet4
+            | Self::Network::Signet => false,
+            Self::Network::Regtest => true,
             &other => unreachable!("Unsupported network: {:?}", other),
         }
     }
 
     fn pow_limit_bits(&self) -> CompactTarget {
-        let bits = match &self.network {
-            Network::Bitcoin => 0x1d00ffff,
-            Network::Testnet | Network::Testnet4 => 0x1d00ffff,
-            Network::Regtest => 0x207fffff,
-            Network::Signet => 0x1e0377ae,
+        let bits = match self.network() {
+            Self::Network::Bitcoin => 0x1d00ffff,
+            Self::Network::Testnet | Self::Network::Testnet4 => 0x1d00ffff,
+            Self::Network::Regtest => 0x207fffff,
+            Self::Network::Signet => 0x1e0377ae,
             &other => unreachable!("Unsupported network: {:?}", other),
         };
         CompactTarget::from_consensus(bits)
+    }
+
+    fn pow_target_spacing(&self) -> u32 {
+        self.network().params().pow_target_spacing as u32
     }
 
     fn validate_header(
@@ -112,7 +119,7 @@ impl HeaderValidator for BitcoinHeaderValidator {
         prev_height: BlockHeight,
         timestamp: u32,
     ) -> Target {
-        match &self.network {
+        match self.network() {
             BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
                 if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 {
                     // This if statements is reached only for Regtest and Testnet networks
@@ -163,7 +170,7 @@ impl HeaderValidator for BitcoinHeaderValidator {
     ) -> CompactTarget {
         // This is the maximum difficulty target for the network
         let pow_limit_bits = self.pow_limit_bits();
-        match &self.network {
+        match self.network() {
             BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
                 let mut current_header = *prev_header;
                 let mut current_height = prev_height;
@@ -232,7 +239,7 @@ impl HeaderValidator for BitcoinHeaderValidator {
         // to the last block of the previous difficulty period. Instead,
         // the first block of the difficulty period is used as the base.
         // See https://github.com/bitcoin/bips/blob/master/bip-0094.mediawiki#block-storm-fix
-        let last = match &self.network {
+        let last = match self.network() {
             BitcoinNetwork::Testnet4 => last_adjustment_header.bits,
             _ => prev_header.bits,
         };
