@@ -103,6 +103,10 @@ fn is_timestamp_valid(
 }
 
 pub trait HeaderValidator {
+    type Network;
+
+    fn network(&self) -> &Self::Network;
+
     /// Returns the maximum difficulty target depending on the network
     fn max_target(&self) -> Target;
 

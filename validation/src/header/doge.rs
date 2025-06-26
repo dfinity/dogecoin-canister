@@ -25,13 +25,15 @@ impl DogecoinHeaderValidator {
     pub fn regtest() -> Self {
         Self::new(DogecoinNetwork::Regtest)
     }
-
-    pub fn network(&self) -> DogecoinNetwork {
-        self.network
-    }
 }
 
 impl HeaderValidator for DogecoinHeaderValidator {
+    type Network = DogecoinNetwork;
+
+    fn network(&self) -> &Self::Network {
+        &self.network
+    }
+
     /// Returns the maximum difficulty target depending on the network
     fn max_target(&self) -> Target {
         match &self.network {

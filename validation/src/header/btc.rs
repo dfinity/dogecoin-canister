@@ -25,13 +25,15 @@ impl BitcoinHeaderValidator {
     pub fn regtest() -> Self {
         Self::new(BitcoinNetwork::Regtest)
     }
-
-    pub fn network(&self) -> BitcoinNetwork {
-        self.network
-    }
 }
 
 impl HeaderValidator for BitcoinHeaderValidator {
+    type Network = BitcoinNetwork;
+
+    fn network(&self) -> &Self::Network {
+        &self.network
+    }
+
     fn max_target(&self) -> Target {
         match &self.network {
             Network::Bitcoin => Target::MAX_ATTAINABLE_MAINNET,

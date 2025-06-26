@@ -95,6 +95,7 @@ fn test_difficulty_adjustments_mainnet() {
     );
 }
 
+#[test]
 fn test_difficulty_adjustments_testnet() {
     verify_difficulty_adjustment(
         BitcoinHeaderValidator::testnet(),
