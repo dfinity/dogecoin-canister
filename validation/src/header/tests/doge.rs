@@ -56,17 +56,6 @@ fn test_sequential_header_validation_testnet() {
 }
 
 #[test]
-fn test_difficulty_regtest() {
-    let initial_pow = CompactTarget::from_consensus(0x1d0000ff); // Some non-limit PoW, the actual value is not important.
-    let genesis_header = dogecoin_genesis_header(DogecoinNetwork::Regtest, initial_pow);
-    verify_regtest_difficulty_calculation(
-        DogecoinHeaderValidator::regtest(),
-        genesis_header,
-        initial_pow,
-    );
-}
-
-#[test]
 fn test_missing_previous_header() {
     verify_with_missing_parent(
         DogecoinHeaderValidator::mainnet(),
@@ -124,6 +113,17 @@ fn test_difficulty_adjustments_testnet() {
         DogecoinHeaderValidator::testnet(),
         "tests/data/block_headers_testnet_doge.csv",
         5_000,
+    );
+}
+
+#[test]
+fn test_difficulty_regtest() {
+    let initial_pow = CompactTarget::from_consensus(0x1d0000ff); // Some non-limit PoW, the actual value is not important.
+    let genesis_header = dogecoin_genesis_header(DogecoinNetwork::Regtest, initial_pow);
+    verify_regtest_difficulty_calculation(
+        DogecoinHeaderValidator::regtest(),
+        genesis_header,
+        initial_pow,
     );
 }
 
