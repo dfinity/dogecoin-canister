@@ -84,15 +84,15 @@ fn verify_with_invalid_pow<T: HeaderValidator>(
     ));
 }
 
-fn verify_with_invalid_pow_for_computed_target<T: HeaderValidator>(
+fn verify_with_invalid_pow_with_computed_target<T: HeaderValidator>(
     validator_regtest: T,
     genesis_header: Header,
 ) {
     let pow_regtest = validator_regtest.pow_limit_bits();
     let h0 = genesis_header;
-    let h1 = next_block_header(h0, pow_regtest);
-    let h2 = next_block_header(h1, pow_regtest);
-    let h3 = next_block_header(h2, pow_regtest);
+    let h1 = next_block_header(&validator_regtest, h0, pow_regtest);
+    let h2 = next_block_header(&validator_regtest, h1, pow_regtest);
+    let h3 = next_block_header(&validator_regtest, h2, pow_regtest);
     let mut store = SimpleHeaderStore::new(h0, 0);
     store.add(h1);
     store.add(h2);
