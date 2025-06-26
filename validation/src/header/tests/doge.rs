@@ -7,7 +7,8 @@ use crate::header::tests::utils::dogecoin_genesis_header;
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
     verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,
-    verify_with_excessive_target, verify_with_invalid_pow, verify_with_missing_parent,
+    verify_with_excessive_target, verify_with_invalid_pow,
+    verify_with_invalid_pow_with_computed_target, verify_with_missing_parent,
 };
 use crate::DogecoinHeaderValidator;
 use bitcoin::dogecoin::constants::genesis_block as dogecoin_genesis_block;
@@ -82,6 +83,18 @@ fn test_invalid_pow_mainnet() {
         MAINNET_HEADER_DOGE_151556,
         151_556,
         MAINNET_HEADER_DOGE_151557,
+    );
+}
+
+#[test]
+fn test_invalid_pow_with_computed_target_regtest() {
+    let dogecoin_genesis_header = dogecoin_genesis_header(
+        DogecoinNetwork::Dogecoin,
+        CompactTarget::from_consensus(0x000ffff0), // Put a low target
+    );
+    verify_with_invalid_pow_with_computed_target(
+        DogecoinHeaderValidator::regtest(),
+        dogecoin_genesis_header,
     );
 }
 

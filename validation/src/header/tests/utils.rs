@@ -1,4 +1,3 @@
-use crate::constants::TEN_MINUTES;
 use crate::header::HeaderValidator;
 use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
@@ -145,10 +144,14 @@ pub fn dogecoin_genesis_header(network: DogecoinNetwork, bits: CompactTarget) ->
     }
 }
 
-pub fn next_block_header(prev: Header, bits: CompactTarget) -> Header {
+pub fn next_block_header<T: HeaderValidator>(
+    validator: &T,
+    prev: Header,
+    bits: CompactTarget,
+) -> Header {
     Header {
         prev_blockhash: prev.block_hash(),
-        time: prev.time + TEN_MINUTES,
+        time: prev.time + validator.pow_target_spacing(),
         bits,
         ..prev
     }
@@ -167,7 +170,7 @@ pub fn build_header_chain<T: HeaderValidator>(
     let mut last_header = h0;
 
     for _ in 1..chain_length {
-        let new_header = next_block_header(last_header, pow_limit);
+        let new_header = next_block_header(validator, last_header, pow_limit);
         store.add(new_header);
         last_header = new_header;
     }
