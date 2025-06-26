@@ -56,7 +56,7 @@ fn test_sequential_header_validation_testnet() {
 
 #[test]
 fn test_difficulty_regtest() {
-    let initial_pow = CompactTarget::from_consensus(7); // Some non-limit PoW, the actual value is not important.
+    let initial_pow = CompactTarget::from_consensus(0x1d0000ff); // Some non-limit PoW, the actual value is not important.
     let genesis_header = dogecoin_genesis_header(DogecoinNetwork::Regtest, initial_pow);
     verify_regtest_difficulty_calculation(
         DogecoinHeaderValidator::regtest(),
