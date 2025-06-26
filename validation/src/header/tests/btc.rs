@@ -8,7 +8,7 @@ use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
     verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,
     verify_with_excessive_target, verify_with_invalid_pow,
-    verify_with_invalid_pow_for_computed_target, verify_with_missing_parent,
+    verify_with_invalid_pow_with_computed_target, verify_with_missing_parent,
 };
 use crate::header::HeaderValidator;
 use crate::BitcoinHeaderValidator;
@@ -66,12 +66,12 @@ fn test_invalid_pow_mainnet() {
 }
 
 #[test]
-fn test_invalid_computed_target_regtest() {
+fn test_invalid_pow_with_computed_target_regtest() {
     let bitcoin_genesis_header = bitcoin_genesis_header(
         BitcoinNetwork::Bitcoin,
         BitcoinHeaderValidator::mainnet().pow_limit_bits(),
     );
-    verify_with_invalid_pow_for_computed_target(
+    verify_with_invalid_pow_with_computed_target(
         BitcoinHeaderValidator::regtest(),
         bitcoin_genesis_header,
     );
