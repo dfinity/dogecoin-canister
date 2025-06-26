@@ -6,11 +6,10 @@ use crate::constants::doge::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
 use crate::header::tests::utils::dogecoin_genesis_header;
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
-    verify_header_sequence, verify_timestamp_rules, verify_with_excessive_target,
-    verify_with_invalid_pow, verify_with_invalid_pow_for_computed_target,
-    verify_with_missing_parent,
+    verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,
+    verify_with_excessive_target, verify_with_invalid_pow, verify_with_missing_parent,
 };
-use crate::{DogecoinHeaderValidator, HeaderValidator};
+use crate::DogecoinHeaderValidator;
 use bitcoin::dogecoin::constants::genesis_block as dogecoin_genesis_block;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
 use bitcoin::{CompactTarget, Target};
@@ -52,6 +51,17 @@ fn test_sequential_header_validation_testnet() {
         "headers_doge_testnet_1_5000.csv",
         dogecoin_genesis_block(DogecoinNetwork::Testnet).header,
         0,
+    );
+}
+
+#[test]
+fn test_difficulty_regtest() {
+    let initial_pow = CompactTarget::from_consensus(7); // Some non-limit PoW, the actual value is not important.
+    let genesis_header = dogecoin_genesis_header(DogecoinNetwork::Regtest, initial_pow);
+    verify_regtest_difficulty_calculation(
+        DogecoinHeaderValidator::regtest(),
+        genesis_header,
+        initial_pow,
     );
 }
 
