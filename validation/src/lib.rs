@@ -8,4 +8,5 @@ pub use crate::header::btc::BitcoinHeaderValidator;
 
 #[cfg(feature = "doge")]
 pub use crate::header::doge::DogecoinHeaderValidator;
+
 type BlockHeight = u32;

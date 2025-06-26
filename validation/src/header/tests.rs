@@ -168,7 +168,7 @@ fn verify_difficulty_adjustment<T: HeaderValidator>(
     });
 }
 
-// This test checks the chain of headers of different lengths
+// This checks the chain of headers of different lengths
 // with non-limit PoW in the first block header and PoW limit
 // in all the other headers.
 // Expect difficulty to be equal to the non-limit PoW.
