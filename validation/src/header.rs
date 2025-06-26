@@ -117,6 +117,9 @@ pub trait HeaderValidator {
     /// Returns the PoW limit bits depending on the network
     fn pow_limit_bits(&self) -> CompactTarget;
 
+    /// Returns the target spacing between blocks in seconds.
+    fn pow_target_spacing(&self) -> u32;
+
     /// Validates a header. If a failure occurs, a
     /// [ValidateHeaderError](ValidateHeaderError) will be returned.
     fn validate_header(

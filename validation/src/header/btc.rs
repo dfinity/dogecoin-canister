@@ -66,6 +66,10 @@ impl HeaderValidator for BitcoinHeaderValidator {
         CompactTarget::from_consensus(bits)
     }
 
+    fn pow_target_spacing(&self) -> u32 {
+        self.network().params().pow_target_spacing as u32
+    }
+
     fn validate_header(
         &self,
         store: &impl HeaderStore,
