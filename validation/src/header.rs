@@ -6,7 +6,7 @@ pub mod doge;
 mod tests;
 
 use crate::BlockHeight;
-use bitcoin::{block::Header, BlockHash, CompactTarget, Target};
+use bitcoin::{block::Header, params::Params as BitcoinParams, BlockHash, CompactTarget, Target};
 
 /// An error thrown when trying to validate a header.
 #[derive(Debug, PartialEq)]
@@ -103,6 +103,10 @@ fn is_timestamp_valid(
 }
 
 pub trait HeaderValidator {
+    type Network: AsRef<BitcoinParams>;
+
+    fn network(&self) -> &Self::Network;
+
     /// Returns the maximum difficulty target depending on the network
     fn max_target(&self) -> Target;
 
