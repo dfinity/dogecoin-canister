@@ -2,7 +2,6 @@ use crate::constants::doge::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
 use crate::header::{is_timestamp_valid, HeaderStore, HeaderValidator, ValidateHeaderError};
 use crate::BlockHeight;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
-use bitcoin::dogecoin::Network;
 use bitcoin::{block::Header, CompactTarget, Target};
 
 pub struct DogecoinHeaderValidator {
@@ -36,10 +35,10 @@ impl HeaderValidator for DogecoinHeaderValidator {
 
     /// Returns the maximum difficulty target depending on the network
     fn max_target(&self) -> Target {
-        match &self.network {
-            Network::Dogecoin => Target::MAX_ATTAINABLE_MAINNET_DOGE,
-            Network::Testnet => Target::MAX_ATTAINABLE_TESTNET_DOGE,
-            Network::Regtest => Target::MAX_ATTAINABLE_REGTEST_DOGE,
+        match self.network() {
+            Self::Network::Dogecoin => Target::MAX_ATTAINABLE_MAINNET_DOGE,
+            Self::Network::Testnet => Target::MAX_ATTAINABLE_TESTNET_DOGE,
+            Self::Network::Regtest => Target::MAX_ATTAINABLE_REGTEST_DOGE,
             &other => unreachable!("Unsupported network: {:?}", other),
         }
     }
@@ -47,19 +46,19 @@ impl HeaderValidator for DogecoinHeaderValidator {
     /// Returns false iff PoW difficulty level of blocks can be
     /// readjusted in the network after a fixed time interval.
     fn no_pow_retargeting(&self) -> bool {
-        match &self.network {
-            Network::Dogecoin | Network::Testnet => false,
-            Network::Regtest => true,
+        match self.network() {
+            Self::Network::Dogecoin | Self::Network::Testnet => false,
+            Self::Network::Regtest => true,
             &other => unreachable!("Unsupported network: {:?}", other),
         }
     }
 
     /// Returns the PoW limit bits depending on the network
     fn pow_limit_bits(&self) -> CompactTarget {
-        let bits = match &self.network {
-            Network::Dogecoin => 0x1e0fffff, // In Dogecoin this is higher than the Genesis compact target (0x1e0ffff0)
-            Network::Testnet => 0x1e0fffff,
-            Network::Regtest => 0x207fffff,
+        let bits = match self.network() {
+            Self::Network::Dogecoin => 0x1e0fffff, // In Dogecoin this is higher than the Genesis compact target (0x1e0ffff0)
+            Self::Network::Testnet => 0x1e0fffff,
+            Self::Network::Regtest => 0x207fffff,
             &other => unreachable!("Unsupported network: {:?}", other),
         };
         CompactTarget::from_consensus(bits)
@@ -111,7 +110,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
         prev_height: BlockHeight,
         _timestamp: u32,
     ) -> Target {
-        match &self.network {
+        match self.network() {
             DogecoinNetwork::Dogecoin => {
                 Target::from_compact(self.compute_next_difficulty(store, prev_header, prev_height))
             }
@@ -127,7 +126,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
     ) -> CompactTarget {
         // This is the maximum difficulty target for the network
         let pow_limit_bits = self.pow_limit_bits();
-        match &self.network {
+        match self.network() {
             DogecoinNetwork::Testnet | DogecoinNetwork::Regtest => {
                 let mut current_header = *prev_header;
                 let mut current_height = prev_height;
