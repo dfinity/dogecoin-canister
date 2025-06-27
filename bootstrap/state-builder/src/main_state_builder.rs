@@ -7,7 +7,7 @@
 //!   --canister-state-dir ./canister_state \
 //!   --network mainnet --stability-threshold 30 --stable-height 9999 \
 //!   --unstable-blocks ./unstable_blocks
-use bitcoin::{consensus::Decodable, Block as BitcoinBlock};
+use bitcoin::{consensus::Decodable, dogecoin::Block as DogecoinBlock};
 use clap::Parser;
 use ic_doge_canister::{
     pre_upgrade,
@@ -61,7 +61,7 @@ fn read_block(reader: &mut BufReader<File>) -> Block {
     let mut block = String::new();
     reader.read_line(&mut block).unwrap();
     let block = hex::decode(block.replace('\n', "")).unwrap();
-    Block::new(BitcoinBlock::consensus_decode(&mut block.as_slice()).unwrap())
+    Block::new(DogecoinBlock::consensus_decode(&mut block.as_slice()).unwrap())
 }
 
 fn main() {

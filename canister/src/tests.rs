@@ -1,14 +1,14 @@
 use crate::{
-    api::{get_balance, get_current_fee_percentiles, get_utxos},
+    api::{get_balance, get_current_fee_percentiles},
     genesis_block, heartbeat, init,
     runtime::{self, GetSuccessorsReply},
     state::main_chain_height,
     test_utils::{BlockBuilder, BlockChainBuilder, TransactionBuilder},
     types::{
-        into_dogecoin_network, BlockBlob, BlockHeaderBlob, GetBalanceRequest,
-        GetSuccessorsCompleteResponse, GetSuccessorsResponse, GetUtxosRequest,
+        into_dogecoin_network, BlockBlob, BlockHeaderBlob, GetSuccessorsCompleteResponse,
+        GetSuccessorsResponse,
     },
-    utxo_set::{IngestingBlock, DUPLICATE_TX_IDS},
+    utxo_set::IngestingBlock,
     verify_synced, with_state, SYNCED_THRESHOLD,
 };
 use bitcoin::{
@@ -20,8 +20,7 @@ use bitcoin::{
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use ic_cdk::api::call::RejectionCode;
-use ic_doge_interface::{Flag, GetUtxosResponse, InitConfig, Network, Txid, UtxosFilter};
-use ic_doge_interface::{OutPoint, Utxo};
+use ic_doge_interface::{Flag, InitConfig, Network};
 use ic_doge_test_utils::random_p2pkh_address;
 use ic_doge_types::{Block, BlockHash};
 use std::str::FromStr;
