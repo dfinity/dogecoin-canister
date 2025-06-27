@@ -97,18 +97,18 @@ fn get_utxos_private(
     Ok(res)
 }
 
-/// Retrieves the UTXOs of the given Bitcoin address.
+/// Retrieves the UTXOs of the given Dogecoin address.
 pub fn get_utxos(request: GetUtxosRequest) -> Result<GetUtxosResponse, GetUtxosError> {
     get_utxos_private(request, true)
 }
 
-/// Retrieves the UTXOs of the given Bitcoin address
+/// Retrieves the UTXOs of the given Dogecoin address
 /// without charging for the execution, used only for query calls.
 pub fn get_utxos_query(request: GetUtxosRequest) -> Result<GetUtxosResponse, GetUtxosError> {
     get_utxos_private(request, false)
 }
 
-// Returns the set of UTXOs for a given bitcoin address.
+// Returns the set of UTXOs for a given dogecoin address.
 //
 // Transactions with confirmations < `min_confirmations` are not considered.
 //
@@ -416,7 +416,7 @@ mod test {
         let address_1 = random_p2pkh_address(doge_network).into();
         let address_2 = random_p2pkh_address(doge_network).into();
 
-        // Create a blockchain which alternates between giving some BTC to
+        // Create a blockchain which alternates between giving some DOGE to
         // address_1 and address_2 based on whether we're creating an even
         // or an odd height block.
         let num_blocks = 10;

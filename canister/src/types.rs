@@ -27,7 +27,7 @@ use std::{
 // The expected length in bytes of the page.
 const EXPECTED_PAGE_LENGTH: usize = 72;
 
-/// A Bitcoin transaction's output.
+/// A Dogecoin transaction's output.
 #[derive(Ord, PartialOrd, Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub struct TxOut {
     pub value: u64,
@@ -358,7 +358,7 @@ pub struct SendTransactionInternalRequest {
     pub transaction: Vec<u8>,
 }
 
-/// A request to retrieve more blocks from the Bitcoin network.
+/// A request to retrieve more blocks from the Dogecoin network.
 #[derive(CandidType, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DataSize)]
 pub enum GetSuccessorsRequest {
     /// A request containing the hashes of blocks we'd like to retrieve succeessors for.
@@ -391,7 +391,7 @@ impl std::fmt::Debug for GetSuccessorsRequestInitial {
     }
 }
 
-/// A response containing new successor blocks from the Bitcoin network.
+/// A response containing new successor blocks from the Dogecoin network.
 #[derive(CandidType, Clone, Debug, Deserialize, Hash, PartialEq, Eq, Serialize, DataSize)]
 pub enum GetSuccessorsResponse {
     /// A complete response that doesn't require pagination.
