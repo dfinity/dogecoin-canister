@@ -10,7 +10,7 @@ use ic_doge_interface::{Network, UtxosFilter};
 use ic_doge_types::Block;
 use proptest::prelude::*;
 
-const ADDRESS: &str = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8";
+const ADDRESS: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]

@@ -115,7 +115,7 @@ mod test {
     }
 
     #[async_std::test]
-    #[should_panic(expected = "Bitcoin API is disabled")]
+    #[should_panic(expected = "Dogecoin API is disabled")]
     async fn send_transaction_access_disabled() {
         crate::init(InitConfig {
             fees: Some(Fees {

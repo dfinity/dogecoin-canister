@@ -1,11 +1,11 @@
-use crate::{genesis_block, types::Address};
-use bitcoin::{block::Header, Address as BitcoinAddress, Witness};
+use crate::{genesis_block, types::into_dogecoin_network, types::Address};
+use bitcoin::{block::Header, dogecoin::Address as DogecoinAddress, Witness};
 use ic_doge_interface::Network;
 use ic_doge_test_utils::{
     random_p2pkh_address, BlockBuilder as ExternalBlockBuilder,
     TransactionBuilder as ExternalTransactionBuilder,
 };
-use ic_doge_types::{into_bitcoin_network, Block, OutPoint, Transaction};
+use ic_doge_types::{Block, OutPoint, Transaction};
 use ic_stable_structures::{Memory, StableBTreeMap, Storable};
 use std::{
     ops::{Bound, RangeBounds},
@@ -33,8 +33,8 @@ fn build_chain_with_genesis_block(
     num_blocks: u32,
     num_transactions_per_block: u32,
 ) -> Vec<Block> {
-    let btc_network = into_bitcoin_network(network);
-    let address = random_p2pkh_address(btc_network).into();
+    let doge_network = into_dogecoin_network(network);
+    let address = random_p2pkh_address(doge_network).into();
     let mut blocks = vec![genesis_block.clone()];
     let mut prev_block: Block = genesis_block;
     let mut value = 1;
@@ -175,7 +175,7 @@ impl TransactionBuilder {
     pub fn with_output(self, address: &Address, value: u64) -> Self {
         Self {
             builder: self.builder.with_output(
-                &BitcoinAddress::from_str(&address.to_string())
+                &DogecoinAddress::from_str(&address.to_string())
                     .map(|a| a.assume_checked())
                     .unwrap(),
                 value,

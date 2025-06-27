@@ -118,7 +118,7 @@ mod test {
     use super::*;
     use crate::{
         test_utils::{BlockBuilder, TransactionBuilder},
-        types::into_bitcoin_network,
+        types::into_dogecoin_network,
         unstable_blocks,
     };
     use ic_doge_interface::Network;
@@ -128,9 +128,9 @@ mod test {
     #[test]
     fn add_tx_to_empty_utxo() {
         let network = Network::Mainnet;
-        let btc_network = into_bitcoin_network(network);
-        // Create some BTC addresses.
-        let address_1 = random_p2pkh_address(btc_network).into();
+        let doge_network = into_dogecoin_network(network);
+        // Create some DOGE addresses.
+        let address_1 = random_p2pkh_address(doge_network).into();
 
         let utxo_set = UtxoSet::new(network);
 
@@ -166,10 +166,10 @@ mod test {
     #[test]
     fn add_tx_then_transfer() {
         let network = Network::Mainnet;
-        let btc_network = into_bitcoin_network(network);
-        // Create some BTC addresses.
-        let address_1 = random_p2pkh_address(btc_network).into();
-        let address_2 = random_p2pkh_address(btc_network).into();
+        let doge_network = into_dogecoin_network(network);
+        // Create some DOGE addresses.
+        let address_1 = random_p2pkh_address(doge_network).into();
+        let address_2 = random_p2pkh_address(doge_network).into();
 
         let utxo_set = UtxoSet::new(network);
 
@@ -219,11 +219,11 @@ mod test {
     #[test]
     fn spending_multiple_inputs() {
         let network = Network::Mainnet;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
 
-        // Create some BTC addresses.
-        let address_1 = random_p2pkh_address(btc_network).into();
-        let address_2 = random_p2pkh_address(btc_network).into();
+        // Create some DOGE addresses.
+        let address_1 = random_p2pkh_address(doge_network).into();
+        let address_2 = random_p2pkh_address(doge_network).into();
 
         // Create a genesis block where 2000 satoshis are given to address 1
         // in two different outputs.

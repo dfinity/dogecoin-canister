@@ -1,5 +1,5 @@
 use bitcoin::consensus::Decodable;
-use bitcoin::{block::Header, consensus::Encodable, Block as BitcoinBlock};
+use bitcoin::{block::Header, consensus::Encodable, dogecoin::Block as DogecoinBlock};
 use canbench_rs::{bench, bench_fn, BenchResult};
 use ic_cdk_macros::init;
 use ic_doge_canister::{types::BlockHeaderBlob, with_state_mut};
@@ -22,14 +22,16 @@ fn init() {
                 .split('\n')
                 .map(|block_hex| {
                     let block_bytes = hex::decode(block_hex).unwrap();
-                    Block::new(BitcoinBlock::consensus_decode(&mut block_bytes.as_slice()).unwrap())
+                    Block::new(
+                        DogecoinBlock::consensus_decode(&mut block_bytes.as_slice()).unwrap(),
+                    )
                 })
                 .collect(),
         );
     });
 }
 
-// Benchmarks inserting the first 300 blocks of the Bitcoin testnet.
+// Benchmarks inserting the first 300 blocks of the Dogecoin testnet.
 #[bench(raw)]
 fn insert_300_blocks() -> BenchResult {
     ic_doge_canister::init(InitConfig {

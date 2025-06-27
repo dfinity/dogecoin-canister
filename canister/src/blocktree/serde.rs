@@ -1,5 +1,5 @@
 use super::BlockTree;
-use bitcoin::Block as BitcoinBlock;
+use bitcoin::dogecoin::Block as DogecoinBlock;
 use ic_doge_types::Block;
 use serde::{
     de::{Deserializer, SeqAccess, Visitor},
@@ -18,7 +18,7 @@ impl Serialize for BlockTree {
         let _p = canbench_rs::bench_scope("serialize_blocktree");
 
         // Flatten a block tree into a list.
-        fn flatten<'a>(tree: &'a BlockTree, flattened_tree: &mut Vec<(&'a BitcoinBlock, usize)>) {
+        fn flatten<'a>(tree: &'a BlockTree, flattened_tree: &mut Vec<(&'a DogecoinBlock, usize)>) {
             flattened_tree.push((tree.root.internal_bitcoin_block(), tree.children.len()));
 
             for child in &tree.children {
@@ -64,7 +64,7 @@ impl<'de> Visitor<'de> for BlockTreeDeserializer {
 
     fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
         fn next<'de, A: SeqAccess<'de>>(seq: &mut A) -> Option<(Block, usize)> {
-            seq.next_element::<(BitcoinBlock, usize)>()
+            seq.next_element::<(DogecoinBlock, usize)>()
                 .expect("reading next element must succeed")
                 .map(|(b, n)| (Block::new(b), n))
         }

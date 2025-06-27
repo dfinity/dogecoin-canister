@@ -1,6 +1,6 @@
 use bitcoin::{
-    blockdata::constants::genesis_block, consensus::Encodable, Address, Block,
-    Network as BitcoinNetwork, OutPoint,
+    consensus::Encodable, dogecoin::constants::genesis_block, dogecoin::Address, dogecoin::Block,
+    dogecoin::Network as DogecoinNetwork, OutPoint,
 };
 use candid::CandidType;
 use ic_cdk_macros::{init, update};
@@ -75,7 +75,7 @@ thread_local! {
 // Initialize the blocks.
 #[init]
 fn init() {
-    let network = BitcoinNetwork::Regtest;
+    let network = DogecoinNetwork::Regtest;
 
     // Block 1: A single transaction that gives ADDRESS_1 50 BTC split over 10k inputs.
     let mut tx_1 = TransactionBuilder::new();
