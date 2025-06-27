@@ -11,4 +11,4 @@ repository = "https://github.com/dfinity/dogecoin-canister"
 
 [dependencies]
 bitcoin = { workspace = true }
-ic-doge-types = { workspace = true, features = ["btc"] }
+ic-doge-types = { workspace = true, features = ["doge"] }

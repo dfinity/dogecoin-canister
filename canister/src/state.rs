@@ -4,7 +4,7 @@ use crate::{
     metrics::Metrics,
     runtime::{inc_performance_counter, performance_counter, print, time_secs},
     types::{
-        into_bitcoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
+        into_dogecoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
         GetSuccessorsPartialResponse, Slicing,
     },
     unstable_blocks::{self, UnstableBlocks},
@@ -16,7 +16,7 @@ use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{
-    BitcoinHeaderValidator, HeaderValidator, ValidateHeaderError as InsertBlockError,
+    DogecoinHeaderValidator, HeaderValidator, ValidateHeaderError as InsertBlockError,
 };
 use serde::{Deserialize, Serialize};
 
@@ -127,7 +127,7 @@ impl State {
 /// Returns an error if the block doesn't extend any known block in the state.
 pub fn insert_block(state: &mut State, block: Block) -> Result<(), InsertBlockError> {
     let start = performance_counter();
-    let header_validator = BitcoinHeaderValidator::new(into_bitcoin_network(state.network()));
+    let header_validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
     header_validator.validate_header(
         &ValidationContext::new(state, block.header())
             .map_err(|_| InsertBlockError::PrevHeaderNotFound)?,
@@ -237,7 +237,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
             {
                 Ok(store) => {
                     let validator =
-                        BitcoinHeaderValidator::new(into_bitcoin_network(state.network()));
+                        DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
                     validator.validate_header(&store, &block_header, time_secs())
                 }
                 Err(err) => Err(err),

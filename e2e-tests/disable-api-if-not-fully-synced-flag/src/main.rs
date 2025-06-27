@@ -1,6 +1,6 @@
 use bitcoin::{
-    block::Header, blockdata::constants::genesis_block, consensus::Encodable, Address, Block,
-    Network as BitcoinNetwork,
+    block::Header, blockdata::constants::genesis_block, consensus::Encodable, dogecoin::Address,
+    dogecoin::Block, Network as BitcoinNetwork,
 };
 use candid::CandidType;
 use ic_cdk_macros::{init, update};

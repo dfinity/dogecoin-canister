@@ -14,8 +14,8 @@ ciborium = { workspace = true }
 datasize = { workspace = true }
 hex = { workspace = true }
 ic-doge-interface = { workspace = true }
-ic-doge-types = { workspace = true, features = ["btc"] }
-ic-doge-validation = { workspace = true, features = ["btc"] }
+ic-doge-types = { workspace = true, features = ["doge"] }
+ic-doge-validation = { workspace = true, features = ["doge"] }
 ic-cdk = { workspace = true }
 ic-cdk-macros = { workspace = true }
 ic-metrics-encoder = { workspace = true }
@@ -39,7 +39,7 @@ async-std = { version = "1.12.0", features = ["attributes"] }
 byteorder = { workspace = true }
 candid_parser = { workspace = true }
 ic-doge-test-utils = { workspace = true }
-ic-doge-types = { workspace = true, features = ["mock_difficulty", "btc"] }
+ic-doge-types = { workspace = true, features = ["mock_difficulty", "doge"] }
 maplit = "1.0.2"
 pocket-ic = { workspace = true }
 proptest = "0.9.4"

@@ -8,7 +8,7 @@
 //!   --utxos-dump-path utxos-dump.csv
 use bitcoin::{hashes::Hash, Address, Txid as BitcoinTxid};
 use clap::Parser;
-use ic_doge_canister::types::into_bitcoin_network;
+use ic_doge_canister::types::into_dogecoin_network;
 use ic_doge_canister::{types::TxOut, with_state, with_state_mut};
 use ic_doge_interface::{Flag, InitConfig, Network};
 use ic_doge_types::{OutPoint, Txid};
@@ -109,7 +109,7 @@ fn main() {
             // address. Otherwise, we use the script in the chainstate database as-is.
             let script = match Address::from_str(address_str) {
                 Ok(address) => address
-                    .require_network(into_bitcoin_network(args.network))
+                    .require_network(into_dogecoin_network(args.network))
                     .unwrap()
                     .script_pubkey()
                     .as_bytes()

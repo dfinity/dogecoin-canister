@@ -22,7 +22,7 @@ use crate::{
     api::set_config::set_config_no_verification,
     runtime::{msg_cycles_accept, msg_cycles_available},
     state::State,
-    types::{into_bitcoin_network, HttpRequest, HttpResponse},
+    types::{into_dogecoin_network, HttpRequest, HttpResponse},
 };
 pub use api::get_metrics;
 pub use api::send_transaction;
@@ -213,8 +213,8 @@ pub fn http_request(req: HttpRequest) -> HttpResponse {
 
 /// Returns the genesis block of the given network.
 pub(crate) fn genesis_block(network: Network) -> Block {
-    Block::new(bitcoin::blockdata::constants::genesis_block(
-        into_bitcoin_network(network),
+    Block::new(bitcoin::dogecoin::constants::genesis_block(
+        into_dogecoin_network(network),
     ))
 }
 
@@ -251,11 +251,11 @@ fn verify_network(network: Network) {
     });
 }
 
-// Verifies that the access to bitcoin apis is enabled.
+// Verifies that the access to dogecoin apis is enabled.
 fn verify_api_access() {
     with_state(|state| {
         if state.api_access == Flag::Disabled {
-            panic!("Bitcoin API is disabled");
+            panic!("Dogecoin API is disabled");
         }
     });
 }
@@ -489,7 +489,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Bitcoin API is disabled")]
+    #[should_panic(expected = "Dogecoin API is disabled")]
     fn get_balance_access_disabled() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -506,7 +506,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Bitcoin API is disabled")]
+    #[should_panic(expected = "Dogecoin API is disabled")]
     fn get_balance_query_access_disabled() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -523,7 +523,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Bitcoin API is disabled")]
+    #[should_panic(expected = "Dogecoin API is disabled")]
     fn get_utxos_access_disabled() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -540,7 +540,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Bitcoin API is disabled")]
+    #[should_panic(expected = "Dogecoin API is disabled")]
     fn get_block_headers_access_disabled() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -557,7 +557,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Bitcoin API is disabled")]
+    #[should_panic(expected = "Dogecoin API is disabled")]
     fn get_utxos_query_access_disabled() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -574,7 +574,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Bitcoin API is disabled")]
+    #[should_panic(expected = "Dogecoin API is disabled")]
     fn get_current_fee_percentiles_access_disabled() {
         init(InitConfig {
             stability_threshold: Some(0),
