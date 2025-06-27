@@ -32,7 +32,7 @@ wait_until_stable_height 2 60
 set +e
 MSG=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
-  address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
+  address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })' 2>&1);
 set -e
 
@@ -45,7 +45,7 @@ fi
 set +e
 MSG=$(dfx canister call --query dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
-  address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
+  address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })' 2>&1);
 set -e
 
@@ -58,7 +58,7 @@ fi
 set +e
 MSG=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
   network = variant { regtest };
-  address = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
+  address = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
 })' 2>&1);
 set -e
 
@@ -84,7 +84,7 @@ fi
 set +e
 MSG=$(dfx canister call --query dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
-  address = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
+  address = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
 })' 2>&1);
 set -e
 
@@ -127,7 +127,7 @@ wait_until_main_chain_height 2 60
 
 BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
-  address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
+  address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
 if ! [[ $BALANCE = "(2 : nat64)" ]]; then
@@ -138,7 +138,7 @@ fi
 # Verify that we are able to fetch the UTXOs of one address.
 UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
   network = variant { regtest };
-  address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
+  address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
 # The address has 2 UTXOs.

@@ -235,7 +235,7 @@ impl TransactionBuilder {
             self.input
         };
         let output = if self.output.is_empty() {
-            // Use default of 50 BTC.
+            // Use default of 50 DOGE.
             vec![TxOut {
                 value: Amount::from_sat(50_0000_0000),
                 script_pubkey: random_p2pkh_address(Network::Regtest).script_pubkey(),
