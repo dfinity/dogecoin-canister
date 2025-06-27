@@ -5,7 +5,7 @@ use crate::{
     state::main_chain_height,
     test_utils::{BlockBuilder, BlockChainBuilder, TransactionBuilder},
     types::{
-        into_bitcoin_network, BlockBlob, BlockHeaderBlob, GetBalanceRequest,
+        into_dogecoin_network, BlockBlob, BlockHeaderBlob, GetBalanceRequest,
         GetSuccessorsCompleteResponse, GetSuccessorsResponse, GetUtxosRequest,
     },
     utxo_set::{IngestingBlock, DUPLICATE_TX_IDS},
@@ -14,8 +14,9 @@ use crate::{
 use bitcoin::{
     block::Header,
     consensus::{Decodable, Encodable},
+    dogecoin::Network as DogecoinNetwork,
     p2p::Magic,
-    Block as BitcoinBlock, Network as BitcoinNetwork,
+    Block as BitcoinBlock,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use ic_cdk::api::call::RejectionCode;
@@ -70,9 +71,9 @@ async fn process_chain(network: Network, blocks_file: &str, num_blocks: u32) {
         assert_eq!(
             magic,
             match network {
-                Network::Mainnet => BitcoinNetwork::Bitcoin,
-                Network::Testnet => BitcoinNetwork::Testnet4,
-                Network::Regtest => BitcoinNetwork::Regtest,
+                Network::Mainnet => DogecoinNetwork::Dogecoin, // TODO: change that
+                Network::Testnet => DogecoinNetwork::Testnet,
+                Network::Regtest => DogecoinNetwork::Regtest,
             }
             .magic()
         );
@@ -408,12 +409,7 @@ async fn testnet_10k_blocks() {
     // Set a reasonable performance counter step to trigger time-slicing.
     runtime::set_performance_counter_step(100_000);
 
-    process_chain(
-        Network::Testnet,
-        "test-data/testnet4_10k_blocks.dat",
-        10_000,
-    )
-    .await;
+    process_chain(Network::Testnet, "test-data/testnet_10k_blocks.dat", 10_000).await;
 
     // Validate we've ingested all the blocks.
     assert_eq!(with_state(main_chain_height), 10_000);
@@ -456,15 +452,15 @@ async fn testnet_10k_blocks() {
 #[async_std::test]
 async fn time_slices_large_block_with_multiple_transactions() {
     let network = Network::Regtest;
-    let btc_network = into_bitcoin_network(network);
+    let doge_network = into_dogecoin_network(network);
     init(InitConfig {
         stability_threshold: Some(0),
         network: Some(network),
         ..Default::default()
     });
 
-    let address_1 = random_p2pkh_address(btc_network).into();
-    let address_2 = random_p2pkh_address(btc_network).into();
+    let address_1 = random_p2pkh_address(doge_network).into();
+    let address_2 = random_p2pkh_address(doge_network).into();
 
     let tx_1 = TransactionBuilder::coinbase()
         .with_output(&address_1, 1000)
@@ -822,17 +818,17 @@ async fn fee_percentiles_evaluation_helper() {
         let fee = 1;
         let balance = 1000;
         let network = Network::Regtest;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
 
         let tx_1 = TransactionBuilder::coinbase()
-            .with_output(&random_p2pkh_address(btc_network).into(), balance)
+            .with_output(&random_p2pkh_address(doge_network).into(), balance)
             .build();
         let tx_2 = TransactionBuilder::new()
             .with_input(ic_doge_types::OutPoint {
                 txid: tx_1.txid(),
                 vout: 0,
             })
-            .with_output(&random_p2pkh_address(btc_network).into(), balance - fee)
+            .with_output(&random_p2pkh_address(doge_network).into(), balance - fee)
             .build();
 
         BlockBuilder::with_prev_header(genesis_block(network).header())

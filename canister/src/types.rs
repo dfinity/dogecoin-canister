@@ -1,6 +1,6 @@
 use bitcoin::{
-    block::Header, Address as BitcoinAddress, Network as BitcoinNetwork, Script,
-    TxOut as BitcoinTxOut,
+    block::Header, dogecoin::Address as DogecoinAddress, dogecoin::Network as DogecoinNetwork,
+    Script, TxOut as BitcoinTxOut,
 };
 use candid::CandidType;
 use datasize::DataSize;
@@ -439,7 +439,7 @@ pub struct Address(String);
 impl Address {
     /// Creates a new address from a bitcoin script.
     pub fn from_script(script: &Script, network: Network) -> Result<Self, InvalidAddress> {
-        let address = BitcoinAddress::from_script(script, into_bitcoin_network(network))
+        let address = DogecoinAddress::from_script(script, into_dogecoin_network(network))
             .map_err(|_| InvalidAddress)?;
 
         // Due to a bug in the bitcoin crate, it is possible in some extremely rare cases
@@ -450,7 +450,7 @@ impl Address {
         //
         // See https://github.com/rust-bitcoin/rust-bitcoin/issues/995 for more information.
         let address_str = address.to_string();
-        if BitcoinAddress::from_str(&address_str).is_ok() {
+        if DogecoinAddress::from_str(&address_str).is_ok() {
             Ok(Self(address_str))
         } else {
             Err(InvalidAddress)
@@ -458,8 +458,8 @@ impl Address {
     }
 }
 
-impl From<BitcoinAddress> for Address {
-    fn from(address: BitcoinAddress) -> Self {
+impl From<DogecoinAddress> for Address {
+    fn from(address: DogecoinAddress) -> Self {
         Self(address.to_string())
     }
 }
@@ -468,7 +468,7 @@ impl FromStr for Address {
     type Err = InvalidAddress;
 
     fn from_str(s: &str) -> Result<Self, InvalidAddress> {
-        BitcoinAddress::from_str(s)
+        DogecoinAddress::from_str(s)
             .map(|address| Address(address.assume_checked().to_string()))
             .map_err(|_| InvalidAddress)
     }
@@ -574,11 +574,11 @@ impl PartialOrd for Utxo {
     }
 }
 
-pub fn into_bitcoin_network(network: Network) -> BitcoinNetwork {
+pub fn into_dogecoin_network(network: Network) -> DogecoinNetwork {
     match network {
-        Network::Mainnet => BitcoinNetwork::Bitcoin,
-        Network::Testnet => BitcoinNetwork::Testnet4,
-        Network::Regtest => BitcoinNetwork::Regtest,
+        Network::Mainnet => DogecoinNetwork::Dogecoin,
+        Network::Testnet => DogecoinNetwork::Testnet,
+        Network::Regtest => DogecoinNetwork::Regtest,
     }
 }
 
