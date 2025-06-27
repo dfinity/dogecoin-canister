@@ -498,50 +498,6 @@ mod test {
         );
     }
 
-    // Tests that the provided address is supported and its UTXOs can be fetched.
-    fn supports_address(network: Network, address: Address) {
-        crate::init(InitConfig {
-            network: Some(network),
-            ..Default::default()
-        });
-
-        // Create a genesis block where 1000 satoshis are given to the address.
-        let coinbase_tx = TransactionBuilder::coinbase()
-            .with_output(&address, 1000)
-            .build();
-
-        let block = BlockBuilder::with_prev_header(genesis_block(network).header())
-            .with_transaction(coinbase_tx.clone())
-            .build();
-
-        // Insert the block
-        with_state_mut(|state| {
-            state::insert_block(state, block.clone()).unwrap();
-        });
-
-        // Assert that the UTXOs of the address can be retrieved.
-        assert_eq!(
-            get_utxos(GetUtxosRequest {
-                address: address.to_string(),
-                filter: None
-            })
-            .unwrap(),
-            GetUtxosResponse {
-                utxos: vec![Utxo {
-                    outpoint: OutPoint {
-                        txid: coinbase_tx.txid().into(),
-                        vout: 0,
-                    },
-                    value: 1000,
-                    height: 1,
-                }],
-                tip_block_hash: block.block_hash().to_vec(),
-                tip_height: 1,
-                next_page: None,
-            }
-        );
-    }
-
     #[test]
     fn min_confirmations() {
         let network = Network::Regtest;

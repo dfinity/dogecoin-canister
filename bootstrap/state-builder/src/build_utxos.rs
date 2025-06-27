@@ -1,4 +1,4 @@
-//! A script for building the Bitcoin canister's UTXOs from a UTXO dump text file.
+//! A script for building the Dogecoin canister's UTXOs from a UTXO dump text file.
 //!
 //! Example run:
 //!
@@ -6,7 +6,7 @@
 //!   --network testnet \
 //!   --output output-dir \
 //!   --utxos-dump-path utxos-dump.csv
-use bitcoin::{hashes::Hash, Address, Txid as BitcoinTxid};
+use bitcoin::{dogecoin::Address, hashes::Hash, Txid as BitcoinTxid};
 use clap::Parser;
 use ic_doge_canister::types::into_dogecoin_network;
 use ic_doge_canister::{types::TxOut, with_state, with_state_mut};
