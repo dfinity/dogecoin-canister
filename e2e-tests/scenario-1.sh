@@ -25,7 +25,7 @@ wait_until_stable_height 3 60
 # Fetch the balance of an address we do not expect to have funds.
 BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
-  address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
+  address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
 if ! [[ $BALANCE = "(0 : nat64)" ]]; then
@@ -35,7 +35,7 @@ fi
 
 BALANCE=$(dfx canister call --query dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
-  address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
+  address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
 if ! [[ $BALANCE = "(0 : nat64)" ]]; then
@@ -46,11 +46,11 @@ fi
 # Fetch the balance of an address we expect to have funds.
 BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
-  address = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
+  address = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
   min_confirmations = opt 2;
 })')
 
-# Verify that the balance is 50 BTC.
+# Verify that the balance is 50 DOGE.
 if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
   echo "FAIL"
   exit 1
@@ -58,7 +58,7 @@ fi
 
 UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
   network = variant { regtest };
-  address = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
+  address = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
 })')
 
 # The address has no UTXOs.
@@ -69,7 +69,7 @@ fi
 
 UTXOS=$(dfx canister call --query dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
-  address = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
+  address = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
 })')
 
 # The address has no UTXOs.
@@ -84,7 +84,7 @@ fi
 set +x
 UTXOS=$(dfx canister call --query dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
-  address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh"
+  address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW"
 })')
 
 # The address has 10000 UTXOs, but the response is capped to 1000 UTXOs.
@@ -97,7 +97,7 @@ set -x
 set +x
 UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
-  address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh"
+  address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW"
 })')
 
 # The address has 10000 UTXOs, but the response is capped to 1000 UTXOs.
@@ -111,7 +111,7 @@ set -x
 set +e
 GET_UTXOS_QUERY_REPLICATED_CALL=$(dfx canister call --update dogecoin bitcoin_get_utxos_query '(record {
   network = variant { regtest };
-  address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
+  address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 })' 2>&1)
 set -e
 
@@ -122,7 +122,7 @@ fi
 
 BALANCE=$(dfx canister call --query dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
-  address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
+  address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 })')
 
 if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
@@ -134,7 +134,7 @@ fi
 set +e
 GET_BALANCE_QUERY_REPLICATED_CALL=$(dfx canister call --update dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
-  address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
+  address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 })' 2>&1)
 set -e
 
@@ -145,7 +145,7 @@ fi
 
 BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
-  address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
+  address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 })')
 
 if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
@@ -155,7 +155,7 @@ fi
 
 BALANCE=$(dfx canister call --query dogecoin bitcoin_get_balance_query '(record {
   network = variant { regtest };
-  address = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
+  address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 })')
 
 if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
@@ -182,12 +182,12 @@ EXPECTED_HEADERS='(
   record {
     tip_height = 5 : nat32;
     block_headers = vec {
-      blob "\01\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\3b\a3\ed\fd\7a\7b\12\b2\7a\c7\2c\3e\67\76\8f\61\7f\c8\1b\c3\88\8a\51\32\3a\9f\b8\aa\4b\1e\5e\4a\da\e5\49\4d\ff\ff\7f\20\02\00\00\00";
-      blob "\01\00\00\00\06\22\6e\46\11\1a\0b\59\ca\af\12\60\43\eb\5b\bf\28\c3\4f\3a\5e\33\2a\1f\c7\b2\b7\3c\f1\88\91\0f\8b\c1\34\a4\62\25\ea\ec\84\54\1e\8c\0f\61\25\5d\cb\d4\16\b4\82\fd\17\94\c1\f3\24\90\30\1e\77\c3\32\e8\49\4d\ff\ff\7f\20\01\00\00\00";
-      blob "\01\00\00\00\6c\e6\6b\7d\21\59\86\39\89\71\41\5f\a4\67\97\ff\52\e8\cf\17\65\f8\e7\ab\53\65\3d\a6\3e\97\18\1c\bf\8d\e3\75\cc\c0\3d\ba\b1\80\da\34\00\7f\0e\bb\ea\a1\30\29\48\dc\07\5b\7a\92\81\d0\de\01\6a\a6\8a\ea\49\4d\ff\ff\7f\20\01\00\00\00";
-      blob "\01\00\00\00\55\07\55\91\fd\ec\e1\02\ab\1f\95\d8\62\ea\98\07\00\c6\c1\61\33\bd\fa\06\86\e8\11\8e\a0\77\76\2d\45\29\a5\be\2b\cc\e3\ea\57\72\a2\d0\b6\69\f9\34\a2\d0\9e\18\c7\91\72\50\52\2e\ac\b2\a4\49\ac\b0\e2\ec\49\4d\ff\ff\7f\20\00\00\00\00";
-      blob "\01\00\00\00\be\62\5e\24\a2\e7\38\ec\96\b4\1b\94\ff\1f\8f\ce\7f\f1\50\76\9c\78\74\fc\2d\ea\97\11\d4\ff\85\1d\ac\4d\af\1b\59\7f\e6\c8\18\0d\28\ee\93\c9\c9\aa\bc\4e\99\30\eb\5d\ad\00\a5\aa\3f\22\79\b8\83\92\3a\ef\49\4d\ff\ff\7f\20\01\00\00\00";
-      blob "\01\00\00\00\5e\57\ba\9c\a3\3a\f4\b7\99\9d\ea\0f\9f\a1\5d\c7\12\cb\54\d6\3d\ed\c8\8d\35\7a\d1\c2\13\1e\08\18\4a\a8\63\98\0d\83\85\8f\00\6f\3f\1f\0d\4e\ca\67\7e\15\c0\c2\2d\e1\ae\2a\eb\83\e3\0b\7d\10\23\3a\92\f1\49\4d\ff\ff\7f\20\01\00\00\00";
+      blob "\01\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\69\6a\d2\0e\2d\d4\36\5c\74\59\b4\a4\a5\af\74\3d\5e\92\c6\da\32\29\e6\53\2c\d6\05\f6\53\3f\2a\5b\da\e5\49\4d\ff\ff\7f\20\02\00\00\00";
+      blob "\01\00\00\00\a5\73\e9\1c\17\72\07\6c\0d\40\f7\0e\44\08\c8\3a\31\70\5f\29\6a\e6\e7\62\9d\4a\dc\b5\a3\60\21\3d\83\49\03\fe\0e\bd\a1\e3\2a\f3\74\ab\4e\8c\f1\7a\fb\39\03\7d\3a\87\e8\2a\f8\d6\3a\de\82\f2\9a\98\32\e8\49\4d\ff\ff\7f\20\01\00\00\00";
+      blob "\01\00\00\00\67\52\ef\cf\34\d1\8f\6f\85\02\92\85\db\7e\31\6f\4a\55\b2\0f\d0\cd\f2\be\62\5a\ba\94\44\fb\8d\0c\22\be\96\05\81\28\cd\7a\f8\4d\48\32\8e\e7\9e\ae\fd\b8\68\4c\ac\7e\4e\81\a0\b4\7b\14\ce\4f\97\e0\8a\ea\49\4d\ff\ff\7f\20\00\00\00\00";
+      blob "\01\00\00\00\60\fe\56\ec\85\2e\41\16\ec\53\bb\d0\8b\1f\98\34\99\b3\65\c7\f6\26\1c\22\aa\b1\55\31\a1\78\9f\32\94\b9\e5\22\9c\fb\b2\70\17\4b\97\bd\3e\88\db\ce\88\8e\68\78\4d\fa\f8\17\06\f6\75\ff\29\1c\59\cb\e2\ec\49\4d\ff\ff\7f\20\02\00\00\00";
+      blob "\01\00\00\00\20\30\43\76\b4\0d\5a\fa\db\75\89\b0\17\0a\5e\5b\d6\9a\74\72\90\70\91\a3\60\1f\9e\2b\59\8c\d2\16\be\e8\2c\a8\08\96\50\9f\44\f2\91\1d\c8\6c\ab\f8\08\51\f1\52\da\b3\56\3b\30\1f\16\e0\8b\5b\08\b3\3a\ef\49\4d\ff\ff\7f\20\01\00\00\00";
+      blob "\01\00\00\00\98\71\1d\f3\da\ea\87\91\a1\7c\b8\7c\ae\e0\24\7e\ae\3e\2b\bb\a5\c9\36\08\9c\f3\07\f8\ab\94\4d\32\09\d2\a0\a2\b0\66\e5\6d\71\dd\29\60\c9\75\ea\30\2e\58\9d\cd\96\f9\6c\54\3f\b9\3d\67\b1\5d\1b\91\92\f1\49\4d\ff\ff\7f\20\00\00\00\00";
     };
   },
 )'

@@ -28,7 +28,7 @@ wait_until_main_chain_height 4 60
 
 BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
   network = variant { regtest };
-  address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
+  address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
 if ! [[ $BALANCE = "(40_000 : nat64)" ]]; then
@@ -42,7 +42,7 @@ fi
 set +x
 UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
   network = variant { regtest };
-  address = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8"
+  address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
 # The address has 40k UTXOs. The first call to get_utxos should return 1,000.

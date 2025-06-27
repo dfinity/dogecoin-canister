@@ -657,7 +657,7 @@ mod test {
         let network = Network::Regtest;
         let doge_network = into_dogecoin_network(network);
 
-        // Create some BTC addresses.
+        // Create some DOGE addresses.
         let address_1 = random_p2pkh_address(doge_network).into();
         let address_2 = random_p2pkh_address(doge_network).into();
         let address_3 = random_p2pkh_address(doge_network).into();
