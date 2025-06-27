@@ -13,11 +13,11 @@ type BlockBlob = Vec<u8>;
 type BlockHeaderBlob = Vec<u8>;
 type BlockHash = Vec<u8>;
 
-const ADDRESS_1: &str = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8";
-const ADDRESS_2: &str = "bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf";
-const ADDRESS_3: &str = "bcrt1qp045tvzkxx0292645rxem9eryc7jpwsk3dy60h";
-const ADDRESS_4: &str = "bcrt1qjft8fhexv4znxu22hed7gxtpy2wazjn0x079mn";
-const ADDRESS_5: &str = "bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh";
+const ADDRESS_1: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
+const ADDRESS_2: &str = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto"; // bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf
+const ADDRESS_3: &str = "mvTiuZm1LtzMLzr7QcF2JHo37oQwsGWG8Z"; // bcrt1qp045tvzkxx0292645rxem9eryc7jpwsk3dy60h
+const ADDRESS_4: &str = "mrMGZmyXejVdfDdRwDywKt1q8WQStZRW7q"; // bcrt1qjft8fhexv4znxu22hed7gxtpy2wazjn0x079mn
+const ADDRESS_5: &str = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW"; // bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh
 
 #[derive(CandidType, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 enum Network {
@@ -77,7 +77,7 @@ thread_local! {
 fn init() {
     let network = DogecoinNetwork::Regtest;
 
-    // Block 1: A single transaction that gives ADDRESS_1 50 BTC split over 10k inputs.
+    // Block 1: A single transaction that gives ADDRESS_1 50 DOGE split over 10k inputs.
     let mut tx_1 = TransactionBuilder::new();
     for _ in 0..10_000 {
         tx_1 = tx_1.with_output(
@@ -93,7 +93,7 @@ fn init() {
         .build();
     append_block(&block_1);
 
-    // Block 2: 10k transactions that transfer all of ADDRESS_1's BTC to ADDRESS_2
+    // Block 2: 10k transactions that transfer all of ADDRESS_1's DOGE to ADDRESS_2
     let mut block_2_txs = vec![];
     for i in 0..10_000 {
         block_2_txs.push(
@@ -121,7 +121,7 @@ fn init() {
 
     append_block(&block_2);
 
-    // Remaining blocks contain a single coinbase transaction giving ADDRESS_3 some BTC.
+    // Remaining blocks contain a single coinbase transaction giving ADDRESS_3 some DOGE.
     let block_3 = BlockBuilder::with_prev_header(block_2.header)
         .with_transaction(
             TransactionBuilder::new()
@@ -146,7 +146,7 @@ fn init() {
         .build();
     append_block(&block_4);
 
-    // Block 5: 10k transactions that transfer all of ADDRESS_2's BTC to ADDRESS_5
+    // Block 5: 10k transactions that transfer all of ADDRESS_2's DOGE to ADDRESS_5
     let mut block_5_txs = vec![];
     for block_2_tx in block_2_txs {
         block_5_txs.push(

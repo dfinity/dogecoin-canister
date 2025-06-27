@@ -79,7 +79,7 @@ fn set_state(state: State) {
     });
 }
 
-/// Initializes the state of the Bitcoin canister.
+/// Initializes the state of the Dogecoin canister.
 pub fn init(init_config: InitConfig) {
     let config = Config::from(init_config);
     set_state(State::new(

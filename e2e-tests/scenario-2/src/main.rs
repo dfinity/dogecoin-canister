@@ -13,7 +13,7 @@ type BlockBlob = Vec<u8>;
 type BlockHeaderBlob = Vec<u8>;
 type BlockHash = Vec<u8>;
 
-const ADDRESS: &str = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8";
+const ADDRESS: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
 
 #[derive(CandidType, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 enum Network {
