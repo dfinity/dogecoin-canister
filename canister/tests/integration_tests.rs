@@ -7,7 +7,7 @@ use std::{path::PathBuf, process::Command};
 const BUILD_SCRIPT: &str = "scripts/build-canister.sh";
 const WASM_PATH: &str = "target/wasm32-unknown-unknown/release/ic-doge-canister.wasm.gz";
 
-// Executes a bash script to build the bitcoin canister wasm.
+// Executes a bash script to build the dogecoin canister wasm.
 fn build_canister() {
     let output = Command::new("bash")
         .arg(get_full_path(BUILD_SCRIPT))
@@ -28,12 +28,12 @@ fn canister_wasm() -> Vec<u8> {
     std::fs::read(get_full_path(WASM_PATH)).unwrap()
 }
 
-fn with_bitcoin_canister<F: Fn(PocketIc, CanisterId)>(test: F) {
-    println!("Building the bitcoin canister...");
+fn with_dogecoin_canister<F: Fn(PocketIc, CanisterId)>(test: F) {
+    println!("Building the dogecoin canister...");
     build_canister();
     println!("Done.");
 
-    println!("Installing the bitcoin canister...");
+    println!("Installing the dogecoin canister...");
     let pic = PocketIcBuilder::new().with_bitcoin_subnet().build();
     let canister_id = pic.create_canister();
     let wasm_bytes = canister_wasm();
@@ -57,8 +57,8 @@ fn get_full_path(path: &str) -> PathBuf {
 // If canbench is included in the canister, there'll be an endpoint called "has_canbench".
 // This test ensures this endpoint doesn't exist.
 #[test]
-fn canbench_is_not_in_bitcoin_canister() {
-    with_bitcoin_canister(|pic: PocketIc, canister_id: CanisterId| {
+fn canbench_is_not_in_dogecoin_canister() {
+    with_dogecoin_canister(|pic: PocketIc, canister_id: CanisterId| {
         assert_matches::assert_matches!(
             pic.update_call(
                 canister_id,
