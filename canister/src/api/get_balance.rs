@@ -17,7 +17,7 @@ struct Stats {
     ins_apply_unstable_blocks: u64,
 }
 
-/// Retrieves the balance of the given Bitcoin address.
+/// Retrieves the balance of the given Dogecoin address.
 pub fn get_balance(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceError> {
     verify_has_enough_cycles(with_state(|s| s.fees.get_balance_maximum));
     charge_cycles(with_state(|s| s.fees.get_balance));
@@ -25,7 +25,7 @@ pub fn get_balance(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceErro
     get_balance_private(request)
 }
 
-/// Retrieves the balance of the given Bitcoin address,
+/// Retrieves the balance of the given Dogecoin address,
 /// while not charging for the execution, used only for queries.
 pub fn get_balance_query(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceError> {
     get_balance_private(request)

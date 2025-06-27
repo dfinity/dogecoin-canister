@@ -27,7 +27,7 @@ pub fn print(msg: &str) {
     println!("{}", msg);
 }
 
-/// A reply from the Bitcoin network containing either GetSuccessorsResponse or Rejection.
+/// A reply from the Dogecoin network containing either GetSuccessorsResponse or Rejection.
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 pub enum GetSuccessorsReply {

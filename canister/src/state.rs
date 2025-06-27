@@ -59,7 +59,7 @@ pub struct State {
     pub disable_api_if_not_fully_synced: Flag,
 
     /// The principal of the watchdog canister.
-    /// The watchdog canister has the authority to disable the Bitcoin canister's API
+    /// The watchdog canister has the authority to disable the Dogecoin canister's API
     /// if it suspects that there is a problem.
     pub watchdog_canister: Option<Principal>,
 
@@ -117,7 +117,7 @@ impl State {
         self.utxos.next_height()
     }
 
-    /// Returns the UTXO set of a given bitcoin address.
+    /// Returns the UTXO set of a given dogecoin address.
     pub fn get_utxos(&self, address: Address) -> AddressUtxoSet<'_> {
         AddressUtxoSet::new(address, &self.utxos, &self.unstable_blocks)
     }

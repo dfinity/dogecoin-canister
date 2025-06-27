@@ -14,9 +14,9 @@ use ic_doge_interface::Flag;
 use ic_doge_types::{Block, BlockHash};
 use std::time::Duration;
 
-/// The heartbeat of the Bitcoin canister.
+/// The heartbeat of the Dogecoin canister.
 ///
-/// The heartbeat fetches new blocks from the bitcoin network and inserts them into the state.
+/// The heartbeat fetches new blocks from the dogecoin network and inserts them into the state.
 pub async fn heartbeat() {
     print("Starting heartbeat...");
 
