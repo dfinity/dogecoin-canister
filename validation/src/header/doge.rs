@@ -64,6 +64,10 @@ impl HeaderValidator for DogecoinHeaderValidator {
         CompactTarget::from_consensus(bits)
     }
 
+    fn pow_target_spacing(&self) -> u32 {
+        self.network().params().bitcoin_params.pow_target_spacing as u32
+    }
+
     fn validate_header(
         &self,
         store: &impl HeaderStore,
@@ -108,9 +112,33 @@ impl HeaderValidator for DogecoinHeaderValidator {
         store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
-        _timestamp: u32,
+        timestamp: u32,
     ) -> Target {
         match self.network() {
+            DogecoinNetwork::Testnet | DogecoinNetwork::Regtest => {
+                if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0 {
+                    if timestamp > prev_header.time + self.pow_target_spacing() * 2 {
+                        // If no block has been found in `pow_target_spacing * 2` minutes, then use
+                        // the maximum difficulty target
+                        self.max_target()
+                    } else {
+                        // If the block has been found within `pow_target_spacing * 2` minutes, then
+                        // use the previous difficulty target that is not equal to the maximum
+                        // difficulty target
+                        Target::from_compact(self.find_next_difficulty_in_chain(
+                            store,
+                            prev_header,
+                            prev_height,
+                        ))
+                    }
+                } else {
+                    Target::from_compact(self.compute_next_difficulty(
+                        store,
+                        prev_header,
+                        prev_height,
+                    ))
+                }
+            }
             DogecoinNetwork::Dogecoin => {
                 Target::from_compact(self.compute_next_difficulty(store, prev_header, prev_height))
             }
