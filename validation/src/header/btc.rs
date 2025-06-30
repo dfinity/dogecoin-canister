@@ -1,9 +1,9 @@
 use crate::constants::btc::DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN;
-use crate::constants::TEN_MINUTES;
 use crate::header::{is_timestamp_valid, HeaderStore, HeaderValidator, ValidateHeaderError};
 use crate::BlockHeight;
 use bitcoin::network::Network as BitcoinNetwork;
 use bitcoin::{block::Header, CompactTarget, Target};
+use std::time::Duration;
 
 pub struct BitcoinHeaderValidator {
     network: BitcoinNetwork,
@@ -66,8 +66,8 @@ impl HeaderValidator for BitcoinHeaderValidator {
         CompactTarget::from_consensus(bits)
     }
 
-    fn pow_target_spacing(&self) -> u32 {
-        self.network().params().pow_target_spacing as u32
+    fn pow_target_spacing(&self) -> Duration {
+        Duration::from_secs(self.network().params().pow_target_spacing)
     }
 
     fn validate_header(
@@ -127,7 +127,9 @@ impl HeaderValidator for BitcoinHeaderValidator {
                     // "If no block has been found in 20 minutes, the difficulty automatically
                     // resets back to the minimum for a single block, after which it
                     // returns to its previous value."
-                    if timestamp > prev_header.time + TEN_MINUTES * 2 {
+                    if timestamp
+                        > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32
+                    {
                         // If no block has been found in 20 minutes, then use the maximum difficulty
                         // target
                         self.max_target()

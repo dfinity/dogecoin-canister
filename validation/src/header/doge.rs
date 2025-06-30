@@ -3,6 +3,7 @@ use crate::header::{is_timestamp_valid, HeaderStore, HeaderValidator, ValidateHe
 use crate::BlockHeight;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
 use bitcoin::{block::Header, CompactTarget, Target};
+use std::time::Duration;
 
 pub struct DogecoinHeaderValidator {
     network: DogecoinNetwork,
@@ -64,8 +65,8 @@ impl HeaderValidator for DogecoinHeaderValidator {
         CompactTarget::from_consensus(bits)
     }
 
-    fn pow_target_spacing(&self) -> u32 {
-        self.network().params().bitcoin_params.pow_target_spacing as u32
+    fn pow_target_spacing(&self) -> Duration {
+        Duration::from_secs(self.network().params().bitcoin_params.pow_target_spacing)
     }
 
     fn validate_header(
@@ -117,7 +118,9 @@ impl HeaderValidator for DogecoinHeaderValidator {
         match self.network() {
             DogecoinNetwork::Testnet | DogecoinNetwork::Regtest => {
                 if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0 {
-                    if timestamp > prev_header.time + self.pow_target_spacing() * 2 {
+                    if timestamp
+                        > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32
+                    {
                         // If no block has been found in `pow_target_spacing * 2` minutes, then use
                         // the maximum difficulty target
                         self.max_target()

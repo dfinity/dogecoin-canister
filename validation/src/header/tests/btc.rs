@@ -43,7 +43,7 @@ fn test_sequential_header_validation_mainnet() {
         deserialize_header(MAINNET_HEADER_586656),
         586_656,
     );
-} // TODO: add test for testnet
+} // TODO XC-408: add test for testnet
 
 #[test]
 fn test_missing_previous_header() {

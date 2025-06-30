@@ -7,6 +7,7 @@ mod tests;
 
 use crate::BlockHeight;
 use bitcoin::{block::Header, BlockHash, CompactTarget, Target};
+use std::time::Duration;
 
 /// An error thrown when trying to validate a header.
 #[derive(Debug, PartialEq)]
@@ -118,7 +119,7 @@ pub trait HeaderValidator {
     fn pow_limit_bits(&self) -> CompactTarget;
 
     /// Returns the target spacing between blocks in seconds.
-    fn pow_target_spacing(&self) -> u32;
+    fn pow_target_spacing(&self) -> Duration;
 
     /// Validates a header. If a failure occurs, a
     /// [ValidateHeaderError](ValidateHeaderError) will be returned.
