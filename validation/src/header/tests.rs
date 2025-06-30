@@ -4,7 +4,7 @@ mod btc;
 mod doge;
 mod utils;
 
-use crate::constants::test::TEN_MINUTES;
+use crate::constants::TEN_MINUTES;
 use crate::header::timestamp_is_less_than_2h_in_future;
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
 use crate::ValidateHeaderError;
