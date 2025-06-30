@@ -187,7 +187,7 @@ fn verify_regtest_difficulty_calculation<T: HeaderValidator>(
             &store,
             &last_header,
             chain_length - 1,
-            last_header.time + validator.pow_target_spacing(),
+            last_header.time + validator.pow_target_spacing().as_secs() as u32,
         );
         // Assert.
         assert_eq!(target, Target::from_compact(expected_pow));

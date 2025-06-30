@@ -151,7 +151,7 @@ pub fn next_block_header<T: HeaderValidator>(
 ) -> Header {
     Header {
         prev_blockhash: prev.block_hash(),
-        time: prev.time + validator.pow_target_spacing(),
+        time: prev.time + validator.pow_target_spacing().as_secs() as u32,
         bits,
         ..prev
     }
