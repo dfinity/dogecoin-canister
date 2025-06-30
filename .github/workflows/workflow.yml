@@ -96,6 +96,7 @@ jobs:
         shell: bash
         run: |
           cargo test --release --all-targets --workspace --exclude benchmarks -- --color always
+          cargo test -p ic-doge-validation --lib --features doge
         env:
           RUST_BACKTRACE: 1
 

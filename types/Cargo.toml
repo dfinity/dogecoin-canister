@@ -17,3 +17,6 @@ serde_bytes = { workspace = true }
 
 [features]
 mock_difficulty = []
+
+btc = []
+doge = []

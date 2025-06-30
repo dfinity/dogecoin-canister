@@ -16,3 +16,7 @@ bitcoin = { workspace = true }
 csv = "1.1"
 hex = { workspace = true }
 proptest = "0.9.4"
+
+[features]
+btc = []
+doge = []
