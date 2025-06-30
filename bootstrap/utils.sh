@@ -59,9 +59,9 @@ prune=5000
 blocksxor=0
 
 # Dummy credentials required by bitcoin-cli.
-rpcuser=ic-btc-integration
+rpcuser=ic-doge-integration
 rpcpassword=QPQiNaph19FqUsCrBRN0FII7lyM26B51fAMeBQzCb-E=
-rpcauth=ic-btc-integration:cdf2741387f3a12438f69092f0fdad8e\$62081498c98bee09a0dce2b30671123fa561932992ce377585e8e08bb0c11dfa
+rpcauth=ic-doge-integration:cdf2741387f3a12438f69092f0fdad8e\$62081498c98bee09a0dce2b30671123fa561932992ce377585e8e08bb0c11dfa
 EOF
 
     # Add network-specific settings.

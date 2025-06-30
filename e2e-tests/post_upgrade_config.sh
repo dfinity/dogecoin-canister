@@ -7,14 +7,14 @@ trap "dfx stop" EXIT SIGINT
 
 dfx start --background --clean
 
-# Deploy the bitcoin canister.
-dfx deploy --no-wallet bitcoin --argument "(record {
+# Deploy the dogecoin canister.
+dfx deploy --no-wallet dogecoin --argument "(record {
   stability_threshold = opt 0;
   network = opt variant { regtest };
 })"
 
 # The stability threshold is zero
-CONFIG=$(dfx canister call bitcoin get_config --query)
+CONFIG=$(dfx canister call dogecoin get_config --query)
 if ! [[ $CONFIG == *"stability_threshold = 0"* ]]; then
   echo "FAIL"
   exit 1
@@ -23,7 +23,7 @@ fi
 # Modify the candid file such that post_upgrade can accept a `opt set_config_request`.
 # This is necessary because post_upgrade takes a different argument from `init`, but candid
 # doesn't provide a way of specifying that and dfx doesn't provide a way to bypass type checks.
-sed -i.bak 's/service bitcoin : (init_config)/service bitcoin : (opt set_config_request)/' ./canister/candid.did
+sed -i.bak 's/service dogecoin : (init_config)/service dogecoin : (opt set_config_request)/' ./canister/candid.did
 
 # Upgrade and update the fees.
 FEES="record {
@@ -41,15 +41,15 @@ FEES="record {
   get_block_headers_maximum = 0 : nat;
 }";
 
-dfx deploy --upgrade-unchanged bitcoin --argument "opt (record {
+dfx deploy --upgrade-unchanged dogecoin --argument "opt (record {
   fees = opt $FEES;
 })"
 
 # Revert the modification to the candid file.
-sed -i.bak 's/service bitcoin : (opt set_config_request)/service bitcoin : (init_config)/' ./canister/candid.did
+sed -i.bak 's/service dogecoin : (opt set_config_request)/service dogecoin : (init_config)/' ./canister/candid.did
 
 # Verify the fees have been updated.
-CONFIG=$(dfx canister call bitcoin get_config --query)
+CONFIG=$(dfx canister call dogecoin get_config --query)
 if ! [[ $CONFIG == *"get_current_fee_percentiles = 123"* ]]; then
   echo "FAIL"
   exit 1

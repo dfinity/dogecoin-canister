@@ -1,6 +1,6 @@
 use bitcoin::hashes::Hash;
-use ic_btc_interface::Network;
-use ic_btc_types::{Block, BlockHash};
+use ic_doge_interface::Network;
+use ic_doge_types::{Block, BlockHash};
 use std::fmt;
 mod serde;
 use std::ops::{Add, Sub};

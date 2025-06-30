@@ -1,13 +1,13 @@
 use crate::{blocktree::BlockDoesNotExtendTree, state::State, unstable_blocks};
 use bitcoin::{block::Header, hashes::Hash};
-use ic_btc_validation::HeaderStore;
+use ic_doge_validation::HeaderStore;
 
 /// A structure passed to the validation crate to validate a specific block header.
 pub struct ValidationContext<'a> {
     state: &'a State,
     // BlockHash is stored in order to avoid repeatedly calling to
     // Header::block_hash() which is expensive.
-    chain: Vec<(&'a Header, ic_btc_types::BlockHash)>,
+    chain: Vec<(&'a Header, ic_doge_types::BlockHash)>,
 }
 
 impl<'a> ValidationContext<'a> {
@@ -52,7 +52,7 @@ impl<'a> ValidationContext<'a> {
 impl HeaderStore for ValidationContext<'_> {
     fn get_with_block_hash(&self, hash: &bitcoin::BlockHash) -> Option<Header> {
         // Check if the header is in the chain.
-        let hash = ic_btc_types::BlockHash::from(hash.as_raw_hash().as_byte_array().to_vec());
+        let hash = ic_doge_types::BlockHash::from(hash.as_raw_hash().as_byte_array().to_vec());
         for item in self.chain.iter() {
             if item.1 == hash {
                 return Some(*item.0);
@@ -92,7 +92,7 @@ mod test {
         state::{ingest_stable_blocks_into_utxoset, insert_block},
         test_utils::{build_chain, BlockBuilder},
     };
-    use ic_btc_interface::Network;
+    use ic_doge_interface::Network;
     use proptest::prelude::*;
     use std::str::FromStr;
 

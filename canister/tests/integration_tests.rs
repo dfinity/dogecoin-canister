@@ -1,17 +1,17 @@
 use candid::{encode_one, Encode, Principal};
-use ic_btc_interface::InitConfig;
 use ic_cdk::api::management_canister::main::CanisterId;
+use ic_doge_interface::InitConfig;
 use pocket_ic::{ErrorCode, PocketIc, PocketIcBuilder, UserError};
 use std::{path::PathBuf, process::Command};
 
 const BUILD_SCRIPT: &str = "scripts/build-canister.sh";
-const WASM_PATH: &str = "target/wasm32-unknown-unknown/release/ic-btc-canister.wasm.gz";
+const WASM_PATH: &str = "target/wasm32-unknown-unknown/release/ic-doge-canister.wasm.gz";
 
 // Executes a bash script to build the bitcoin canister wasm.
 fn build_canister() {
     let output = Command::new("bash")
         .arg(get_full_path(BUILD_SCRIPT))
-        .arg("ic-btc-canister")
+        .arg("ic-doge-canister")
         .output()
         .expect("Failed to execute command");
 

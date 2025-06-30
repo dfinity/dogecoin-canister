@@ -13,9 +13,11 @@ use crate::{
 };
 use bitcoin::{block::Header, consensus::Decodable};
 use candid::Principal;
-use ic_btc_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
-use ic_btc_types::{Block, BlockHash, OutPoint};
-use ic_btc_validation::{validate_header, ValidateHeaderError as InsertBlockError};
+use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
+use ic_doge_types::{Block, BlockHash, OutPoint};
+use ic_doge_validation::{
+    BitcoinHeaderValidator, HeaderValidator, ValidateHeaderError as InsertBlockError,
+};
 use serde::{Deserialize, Serialize};
 
 /// A structure used to maintain the entire state.
@@ -125,8 +127,8 @@ impl State {
 /// Returns an error if the block doesn't extend any known block in the state.
 pub fn insert_block(state: &mut State, block: Block) -> Result<(), InsertBlockError> {
     let start = performance_counter();
-    validate_header(
-        &into_bitcoin_network(state.network()),
+    let header_validator = BitcoinHeaderValidator::new(into_bitcoin_network(state.network()));
+    header_validator.validate_header(
         &ValidationContext::new(state, block.header())
             .map_err(|_| InsertBlockError::PrevHeaderNotFound)?,
         block.header(),
@@ -233,12 +235,11 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
             match ValidationContext::new_with_next_block_headers(state, &block_header)
                 .map_err(|_| InsertBlockError::PrevHeaderNotFound)
             {
-                Ok(store) => validate_header(
-                    &into_bitcoin_network(state.network()),
-                    &store,
-                    &block_header,
-                    time_secs(),
-                ),
+                Ok(store) => {
+                    let validator =
+                        BitcoinHeaderValidator::new(into_bitcoin_network(state.network()));
+                    validator.validate_header(&store, &block_header, time_secs())
+                }
                 Err(err) => Err(err),
             };
 

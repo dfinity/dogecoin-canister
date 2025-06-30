@@ -7,26 +7,26 @@ trap "dfx stop" EXIT SIGINT
 
 dfx start --background --clean
 
-# Deploy the bitcoin canister.
-dfx deploy --no-wallet bitcoin --argument "(record {
+# Deploy the dogecoin canister.
+dfx deploy --no-wallet dogecoin --argument "(record {
   stability_threshold = opt 0;
   network = opt variant { regtest };
 })"
 
 # The stability threshold is zero
-CONFIG=$(dfx canister call bitcoin get_config --query)
+CONFIG=$(dfx canister call dogecoin get_config --query)
 if ! [[ $CONFIG == *"stability_threshold = 0"* ]]; then
   echo "FAIL"
   exit 1
 fi
 
 # Update the stability threshold.
-dfx canister call bitcoin set_config '(record {
+dfx canister call dogecoin set_config '(record {
   stability_threshold = opt (17: nat);
 })'
 
 # Verify the stability threshold has been updated.
-CONFIG=$(dfx canister call bitcoin get_config --query)
+CONFIG=$(dfx canister call dogecoin get_config --query)
 if ! [[ $CONFIG == *"stability_threshold = 17"* ]]; then
   echo "FAIL"
   exit 1

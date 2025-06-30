@@ -1,11 +1,11 @@
 use bitcoin::consensus::Decodable;
 use bitcoin::{block::Header, consensus::Encodable, Block as BitcoinBlock};
 use canbench_rs::{bench, bench_fn, BenchResult};
-use ic_btc_canister::{types::BlockHeaderBlob, with_state_mut};
-use ic_btc_interface::{InitConfig, Network};
-use ic_btc_test_utils::build_regtest_chain;
-use ic_btc_types::Block;
 use ic_cdk_macros::init;
+use ic_doge_canister::{types::BlockHeaderBlob, with_state_mut};
+use ic_doge_interface::{InitConfig, Network};
+use ic_doge_test_utils::build_regtest_chain;
+use ic_doge_types::Block;
 use std::cell::RefCell;
 
 thread_local! {
@@ -32,7 +32,7 @@ fn init() {
 // Benchmarks inserting the first 300 blocks of the Bitcoin testnet.
 #[bench(raw)]
 fn insert_300_blocks() -> BenchResult {
-    ic_btc_canister::init(InitConfig {
+    ic_doge_canister::init(InitConfig {
         network: Some(Network::Testnet),
         stability_threshold: Some(144),
         ..Default::default()
@@ -41,7 +41,7 @@ fn insert_300_blocks() -> BenchResult {
     bench_fn(|| {
         with_state_mut(|s| {
             for i in 0..300 {
-                ic_btc_canister::state::insert_block(
+                ic_doge_canister::state::insert_block(
                     s,
                     TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
                 )
@@ -54,7 +54,7 @@ fn insert_300_blocks() -> BenchResult {
 // Benchmarks gettings the metrics when there are many unstable blocks..
 #[bench(raw)]
 fn get_metrics() -> BenchResult {
-    ic_btc_canister::init(InitConfig {
+    ic_doge_canister::init(InitConfig {
         network: Some(Network::Testnet),
         stability_threshold: Some(3000),
         ..Default::default()
@@ -62,7 +62,7 @@ fn get_metrics() -> BenchResult {
 
     with_state_mut(|s| {
         for i in 0..3000 {
-            ic_btc_canister::state::insert_block(
+            ic_doge_canister::state::insert_block(
                 s,
                 TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
             )
@@ -71,7 +71,7 @@ fn get_metrics() -> BenchResult {
     });
 
     bench_fn(|| {
-        ic_btc_canister::get_metrics();
+        ic_doge_canister::get_metrics();
     })
 }
 
@@ -81,7 +81,7 @@ fn insert_block_headers() -> BenchResult {
     let blocks_to_insert = 1000;
     let block_headers_to_insert = 100;
 
-    ic_btc_canister::init(InitConfig {
+    ic_doge_canister::init(InitConfig {
         network: Some(Network::Testnet),
         ..Default::default()
     });
@@ -89,7 +89,7 @@ fn insert_block_headers() -> BenchResult {
     // Insert the blocks.
     with_state_mut(|s| {
         for i in 0..blocks_to_insert {
-            ic_btc_canister::state::insert_block(
+            ic_doge_canister::state::insert_block(
                 s,
                 TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
             )
@@ -113,7 +113,7 @@ fn insert_block_headers() -> BenchResult {
     // Benchmark inserting the block headers.
     bench_fn(|| {
         with_state_mut(|s| {
-            ic_btc_canister::state::insert_next_block_headers(s, next_block_headers.as_slice());
+            ic_doge_canister::state::insert_next_block_headers(s, next_block_headers.as_slice());
         });
     })
 }
@@ -121,7 +121,7 @@ fn insert_block_headers() -> BenchResult {
 // Inserts the same block headers multiple times.
 #[bench(raw)]
 fn insert_block_headers_multiple_times() -> BenchResult {
-    ic_btc_canister::init(InitConfig {
+    ic_doge_canister::init(InitConfig {
         network: Some(Network::Testnet),
         ..Default::default()
     });
@@ -143,7 +143,10 @@ fn insert_block_headers_multiple_times() -> BenchResult {
     bench_fn(|| {
         with_state_mut(|s| {
             for _ in 0..10 {
-                ic_btc_canister::state::insert_next_block_headers(s, next_block_headers.as_slice());
+                ic_doge_canister::state::insert_next_block_headers(
+                    s,
+                    next_block_headers.as_slice(),
+                );
             }
         });
     })
@@ -153,7 +156,7 @@ fn insert_block_headers_multiple_times() -> BenchResult {
 fn pre_upgrade_with_many_unstable_blocks() -> BenchResult {
     let blocks = build_regtest_chain(3000, 100);
 
-    ic_btc_canister::init(InitConfig {
+    ic_doge_canister::init(InitConfig {
         network: Some(Network::Regtest),
         ..Default::default()
     });
@@ -161,12 +164,12 @@ fn pre_upgrade_with_many_unstable_blocks() -> BenchResult {
     // Insert the blocks.
     with_state_mut(|s| {
         for block in blocks.into_iter().skip(1) {
-            ic_btc_canister::state::insert_block(s, block).unwrap();
+            ic_doge_canister::state::insert_block(s, block).unwrap();
         }
     });
 
     bench_fn(|| {
-        ic_btc_canister::pre_upgrade();
+        ic_doge_canister::pre_upgrade();
     })
 }
 

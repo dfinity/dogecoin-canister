@@ -2,8 +2,8 @@ use crate::{
     types::{Address, TxOut},
     UtxoSet,
 };
-use ic_btc_interface::Height;
-use ic_btc_types::{Block, BlockHash, OutPoint};
+use ic_doge_interface::Height;
+use ic_doge_types::{Block, BlockHash, OutPoint};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -238,8 +238,8 @@ mod test {
         test_utils::{BlockBuilder, TransactionBuilder},
         types::into_bitcoin_network,
     };
-    use ic_btc_interface::Network;
-    use ic_btc_test_utils::random_p2pkh_address;
+    use ic_doge_interface::Network;
+    use ic_doge_test_utils::random_p2pkh_address;
 
     #[test]
     fn empty_when_initialized() {

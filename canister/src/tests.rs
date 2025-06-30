@@ -18,11 +18,11 @@ use bitcoin::{
     Block as BitcoinBlock, Network as BitcoinNetwork,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
-use ic_btc_interface::{Flag, GetUtxosResponse, InitConfig, Network, Txid, UtxosFilter};
-use ic_btc_interface::{OutPoint, Utxo};
-use ic_btc_test_utils::random_p2pkh_address;
-use ic_btc_types::{Block, BlockHash};
 use ic_cdk::api::call::RejectionCode;
+use ic_doge_interface::{Flag, GetUtxosResponse, InitConfig, Network, Txid, UtxosFilter};
+use ic_doge_interface::{OutPoint, Utxo};
+use ic_doge_test_utils::random_p2pkh_address;
+use ic_doge_types::{Block, BlockHash};
 use std::str::FromStr;
 use std::{collections::HashMap, io::BufReader, path::PathBuf};
 use std::{fs::File, panic::catch_unwind};
@@ -828,7 +828,7 @@ async fn fee_percentiles_evaluation_helper() {
             .with_output(&random_p2pkh_address(btc_network).into(), balance)
             .build();
         let tx_2 = TransactionBuilder::new()
-            .with_input(ic_btc_types::OutPoint {
+            .with_input(ic_doge_types::OutPoint {
                 txid: tx_1.txid(),
                 vout: 0,
             })

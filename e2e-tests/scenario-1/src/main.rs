@@ -3,8 +3,8 @@ use bitcoin::{
     Network as BitcoinNetwork, OutPoint,
 };
 use candid::CandidType;
-use ic_btc_test_utils::{BlockBuilder, TransactionBuilder};
 use ic_cdk_macros::{init, update};
+use ic_doge_test_utils::{BlockBuilder, TransactionBuilder};
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
 use std::str::FromStr;

@@ -4,7 +4,7 @@ use crate::{
     unstable_blocks::UnstableBlocks,
     UtxoSet,
 };
-use ic_btc_types::{Block, OutPoint};
+use ic_doge_types::{Block, OutPoint};
 use std::{collections::BTreeSet, sync::Arc};
 
 /// A struct that tracks the UTXO set of a given address.
@@ -121,9 +121,9 @@ mod test {
         types::into_bitcoin_network,
         unstable_blocks,
     };
-    use ic_btc_interface::Network;
-    use ic_btc_test_utils::random_p2pkh_address;
-    use ic_btc_types::OutPoint;
+    use ic_doge_interface::Network;
+    use ic_doge_test_utils::random_p2pkh_address;
+    use ic_doge_types::OutPoint;
 
     #[test]
     fn add_tx_to_empty_utxo() {

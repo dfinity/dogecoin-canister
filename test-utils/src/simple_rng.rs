@@ -10,7 +10,7 @@
 //! because the Internet Computer (IC) production environment does not support Node.js modules.
 //!
 //! As a temporary solution, SimpleRng is used in place of the `rand` crate. This RNG is not cryptographically
-//! secure but is sufficient for the `ic-btc-test-utils` library, which is intended for testing purposes only.
+//! secure but is sufficient for the `ic-doge-test-utils` library, which is intended for testing purposes only.
 //!
 //! Note: This implementation should *NOT* be used in production or for applications requiring cryptographic security.
 

@@ -5,8 +5,8 @@ use crate::{
     types::{Address, AddressUtxo, AddressUtxoRange, Slicing, TxOut, Utxo},
 };
 use bitcoin::{Script, TxOut as BitcoinTxOut};
-use ic_btc_interface::{Height, Network, Satoshi};
-use ic_btc_types::{Block, BlockHash, OutPoint, Transaction, Txid};
+use ic_doge_interface::{Height, Network, Satoshi};
+use ic_doge_types::{Block, BlockHash, OutPoint, Transaction, Txid};
 use ic_stable_structures::{storable::Blob, StableBTreeMap, Storable as _};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, iter::Iterator, str::FromStr};
@@ -580,9 +580,9 @@ mod test {
         transaction::Version,
         Amount,
     };
-    use ic_btc_interface::Network;
-    use ic_btc_test_utils::random_p2pkh_address;
-    use ic_btc_types::into_bitcoin_network;
+    use ic_doge_interface::Network;
+    use ic_doge_test_utils::random_p2pkh_address;
+    use ic_doge_types::into_bitcoin_network;
     use proptest::prelude::*;
     use std::collections::BTreeSet;
 

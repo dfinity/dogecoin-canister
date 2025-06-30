@@ -2,7 +2,7 @@
 #
 # This Dockerfile prepares an environment to build and verify the integrity of 
 # these specific WebAssembly canisters:
-#  - ic-btc-canister
+#  - ic-doge-canister
 #  - uploader
 #  - watchdog
 #
@@ -15,11 +15,11 @@
 # or
 # docker build --build-arg CHUNK_HASHES_PATH=/bootstrap/chunk_hashes.txt  -t canisters .
 #
-# docker run --rm --entrypoint cat canisters /ic-btc-canister.wasm.gz > ic-btc-canister.wasm.gz
+# docker run --rm --entrypoint cat canisters /ic-doge-canister.wasm.gz > ic-doge-canister.wasm.gz
 # docker run --rm --entrypoint cat canisters /uploader.wasm.gz > uploader.wasm.gz
 # docker run --rm --entrypoint cat canisters /watchdog.wasm.gz > watchdog.wasm.gz
 #
-# sha256sum ic-btc-canister.wasm.gz
+# sha256sum ic-doge-canister.wasm.gz
 # sha256sum uploader.wasm.gz
 # sha256sum watchdog.wasm.gz
 
@@ -31,7 +31,7 @@ FROM ubuntu@sha256:626ffe58f6e7566e00254b638eb7e0f3b11d4da9675088f4781a50ae288f3
 # should be updated as well.
 ARG rust_version=1.84.0
 ARG CHUNK_HASHES_PATH
-ARG BTC_FEATURES=""
+ARG DOGE_FEATURES=""
 
 # Setting the timezone and installing the necessary dependencies
 ENV TZ=UTC
@@ -59,9 +59,9 @@ ENV PATH=/cargo/bin:$PATH
 # Copy the current directory (containing source code and build scripts) into the Docker image.
 COPY . .
 
-# Building bitcoin canister...
-RUN scripts/build-canister.sh ic-btc-canister ${BTC_FEATURES} && \
-    cp target/wasm32-unknown-unknown/release/ic-btc-canister.wasm.gz ic-btc-canister.wasm.gz
+# Building dogecoin canister...
+RUN scripts/build-canister.sh ic-doge-canister ${DOGE_FEATURES} && \
+    cp target/wasm32-unknown-unknown/release/ic-doge-canister.wasm.gz ic-doge-canister.wasm.gz
 
 # Set the path to chunk hashes if specified (for including it in the uploader canister)
 RUN if [ -n "$CHUNK_HASHES_PATH" ]; then export CHUNK_HASHES_PATH="$CHUNK_HASHES_PATH"; fi

@@ -7,8 +7,8 @@ use crate::{
     UtxoSet,
 };
 use bitcoin::block::Header;
-use ic_btc_interface::{Height, Network};
-use ic_btc_types::{Block, BlockHash, OutPoint};
+use ic_doge_interface::{Height, Network};
+use ic_doge_types::{Block, BlockHash, OutPoint};
 use outpoints_cache::OutPointsCache;
 use serde::{Deserialize, Serialize};
 
@@ -472,7 +472,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
 mod test {
     use super::*;
     use crate::test_utils::{BlockBuilder, BlockChainBuilder};
-    use ic_btc_interface::Network;
+    use ic_doge_interface::Network;
     use proptest::proptest;
 
     #[test]

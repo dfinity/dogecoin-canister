@@ -4,12 +4,12 @@ use bitcoin::{
 };
 use candid::CandidType;
 use datasize::DataSize;
-use ic_btc_interface::{
+use ic_doge_interface::{
     Address as AddressStr, GetBalanceRequest as PublicGetBalanceRequest,
     GetUtxosRequest as PublicGetUtxosRequest, Height, Network, Satoshi, UtxosFilter,
     UtxosFilterInRequest,
 };
-use ic_btc_types::{BlockHash, OutPoint, Txid};
+use ic_doge_types::{BlockHash, OutPoint, Txid};
 use ic_stable_structures::{
     storable::{Blob, Bound as StableStructuresBound},
     Storable as StableStructuresStorable,

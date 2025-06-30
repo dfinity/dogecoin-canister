@@ -1,13 +1,24 @@
 //! Types used across crates.
 //! NOTE: These types are _not_ part of the interface.
 
+#[cfg(all(feature = "btc", feature = "doge"))]
+compile_error!("Features \"btc\" and \"doge\" cannot be enabled at the same time.");
+
+#[cfg(not(any(feature = "btc", feature = "doge")))]
+compile_error!("Either feature \"btc\" or \"doge\" must be enabled.");
+
+#[cfg(feature = "btc")]
+use bitcoin::block::Block as BlockData;
+
+#[cfg(feature = "doge")]
+use bitcoin::dogecoin::Block as BlockData;
+
 use bitcoin::{
-    block::Header, hashes::Hash, params::Params, Block as BitcoinBlock, Network as BitcoinNetwork,
-    OutPoint as BitcoinOutPoint, Target,
+    block::Header, hashes::Hash, Network as BitcoinNetwork, OutPoint as BitcoinOutPoint, Target,
 };
 use candid::CandidType;
 use datasize::DataSize;
-use ic_btc_interface::{Network, Txid as PublicTxid};
+use ic_doge_interface::{Network, Txid as PublicTxid};
 use ic_stable_structures::{storable::Bound, Storable};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, cell::RefCell, fmt, str::FromStr};
@@ -15,7 +26,7 @@ use std::{borrow::Cow, cell::RefCell, fmt, str::FromStr};
 // NOTE: If new fields are added, then the implementation of `PartialEq` should be updated.
 #[derive(Clone, Debug, Serialize, Deserialize, Eq)]
 pub struct Block {
-    block: BitcoinBlock,
+    block: BlockData,
     transactions: Vec<Transaction>,
     block_hash: RefCell<Option<BlockHash>>,
 
@@ -24,7 +35,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(block: BitcoinBlock) -> Self {
+    pub fn new(block: BlockData) -> Self {
         Self {
             transactions: block
                 .txdata
@@ -73,10 +84,10 @@ impl Block {
     // The definition here corresponds to what is referred as "bdiff" in
     // https://en.bitcoin.it/wiki/Difficulty
     pub fn target_difficulty(network: Network, target: Target) -> u128 {
-        target.difficulty(Params::new(into_bitcoin_network(network)))
+        target.difficulty(into_bitcoin_network(network))
     }
 
-    pub fn internal_bitcoin_block(&self) -> &BitcoinBlock {
+    pub fn internal_bitcoin_block(&self) -> &BlockData {
         &self.block
     }
 }

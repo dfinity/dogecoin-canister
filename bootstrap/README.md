@@ -137,11 +137,11 @@ $ docker build --build-arg CHUNK_HASHES_PATH=/bootstrap/chunk_hashes.txt  -t can
 
 # Extract canister's WASM
 $ docker run --rm canisters cat /uploader.wasm.gz > uploader.wasm.gz
-$ docker run --rm canisters cat /ic-btc-canister.wasm.gz > ic-btc-canister.wasm.gz
+$ docker run --rm canisters cat /ic-doge-canister.wasm.gz > ic-doge-canister.wasm.gz
 
 # Verify SHA-256 of the canister's WASM.
 $ sha256sum *.wasm.gz
-c6abf3605cd33d0d640a648ecc1aaf33999032775436481485468a75024f38bc  ic-btc-canister.wasm.gz
+c6abf3605cd33d0d640a648ecc1aaf33999032775436481485468a75024f38bc  ic-doge-canister.wasm.gz
 2f9a1f7ee91ce2e2c29cc78040197b2687c25ac7fd76a609c79a72c67e3ca1d8  uploader.wasm.gz
 ```
 
@@ -307,7 +307,7 @@ $ dfx canister stop --network testnet $TESTNET_BITCOIN_CANISTER_ID
 $ dfx canister install \
     --network testnet $TESTNET_BITCOIN_CANISTER_ID \
     --mode upgrade \
-    --wasm ./ic-btc-canister.wasm.gz \
+    --wasm ./ic-doge-canister.wasm.gz \
     --argument "$ARG"
 
 $ dfx canister start --network testnet $TESTNET_BITCOIN_CANISTER_ID

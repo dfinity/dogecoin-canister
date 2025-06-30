@@ -1,4 +1,4 @@
-use ic_btc_interface::SetConfigRequest;
+use ic_doge_interface::SetConfigRequest;
 use std::convert::TryInto;
 
 pub fn set_config(request: SetConfigRequest) {
@@ -81,7 +81,7 @@ mod test {
     use super::*;
     use crate::{init, with_state};
     use candid::Principal;
-    use ic_btc_interface::{Fees, Flag, InitConfig};
+    use ic_doge_interface::{Fees, Flag, InitConfig};
     use proptest::prelude::*;
 
     #[test]

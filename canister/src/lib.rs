@@ -28,12 +28,12 @@ pub use api::get_metrics;
 pub use api::send_transaction;
 pub use api::set_config;
 pub use heartbeat::heartbeat;
-use ic_btc_interface::{
+use ic_doge_interface::{
     Config, Flag, GetBalanceError, GetBalanceRequest, GetBlockHeadersError, GetBlockHeadersRequest,
     GetBlockHeadersResponse, GetCurrentFeePercentilesRequest, GetUtxosError, GetUtxosRequest,
     GetUtxosResponse, InitConfig, MillisatoshiPerByte, Network, Satoshi, SetConfigRequest,
 };
-use ic_btc_types::Block;
+use ic_doge_types::Block;
 use ic_stable_structures::Memory;
 pub use memory::get_memory;
 use serde_bytes::ByteBuf;
@@ -293,8 +293,8 @@ pub(crate) fn is_synced() -> bool {
 #[cfg(test)]
 mod test {
     use super::*;
-    use ic_btc_interface::{Fees, Network, NetworkInRequest};
-    use ic_btc_test_utils::build_regtest_chain;
+    use ic_doge_interface::{Fees, Network, NetworkInRequest};
+    use ic_doge_test_utils::build_regtest_chain;
     use proptest::prelude::*;
 
     proptest! {
