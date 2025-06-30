@@ -4,5 +4,8 @@ pub mod btc;
 pub mod doge;
 
 #[cfg(feature = "btc")]
-/// Needed to help test check for the 20 minute testnet/regtest rule
-pub const TEN_MINUTES: u32 = 60 * 10;
+#[cfg(test)]
+pub mod test {
+    /// Needed to help test check for the 20 minutes testnet/regtest rule
+    pub const TEN_MINUTES: u32 = 60 * 10;
+}
