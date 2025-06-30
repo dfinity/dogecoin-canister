@@ -33,7 +33,6 @@ impl HeaderValidator for DogecoinHeaderValidator {
         &self.network
     }
 
-    /// Returns the maximum difficulty target depending on the network
     fn max_target(&self) -> Target {
         match self.network() {
             Self::Network::Dogecoin => Target::MAX_ATTAINABLE_MAINNET_DOGE,
@@ -43,8 +42,6 @@ impl HeaderValidator for DogecoinHeaderValidator {
         }
     }
 
-    /// Returns false iff PoW difficulty level of blocks can be
-    /// readjusted in the network after a fixed time interval.
     fn no_pow_retargeting(&self) -> bool {
         match self.network() {
             Self::Network::Dogecoin | Self::Network::Testnet => false,
@@ -53,7 +50,6 @@ impl HeaderValidator for DogecoinHeaderValidator {
         }
     }
 
-    /// Returns the PoW limit bits depending on the network
     fn pow_limit_bits(&self) -> CompactTarget {
         let bits = match self.network() {
             Self::Network::Dogecoin => 0x1e0fffff, // In Dogecoin this is higher than the Genesis compact target (0x1e0ffff0)
@@ -62,6 +58,10 @@ impl HeaderValidator for DogecoinHeaderValidator {
             &other => unreachable!("Unsupported network: {:?}", other),
         };
         CompactTarget::from_consensus(bits)
+    }
+
+    fn pow_target_spacing(&self) -> u32 {
+        self.network().params().bitcoin_params.pow_target_spacing as u32
     }
 
     fn validate_header(
@@ -108,9 +108,33 @@ impl HeaderValidator for DogecoinHeaderValidator {
         store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
-        _timestamp: u32,
+        timestamp: u32,
     ) -> Target {
         match self.network() {
+            DogecoinNetwork::Testnet | DogecoinNetwork::Regtest => {
+                if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0 {
+                    if timestamp > prev_header.time + self.pow_target_spacing() * 2 {
+                        // If no block has been found in `pow_target_spacing * 2` minutes, then use
+                        // the maximum difficulty target
+                        self.max_target()
+                    } else {
+                        // If the block has been found within `pow_target_spacing * 2` minutes,
+                        // then use the previous difficulty target that is not equal to the maximum
+                        // difficulty target
+                        Target::from_compact(self.find_next_difficulty_in_chain(
+                            store,
+                            prev_header,
+                            prev_height,
+                        ))
+                    }
+                } else {
+                    Target::from_compact(self.compute_next_difficulty(
+                        store,
+                        prev_header,
+                        prev_height,
+                    ))
+                }
+            }
             DogecoinNetwork::Dogecoin => {
                 Target::from_compact(self.compute_next_difficulty(store, prev_header, prev_height))
             }
