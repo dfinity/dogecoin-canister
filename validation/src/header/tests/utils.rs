@@ -1,11 +1,17 @@
-use crate::constants::TEN_MINUTES;
 use crate::header::HeaderValidator;
 use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
-use bitcoin::constants::genesis_block as bitcoin_genesis_block;
 use bitcoin::hashes::hex::FromHex;
-use bitcoin::network::Network as BitcoinNetwork;
+#[cfg(feature = "btc")]
+use bitcoin::{
+    constants::genesis_block as bitcoin_genesis_block, network::Network as BitcoinNetwork,
+};
+#[cfg(feature = "doge")]
+use bitcoin::{
+    dogecoin::constants::genesis_block as dogecoin_genesis_block,
+    dogecoin::Network as DogecoinNetwork,
+};
 use bitcoin::{BlockHash, CompactTarget, TxMerkleNode};
 use csv::Reader;
 use std::collections::HashMap;
@@ -122,6 +128,7 @@ pub fn get_headers(file: &str) -> Vec<Header> {
     headers
 }
 
+#[cfg(feature = "btc")]
 pub fn bitcoin_genesis_header(network: BitcoinNetwork, bits: CompactTarget) -> Header {
     Header {
         bits,
@@ -129,10 +136,22 @@ pub fn bitcoin_genesis_header(network: BitcoinNetwork, bits: CompactTarget) -> H
     }
 }
 
-pub fn next_block_header(prev: Header, bits: CompactTarget) -> Header {
+#[cfg(feature = "doge")]
+pub fn dogecoin_genesis_header(network: DogecoinNetwork, bits: CompactTarget) -> Header {
+    Header {
+        bits,
+        ..dogecoin_genesis_block(network).header
+    }
+}
+
+pub fn next_block_header<T: HeaderValidator>(
+    validator: &T,
+    prev: Header,
+    bits: CompactTarget,
+) -> Header {
     Header {
         prev_blockhash: prev.block_hash(),
-        time: prev.time + TEN_MINUTES,
+        time: prev.time + validator.pow_target_spacing().as_secs() as u32,
         bits,
         ..prev
     }
@@ -151,7 +170,7 @@ pub fn build_header_chain<T: HeaderValidator>(
     let mut last_header = h0;
 
     for _ in 1..chain_length {
-        let new_header = next_block_header(last_header, pow_limit);
+        let new_header = next_block_header(validator, last_header, pow_limit);
         store.add(new_header);
         last_header = new_header;
     }

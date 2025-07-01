@@ -7,6 +7,7 @@ mod tests;
 
 use crate::BlockHeight;
 use bitcoin::{block::Header, BlockHash, CompactTarget, Target};
+use std::time::Duration;
 
 /// An error thrown when trying to validate a header.
 #[derive(Debug, PartialEq)]
@@ -117,6 +118,9 @@ pub trait HeaderValidator {
     /// Returns the PoW limit bits depending on the network
     fn pow_limit_bits(&self) -> CompactTarget;
 
+    /// Returns the target spacing between blocks in seconds.
+    fn pow_target_spacing(&self) -> Duration;
+
     /// Validates a header. If a failure occurs, a
     /// [ValidateHeaderError](ValidateHeaderError) will be returned.
     fn validate_header(
@@ -143,7 +147,6 @@ pub trait HeaderValidator {
     /// returns to its previous value." This function is used to compute the
     /// difficulty target in case the block has been found within 20
     /// minutes.
-    #[allow(dead_code)]
     fn find_next_difficulty_in_chain(
         &self,
         store: &impl HeaderStore,

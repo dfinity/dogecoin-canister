@@ -4,7 +4,7 @@ mod btc;
 mod doge;
 mod utils;
 
-use crate::constants::TEN_MINUTES;
+use crate::constants::test::TEN_MINUTES;
 use crate::header::timestamp_is_less_than_2h_in_future;
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
 use crate::ValidateHeaderError;
@@ -84,15 +84,15 @@ fn verify_with_invalid_pow<T: HeaderValidator>(
     ));
 }
 
-fn verify_with_wrong_computed_target<T: HeaderValidator>(
+fn verify_with_invalid_pow_with_computed_target<T: HeaderValidator>(
     validator_regtest: T,
     genesis_header: Header,
 ) {
     let pow_regtest = validator_regtest.pow_limit_bits();
     let h0 = genesis_header;
-    let h1 = next_block_header(h0, pow_regtest);
-    let h2 = next_block_header(h1, pow_regtest);
-    let h3 = next_block_header(h2, pow_regtest);
+    let h1 = next_block_header(&validator_regtest, h0, pow_regtest);
+    let h2 = next_block_header(&validator_regtest, h1, pow_regtest);
+    let h3 = next_block_header(&validator_regtest, h2, pow_regtest);
     let mut store = SimpleHeaderStore::new(h0, 0);
     store.add(h1);
     store.add(h2);
@@ -187,7 +187,7 @@ fn verify_regtest_difficulty_calculation<T: HeaderValidator>(
             &store,
             &last_header,
             chain_length - 1,
-            last_header.time + TEN_MINUTES,
+            last_header.time + validator.pow_target_spacing().as_secs() as u32,
         );
         // Assert.
         assert_eq!(target, Target::from_compact(expected_pow));
@@ -198,7 +198,7 @@ fn verify_backdated_block_difficulty<T: HeaderValidator>(
     validator: T,
     difficulty_adjustment_interval: u32,
     genesis_header: Header,
-    expected_target: u32,
+    expected_target: CompactTarget,
 ) {
     let chain_length = difficulty_adjustment_interval - 1; // To trigger the difficulty adjustment.
 
@@ -219,7 +219,7 @@ fn verify_backdated_block_difficulty<T: HeaderValidator>(
     let difficulty = validator.compute_next_difficulty(&store, &last_header, chain_length);
 
     // Assert.
-    assert_eq!(difficulty, CompactTarget::from_consensus(expected_target));
+    assert_eq!(difficulty, expected_target);
 }
 
 fn verify_timestamp_rules<T: HeaderValidator>(
