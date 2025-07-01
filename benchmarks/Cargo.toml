@@ -13,7 +13,7 @@ bitcoin = { workspace = true, features = ["serde"] }
 canbench-rs = { workspace = true }
 candid = { workspace = true }
 hex = { workspace = true }
-ic-doge-canister = { workspace = true, features = ["canbench-rs"] }
+ic-doge-canister = { workspace = true, features = ["canbench-rs", "mock_time"] }
 ic-doge-interface = { workspace = true }
 ic-doge-test-utils = { workspace = true }
 ic-doge-types = { workspace = true, features = ["btc"] }
