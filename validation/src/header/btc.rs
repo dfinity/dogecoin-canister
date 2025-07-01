@@ -1,5 +1,4 @@
 use crate::constants::btc::DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN;
-use crate::constants::test::TEN_MINUTES;
 use crate::header::{is_timestamp_valid, HeaderStore, HeaderValidator, ValidateHeaderError};
 use crate::BlockHeight;
 use bitcoin::network::Network as BitcoinNetwork;
