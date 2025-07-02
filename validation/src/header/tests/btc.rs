@@ -39,7 +39,7 @@ fn test_basic_header_validation_testnet() {
 fn test_sequential_header_validation_mainnet() {
     verify_header_sequence(
         BitcoinHeaderValidator::mainnet(),
-        "headers.csv",
+        "btc/headers.csv",
         deserialize_header(MAINNET_HEADER_586656),
         586_656,
     );

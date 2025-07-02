@@ -39,7 +39,7 @@ fn test_basic_header_validation_testnet() {
 fn test_sequential_header_validation_mainnet() {
     verify_header_sequence(
         DogecoinHeaderValidator::mainnet(),
-        "headers_doge_1_5000.csv",
+        "doge/headers_doge_1_5000.csv",
         dogecoin_genesis_block(DogecoinNetwork::Dogecoin).header,
         0,
     );
@@ -49,7 +49,7 @@ fn test_sequential_header_validation_mainnet() {
 fn test_sequential_header_validation_testnet() {
     verify_header_sequence(
         DogecoinHeaderValidator::testnet(),
-        "headers_doge_testnet_1_5000.csv",
+        "doge/headers_doge_testnet_1_5000.csv",
         dogecoin_genesis_block(DogecoinNetwork::Testnet).header,
         0,
     );
@@ -102,7 +102,7 @@ fn test_target_exceeds_maximum_mainnet() {
 fn test_difficulty_adjustments_mainnet() {
     verify_difficulty_adjustment(
         DogecoinHeaderValidator::mainnet(),
-        "tests/data/block_headers_mainnet_doge.csv",
+        "tests/data/doge/block_headers_mainnet.csv",
         5_000,
     );
 }
@@ -111,7 +111,7 @@ fn test_difficulty_adjustments_mainnet() {
 fn test_difficulty_adjustments_testnet() {
     verify_difficulty_adjustment(
         DogecoinHeaderValidator::testnet(),
-        "tests/data/block_headers_testnet_doge.csv",
+        "tests/data/doge/block_headers_testnet.csv",
         5_000,
     );
 }
