@@ -20,8 +20,8 @@ use std::str::FromStr;
 
 #[cfg(feature = "btc")]
 pub mod btc_files {
-    pub const MAINNET_HEADERS_CSV: &str = "tests/data/btc/block_headers_mainnet.csv";
-    pub const TESTNET_HEADERS_CSV: &str = "tests/data/btc/block_headers_testnet.csv";
+    pub const MAINNET_HEADERS_0_782282_RAW: &str = "tests/data/btc/block_headers_mainnet.csv";
+    pub const TESTNET_HEADERS_0_2425489_RAW: &str = "tests/data/btc/block_headers_testnet.csv";
     pub const MAINNET_HEADERS_1_2633_PARSED: &str = "btc/headers_1_2633_mainnet_parsed.csv";
 }
 
