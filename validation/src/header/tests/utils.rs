@@ -27,6 +27,7 @@ pub mod btc_files {
     pub const TESTNET_HEADERS_0_2425489_RAW: &str = "btc/headers_0_2425489_testnet_raw.csv";
     pub const MAINNET_HEADERS_586657_589289_PARSED: &str =
         "btc/headers_586657_589289_mainnet_parsed.csv";
+    pub const TESTNET_HEADERS_1_5000_PARSED: &str = "btc/headers_1_5000_testnet_parsed.csv";
 }
 
 #[cfg(feature = "doge")]

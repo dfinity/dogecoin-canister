@@ -3,7 +3,7 @@ use crate::constants::doge::test::{
     MAINNET_HEADER_DOGE_17, MAINNET_HEADER_DOGE_18, TESTNET_HEADER_DOGE_88, TESTNET_HEADER_DOGE_89,
 };
 use crate::constants::doge::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
-use crate::header::tests::utils::{dogecoin_genesis_header, doge_files};
+use crate::header::tests::utils::{doge_files, dogecoin_genesis_header};
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
     verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,

@@ -12,6 +12,7 @@ use crate::header::tests::{
 };
 use crate::header::HeaderValidator;
 use crate::BitcoinHeaderValidator;
+use bitcoin::constants::genesis_block as bitcoin_genesis_block;
 use bitcoin::network::Network as BitcoinNetwork;
 use bitcoin::CompactTarget;
 
@@ -43,7 +44,17 @@ fn test_sequential_header_validation_mainnet() {
         deserialize_header(MAINNET_HEADER_586656),
         586_656,
     );
-} // TODO XC-408: add test for testnet
+}
+
+#[test]
+fn test_sequential_header_validation_testnet() {
+    verify_header_sequence(
+        BitcoinHeaderValidator::testnet(),
+        btc_files::TESTNET_HEADERS_1_5000_PARSED,
+        bitcoin_genesis_block(BitcoinNetwork::Testnet).header,
+        0,
+    );
+}
 
 #[test]
 fn test_missing_previous_header() {
