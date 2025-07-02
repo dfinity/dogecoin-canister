@@ -3,7 +3,7 @@ use crate::constants::doge::test::{
     MAINNET_HEADER_DOGE_17, MAINNET_HEADER_DOGE_18, TESTNET_HEADER_DOGE_88, TESTNET_HEADER_DOGE_89,
 };
 use crate::constants::doge::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
-use crate::header::tests::utils::dogecoin_genesis_header;
+use crate::header::tests::utils::{dogecoin_genesis_header, doge_files};
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
     verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,
@@ -39,7 +39,7 @@ fn test_basic_header_validation_testnet() {
 fn test_sequential_header_validation_mainnet() {
     verify_header_sequence(
         DogecoinHeaderValidator::mainnet(),
-        "doge/headers_doge_1_5000.csv",
+        doge_files::MAINNET_HEADERS_1_5000_PARSED,
         dogecoin_genesis_block(DogecoinNetwork::Dogecoin).header,
         0,
     );
@@ -49,7 +49,7 @@ fn test_sequential_header_validation_mainnet() {
 fn test_sequential_header_validation_testnet() {
     verify_header_sequence(
         DogecoinHeaderValidator::testnet(),
-        "doge/headers_doge_testnet_1_5000.csv",
+        doge_files::TESTNET_HEADERS_1_5000_PARSED,
         dogecoin_genesis_block(DogecoinNetwork::Testnet).header,
         0,
     );
@@ -102,7 +102,7 @@ fn test_target_exceeds_maximum_mainnet() {
 fn test_difficulty_adjustments_mainnet() {
     verify_difficulty_adjustment(
         DogecoinHeaderValidator::mainnet(),
-        "tests/data/doge/block_headers_mainnet.csv",
+        doge_files::MAINNET_HEADERS_0_5000_RAW,
         5_000,
     );
 }
@@ -111,7 +111,7 @@ fn test_difficulty_adjustments_mainnet() {
 fn test_difficulty_adjustments_testnet() {
     verify_difficulty_adjustment(
         DogecoinHeaderValidator::testnet(),
-        "tests/data/doge/block_headers_testnet.csv",
+        doge_files::TESTNET_HEADERS_0_5000_RAW,
         5_000,
     );
 }

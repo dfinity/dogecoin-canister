@@ -18,6 +18,21 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+#[cfg(feature = "btc")]
+pub mod btc_files {
+    pub const MAINNET_HEADERS_CSV: &str = "tests/data/btc/block_headers_mainnet.csv";
+    pub const TESTNET_HEADERS_CSV: &str = "tests/data/btc/block_headers_testnet.csv";
+    pub const MAINNET_HEADERS_1_2633_PARSED: &str = "btc/headers_1_2633_mainnet_parsed.csv";
+}
+
+#[cfg(feature = "doge")]
+pub mod doge_files {
+    pub const MAINNET_HEADERS_0_5000_RAW: &str = "tests/data/doge/headers_0_5000_mainnet_raw.csv";
+    pub const TESTNET_HEADERS_0_5000_RAW: &str = "tests/data/doge/headers_0_5000_testnet_raw.csv";
+    pub const MAINNET_HEADERS_1_5000_PARSED: &str = "doge/headers_1_5000_mainnet_parsed.csv";
+    pub const TESTNET_HEADERS_1_5000_PARSED: &str = "doge/headers_1_5000_testnet_parsed.csv";
+}
+
 pub const MOCK_CURRENT_TIME: u64 = 2_634_590_600;
 
 pub fn deserialize_header(encoded_bytes: &str) -> Header {

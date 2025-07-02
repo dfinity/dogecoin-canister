@@ -3,7 +3,7 @@ use crate::constants::btc::test::{
     TESTNET_HEADER_2132555, TESTNET_HEADER_2132556,
 };
 use crate::constants::btc::DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN;
-use crate::header::tests::utils::{bitcoin_genesis_header, deserialize_header};
+use crate::header::tests::utils::{bitcoin_genesis_header, btc_files, deserialize_header};
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
     verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,
@@ -39,7 +39,7 @@ fn test_basic_header_validation_testnet() {
 fn test_sequential_header_validation_mainnet() {
     verify_header_sequence(
         BitcoinHeaderValidator::mainnet(),
-        "btc/headers.csv",
+        btc_files::MAINNET_HEADERS_1_2633_PARSED,
         deserialize_header(MAINNET_HEADER_586656),
         586_656,
     );
@@ -92,7 +92,7 @@ fn test_target_exceeds_maximum_mainnet() {
 fn test_difficulty_adjustments_mainnet() {
     verify_difficulty_adjustment(
         BitcoinHeaderValidator::mainnet(),
-        "tests/data/block_headers_mainnet.csv",
+        btc_files::MAINNET_HEADERS_CSV,
         700_000,
     );
 }
@@ -101,7 +101,7 @@ fn test_difficulty_adjustments_mainnet() {
 fn test_difficulty_adjustments_testnet() {
     verify_difficulty_adjustment(
         BitcoinHeaderValidator::testnet(),
-        "tests/data/block_headers_testnet.csv",
+        btc_files::TESTNET_HEADERS_CSV,
         2_400_000,
     );
 }
