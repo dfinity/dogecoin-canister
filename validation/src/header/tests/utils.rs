@@ -25,7 +25,8 @@ const TEST_DATA_FOLDER: &str = "tests/data";
 pub mod btc_files {
     pub const MAINNET_HEADERS_0_782282_RAW: &str = "btc/headers_0_782282_mainnet_raw.csv";
     pub const TESTNET_HEADERS_0_2425489_RAW: &str = "btc/headers_0_2425489_testnet_raw.csv";
-    pub const MAINNET_HEADERS_1_2633_PARSED: &str = "btc/headers_1_2633_mainnet_parsed.csv";
+    pub const MAINNET_HEADERS_586657_589289_PARSED: &str =
+        "btc/headers_586657_589289_mainnet_parsed.csv";
 }
 
 #[cfg(feature = "doge")]
