@@ -154,6 +154,7 @@ fn verify_block_header(state: &crate::State, height: u32, block_hash: &str) {
     assert_eq!(header, header_2);
 }
 
+// TODO XC-419: use 100k blocks instead of 5k
 #[async_std::test]
 async fn mainnet_5k_blocks() {
     crate::init(crate::InitConfig {
@@ -398,6 +399,7 @@ async fn mainnet_5k_blocks() {
     });
 }
 
+// TODO XC-419: use 100k blocks instead of 5k
 #[async_std::test]
 async fn testnet_5k_blocks() {
     crate::init(crate::InitConfig {

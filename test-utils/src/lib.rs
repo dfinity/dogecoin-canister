@@ -23,35 +23,6 @@ pub fn random_p2pkh_address(network: Network) -> Address {
     Address::p2pkh(PublicKey::new(pk), network)
 }
 
-// /// Generates a random P2SH address.
-// pub fn random_p2tr_address(network: Network) -> Address {
-//     let secp = Secp256k1::new();
-//     let (sk, _) = generate_keypair(&secp);
-//     let keypair = Keypair::from_secret_key(&secp, &sk);
-//     let (xonly, _) = XOnlyPublicKey::from_keypair(&keypair);
-//
-//     Address::p2tr(&secp, xonly, None, network)
-// }
-//
-// /// Generates a random P2WPKH address.
-// pub fn random_p2wpkh_address(network: Network) -> Address {
-//     let secp = Secp256k1::new();
-//     let (_, pk) = generate_keypair(&secp);
-//
-//     Address::p2wpkh(
-//         &CompressedPublicKey::try_from(PublicKey::new(pk))
-//             .expect("failed to create p2wpkh address"),
-//         network,
-//     )
-// }
-//
-// /// Generates a random P2WSH address.
-// pub fn random_p2wsh_address(network: Network) -> Address {
-//     let mut bytes = [0u8; 32];
-//     fill_bytes(&mut bytes);
-//     Address::p2wsh(&Script::from_bytes(&bytes).to_p2wsh(), network)
-// }
-
 fn coinbase_input() -> TxIn {
     TxIn {
         previous_output: OutPoint::null(),
