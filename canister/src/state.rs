@@ -208,6 +208,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
     // Note that the actual limit available on system subnets is 50B. The threshold is set
     // lower to be conservative.
     const MAX_INSTRUCTIONS_THRESHOLD: u64 = 30_000_000_000;
+    let validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
 
     for block_header_blob in next_block_headers.iter() {
         if inc_performance_counter() > MAX_INSTRUCTIONS_THRESHOLD {
@@ -235,11 +236,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
             match ValidationContext::new_with_next_block_headers(state, &block_header)
                 .map_err(|_| InsertBlockError::PrevHeaderNotFound)
             {
-                Ok(store) => {
-                    let validator =
-                        DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
-                    validator.validate_header(&store, &block_header, time_secs())
-                }
+                Ok(store) => validator.validate_header(&store, &block_header, time_secs()),
                 Err(err) => Err(err),
             };
 
