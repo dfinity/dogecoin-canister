@@ -23,6 +23,21 @@ pub fn random_p2pkh_address(network: Network) -> Address {
     Address::p2pkh(PublicKey::new(pk), network)
 }
 
+/// Generates a random P2SH address.
+pub fn random_p2sh_address(network: Network) -> Address {
+    let secp = Secp256k1::new();
+    let (_, pk) = generate_keypair(&secp);
+    let pubkey = PublicKey::new(pk);
+
+    // Create a p2pk script: <pubkey> OP_CHECKSIG
+    let script = Script::builder()
+        .push_key(&pubkey)
+        .push_opcode(bitcoin::opcodes::all::OP_CHECKSIG)
+        .into_script();
+
+    Address::p2sh(&script, network).expect("Valid script should create valid P2SH address")
+}
+
 fn coinbase_input() -> TxIn {
     TxIn {
         previous_output: OutPoint::null(),

@@ -292,7 +292,7 @@ mod test {
         with_state_mut,
     };
     use ic_doge_interface::{Fees, InitConfig, Network, OutPoint, Utxo};
-    use ic_doge_test_utils::random_p2pkh_address;
+    use ic_doge_test_utils::{random_p2pkh_address, random_p2sh_address};
     use ic_doge_types::Block;
     use proptest::prelude::*;
 
@@ -413,7 +413,7 @@ mod test {
         });
 
         // Generate addresses.
-        let address_1 = random_p2pkh_address(doge_network).into();
+        let address_1 = random_p2sh_address(doge_network).into();
         let address_2 = random_p2pkh_address(doge_network).into();
 
         // Create a blockchain which alternates between giving some DOGE to
