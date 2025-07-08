@@ -19,6 +19,30 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 pub const MOCK_CURRENT_TIME: u64 = 2_634_590_600;
+const TEST_DATA_FOLDER: &str = "tests/data";
+
+#[cfg(feature = "btc")]
+pub mod btc_files {
+    pub const MAINNET_HEADERS_0_782282_RAW: &str = "btc/headers_0_782282_mainnet_raw.csv";
+    pub const TESTNET_HEADERS_0_2425489_RAW: &str = "btc/headers_0_2425489_testnet_raw.csv";
+    pub const MAINNET_HEADERS_586657_589289_PARSED: &str =
+        "btc/headers_586657_589289_mainnet_parsed.csv";
+    pub const TESTNET_HEADERS_1_5000_PARSED: &str = "btc/headers_1_5000_testnet_parsed.csv";
+}
+
+#[cfg(feature = "doge")]
+pub mod doge_files {
+    pub const MAINNET_HEADERS_0_5000_RAW: &str = "doge/headers_0_5000_mainnet_raw.csv";
+    pub const TESTNET_HEADERS_0_5000_RAW: &str = "doge/headers_0_5000_testnet_raw.csv";
+    pub const MAINNET_HEADERS_1_5000_PARSED: &str = "doge/headers_1_5000_mainnet_parsed.csv";
+    pub const TESTNET_HEADERS_1_5000_PARSED: &str = "doge/headers_1_5000_testnet_parsed.csv";
+}
+
+pub fn test_data_file(file: &str) -> PathBuf {
+    PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
+        .join(TEST_DATA_FOLDER)
+        .join(file)
+}
 
 pub fn deserialize_header(encoded_bytes: &str) -> Header {
     let bytes = Vec::from_hex(encoded_bytes).expect("failed to decoded bytes");
@@ -98,14 +122,9 @@ impl HeaderStore for SimpleHeaderStore {
     }
 }
 
-/// This function reads all headers from the specified CSV file in `tests/data/`
-/// and returns them as a `Vec<Header>`.
+/// This function reads all headers from the specified CSV file and returns them as a `Vec<Header>`.
 pub fn get_headers(file: &str) -> Vec<Header> {
-    let rdr = Reader::from_path(
-        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
-            .join("tests/data/")
-            .join(file),
-    );
+    let rdr = Reader::from_path(test_data_file(file));
     assert!(rdr.is_ok(), "Unable to find {file} file");
     let mut rdr = rdr.unwrap();
     let mut headers = vec![];

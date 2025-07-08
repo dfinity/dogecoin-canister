@@ -4,6 +4,7 @@ mod btc;
 mod doge;
 mod utils;
 
+use crate::header::tests::utils::test_data_file;
 use crate::header::timestamp_is_less_than_2h_in_future;
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
 use crate::ValidateHeaderError;
@@ -11,7 +12,6 @@ use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
 use bitcoin::{CompactTarget, Target, TxMerkleNode};
 use proptest::proptest;
-use std::path::PathBuf;
 use std::str::FromStr;
 use utils::{
     deserialize_header, get_headers, next_block_header, SimpleHeaderStore, MOCK_CURRENT_TIME,
@@ -130,10 +130,7 @@ fn verify_difficulty_adjustment<T: HeaderValidator>(
 ) {
     use bitcoin::consensus::Decodable;
     use std::io::BufRead;
-    let file = std::fs::File::open(
-        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(headers_path),
-    )
-    .unwrap();
+    let file = std::fs::File::open(test_data_file(headers_path)).unwrap();
 
     let rdr = std::io::BufReader::new(file);
 
