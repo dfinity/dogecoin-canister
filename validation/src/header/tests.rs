@@ -4,7 +4,6 @@ mod btc;
 mod doge;
 mod utils;
 
-use crate::constants::test::TEN_MINUTES;
 use crate::header::tests::utils::test_data_file;
 use crate::header::timestamp_is_less_than_2h_in_future;
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
@@ -240,7 +239,7 @@ fn verify_timestamp_rules<T: HeaderValidator>(
             "c120ff2ae1363593a0b92e0d281ec341a0cc989b4ee836dc3405c9f4215242a6",
         )
         .unwrap(),
-        time: header_3.time + TEN_MINUTES,
+        time: header_2.time + 1, // Larger than median time past
         bits: CompactTarget::from_consensus(0x170e0408),
         nonce: 0xb48e8b0a,
     };

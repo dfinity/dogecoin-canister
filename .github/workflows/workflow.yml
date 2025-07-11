@@ -96,7 +96,7 @@ jobs:
         shell: bash
         run: |
           cargo test --release --all-targets --workspace --exclude benchmarks -- --color always
-          cargo test -p ic-doge-validation --lib --features doge
+          cargo test -p ic-doge-validation --lib --features btc
         env:
           RUST_BACKTRACE: 1
 

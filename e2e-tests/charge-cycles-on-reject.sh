@@ -84,7 +84,7 @@ RECORD="(record { address = \"Bad address\"; network = variant { regtest } })"
 EXPECTED="MalformedAddress"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
-RECORD="(record { address = \"bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8\"; network = variant { regtest }; min_confirmations = opt 10 })"
+RECORD="(record { address = \"mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM\"; network = variant { regtest }; min_confirmations = opt 10 })"
 EXPECTED="MinConfirmationsTooLarge"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
@@ -94,17 +94,17 @@ RECORD="(record { address = \"Bad address\"; network = variant { regtest } })"
 EXPECTED="MalformedAddress"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
-RECORD="(record { address = \"bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8\"; network = variant { regtest }; filter = opt variant {min_confirmations = 10} })"
+RECORD="(record { address = \"mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM\"; network = variant { regtest }; filter = opt variant {min_confirmations = 10} })"
 EXPECTED="MinConfirmationsTooLarge"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
 SHORT_PAGE="blob \"12341234789789\""
-RECORD="(record { address = \"bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8\"; network = variant { regtest }; filter = opt variant {page = ${SHORT_PAGE}} })"
+RECORD="(record { address = \"mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM\"; network = variant { regtest }; filter = opt variant {page = ${SHORT_PAGE}} })"
 EXPECTED="MalformedPage"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
 BAD_TIP="blob \"123412347897123412347897123412347897123412347897123412347897123412347897\""
-RECORD="(record { address = \"bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8\"; network = variant { regtest }; filter = opt variant {page = ${BAD_TIP}} })"
+RECORD="(record { address = \"mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM\"; network = variant { regtest }; filter = opt variant {page = ${BAD_TIP}} })"
 EXPECTED="UnknownTipBlockHash"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 

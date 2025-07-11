@@ -41,10 +41,6 @@ pub fn generate_keypair<C: Signing>(secp: &Secp256k1<C>) -> (SecretKey, PublicKe
     })
 }
 
-pub fn fill_bytes(dest: &mut [u8]) {
-    with_rng(|rng| rng.fill_bytes(dest))
-}
-
 struct SimpleRng {
     state: u64,
 }

@@ -8,15 +8,15 @@ use crate::{
     },
     with_state, with_state_mut,
 };
-use bitcoin::{consensus::Decodable, Block as BitcoinBlock};
+use bitcoin::{consensus::Decodable, dogecoin::Block as DogecoinBlock};
 use datasize::data_size;
 use ic_doge_interface::Flag;
 use ic_doge_types::{Block, BlockHash};
 use std::time::Duration;
 
-/// The heartbeat of the Bitcoin canister.
+/// The heartbeat of the Dogecoin canister.
 ///
-/// The heartbeat fetches new blocks from the bitcoin network and inserts them into the state.
+/// The heartbeat fetches new blocks from the dogecoin network and inserts them into the state.
 pub async fn heartbeat() {
     print("Starting heartbeat...");
 
@@ -209,7 +209,7 @@ fn maybe_process_response() {
                 ));
                 for block_bytes in response.blocks.iter() {
                     // Deserialize the block.
-                    let block = match BitcoinBlock::consensus_decode(&mut block_bytes.as_slice()) {
+                    let block = match DogecoinBlock::consensus_decode(&mut block_bytes.as_slice()) {
                         Ok(block) => block,
                         Err(err) => {
                             print(&format!(
@@ -332,7 +332,7 @@ mod test {
         runtime::{self, GetSuccessorsReply},
         test_utils::{BlockBuilder, BlockChainBuilder, TransactionBuilder},
         types::{
-            into_bitcoin_network, Address, BlockBlob, GetSuccessorsCompleteResponse,
+            into_dogecoin_network, Address, BlockBlob, GetSuccessorsCompleteResponse,
             GetSuccessorsPartialResponse,
         },
         utxo_set::IngestingBlock,
@@ -439,7 +439,7 @@ mod test {
     #[async_std::test]
     async fn time_slices_large_blocks() {
         let network = Network::Regtest;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
 
         init(InitConfig {
             stability_threshold: Some(0),
@@ -448,7 +448,7 @@ mod test {
         });
 
         // Setup a chain of two blocks.
-        let address: Address = random_p2pkh_address(btc_network).into();
+        let address: Address = random_p2pkh_address(doge_network).into();
         let block_1 = build_block(genesis_block(network).header(), address.clone(), 6);
         let block_2 = build_block(block_1.header(), address, 1);
 
@@ -525,7 +525,7 @@ mod test {
     #[async_std::test]
     async fn time_slices_large_transactions() {
         let network = Network::Regtest;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
 
         // The number of inputs/outputs in a transaction.
         let tx_cardinality = 6;
@@ -536,8 +536,8 @@ mod test {
             ..Default::default()
         });
 
-        let address_1 = random_p2pkh_address(btc_network).into();
-        let address_2 = random_p2pkh_address(btc_network).into();
+        let address_1 = random_p2pkh_address(doge_network).into();
+        let address_2 = random_p2pkh_address(doge_network).into();
 
         // Create a transaction where a few inputs are given to address 1.
         let mut tx_1 = TransactionBuilder::coinbase();
@@ -681,7 +681,7 @@ mod test {
     #[async_std::test]
     async fn fetches_and_processes_responses_paginated() {
         let network = Network::Regtest;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
 
         init(InitConfig {
             stability_threshold: Some(0),
@@ -689,7 +689,7 @@ mod test {
             ..Default::default()
         });
 
-        let address = random_p2pkh_address(btc_network).into();
+        let address = random_p2pkh_address(doge_network).into();
         let block = BlockBuilder::with_prev_header(genesis_block(network).header())
             .with_transaction(
                 TransactionBuilder::coinbase()

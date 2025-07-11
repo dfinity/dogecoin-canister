@@ -1,4 +1,4 @@
-//! A script for building the Bitcoin canister's balances from a UTXO dump text file.
+//! A script for building the Dogecoin canister's balances from a UTXO dump text file.
 //!
 //! Example run:
 //!
@@ -6,9 +6,9 @@
 //!   --network testnet \
 //!   --output balances.bin \
 //!   --utxos-dump-path utxos-dump.csv
-use bitcoin::{Address as BitcoinAddress, Script};
+use bitcoin::{dogecoin::Address as DogecoinAddress, Script};
 use clap::Parser;
-use ic_doge_canister::types::{into_bitcoin_network, Address};
+use ic_doge_canister::types::{into_dogecoin_network, Address};
 use ic_doge_interface::Network;
 use ic_stable_structures::{DefaultMemoryImpl, StableBTreeMap};
 use rand::prelude::*;
@@ -59,15 +59,15 @@ fn main() {
 
         // Load the address. The UTXO dump tool we use doesn't output all the addresses
         // we support, so if parsing the address itself fails, we try parsing the script directly.
-        let bitcoin_network = into_bitcoin_network(args.network);
-        let address = if let Ok(address) = BitcoinAddress::from_str(address_str) {
+        let dogecoin_network = into_dogecoin_network(args.network);
+        let address = if let Ok(address) = DogecoinAddress::from_str(address_str) {
             let checked_address = address
-                .require_network(bitcoin_network)
+                .require_network(dogecoin_network)
                 .expect("Address must be valid for network");
             Some(checked_address)
         } else {
             let bytes = hex::decode(script).expect("script must be valid hex");
-            BitcoinAddress::from_script(Script::from_bytes(&bytes), bitcoin_network).ok()
+            DogecoinAddress::from_script(Script::from_bytes(&bytes), dogecoin_network).ok()
         };
 
         if let Some(address) = address {

@@ -17,7 +17,7 @@ struct Stats {
     ins_apply_unstable_blocks: u64,
 }
 
-/// Retrieves the balance of the given Bitcoin address.
+/// Retrieves the balance of the given Dogecoin address.
 pub fn get_balance(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceError> {
     verify_has_enough_cycles(with_state(|s| s.fees.get_balance_maximum));
     charge_cycles(with_state(|s| s.fees.get_balance));
@@ -25,7 +25,7 @@ pub fn get_balance(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceErro
     get_balance_private(request)
 }
 
-/// Retrieves the balance of the given Bitcoin address,
+/// Retrieves the balance of the given Dogecoin address,
 /// while not charging for the execution, used only for queries.
 pub fn get_balance_query(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceError> {
     get_balance_private(request)
@@ -109,7 +109,7 @@ mod test {
     use crate::{
         genesis_block, state,
         test_utils::{BlockBuilder, TransactionBuilder},
-        types::into_bitcoin_network,
+        types::into_dogecoin_network,
         with_state_mut,
     };
     use ic_doge_interface::{Fees, InitConfig, Network};
@@ -153,7 +153,7 @@ mod test {
     #[test]
     fn retrieves_the_balance_of_address() {
         let network = Network::Regtest;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
         crate::init(InitConfig {
             stability_threshold: Some(2),
             network: Some(network),
@@ -161,7 +161,7 @@ mod test {
         });
 
         // Create a block where 1000 satoshis are given to an address.
-        let address = random_p2pkh_address(btc_network).into();
+        let address = random_p2pkh_address(doge_network).into();
         let coinbase_tx = TransactionBuilder::coinbase()
             .with_output(&address, 1000)
             .build();
@@ -199,14 +199,14 @@ mod test {
     #[test]
     fn error_on_very_large_confirmations() {
         let network = Network::Regtest;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
         crate::init(InitConfig {
             stability_threshold: Some(2),
             network: Some(network),
             ..Default::default()
         });
 
-        let address: Address = random_p2pkh_address(btc_network).into();
+        let address: Address = random_p2pkh_address(doge_network).into();
 
         for min_confirmations in [Some(0), None, Some(1)] {
             assert_eq!(
@@ -233,7 +233,7 @@ mod test {
     #[test]
     fn retrieves_balances_of_addresses_with_different_confirmations() {
         let network = Network::Regtest;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
 
         crate::init(InitConfig {
             stability_threshold: Some(2),
@@ -242,8 +242,8 @@ mod test {
         });
 
         // Generate addresses.
-        let address_1 = random_p2pkh_address(btc_network).into();
-        let address_2 = random_p2pkh_address(btc_network).into();
+        let address_1 = random_p2pkh_address(doge_network).into();
+        let address_2 = random_p2pkh_address(doge_network).into();
 
         // Create a chain where 1000 satoshis are given to the address_1, then
         // address_1 gives 1000 satoshis to address_2.
@@ -314,7 +314,7 @@ mod test {
     #[test]
     fn charges_cycles() {
         let network = Network::Regtest;
-        let btc_network = into_bitcoin_network(network);
+        let doge_network = into_dogecoin_network(network);
         crate::init(InitConfig {
             fees: Some(Fees {
                 get_balance: 10,
@@ -324,7 +324,7 @@ mod test {
         });
 
         get_balance(GetBalanceRequest {
-            address: random_p2pkh_address(btc_network).to_string(),
+            address: random_p2pkh_address(doge_network).to_string(),
             min_confirmations: None,
         })
         .unwrap();

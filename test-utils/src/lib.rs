@@ -1,15 +1,16 @@
-use bitcoin::blockdata::constants::genesis_block;
+use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::{
     absolute::LockTime,
     block::{Header, Version},
-    key::Keypair,
+    dogecoin::Address,
+    dogecoin::Block as DogecoinBlock,
+    dogecoin::Network,
     secp256k1::Secp256k1,
-    Address, Amount, Block as BitcoinBlock, BlockHash, CompressedPublicKey, Network, OutPoint,
-    PublicKey, Script, Sequence, Target, Transaction, TxIn, TxMerkleNode, TxOut, Witness,
-    XOnlyPublicKey,
+    Amount, BlockHash, OutPoint, PublicKey, Script, Sequence, Target, Transaction, TxIn,
+    TxMerkleNode, TxOut, Witness,
 };
 use ic_doge_types::Block;
-use simple_rng::{fill_bytes, generate_keypair};
+use simple_rng::generate_keypair;
 use std::str::FromStr;
 
 mod simple_rng;
@@ -23,32 +24,18 @@ pub fn random_p2pkh_address(network: Network) -> Address {
 }
 
 /// Generates a random P2SH address.
-pub fn random_p2tr_address(network: Network) -> Address {
-    let secp = Secp256k1::new();
-    let (sk, _) = generate_keypair(&secp);
-    let keypair = Keypair::from_secret_key(&secp, &sk);
-    let (xonly, _) = XOnlyPublicKey::from_keypair(&keypair);
-
-    Address::p2tr(&secp, xonly, None, network)
-}
-
-/// Generates a random P2WPKH address.
-pub fn random_p2wpkh_address(network: Network) -> Address {
+pub fn random_p2sh_address(network: Network) -> Address {
     let secp = Secp256k1::new();
     let (_, pk) = generate_keypair(&secp);
+    let pubkey = PublicKey::new(pk);
 
-    Address::p2wpkh(
-        &CompressedPublicKey::try_from(PublicKey::new(pk))
-            .expect("failed to create p2wpkh address"),
-        network,
-    )
-}
+    // Create a p2pk script: <pubkey> OP_CHECKSIG
+    let script = Script::builder()
+        .push_key(&pubkey)
+        .push_opcode(bitcoin::opcodes::all::OP_CHECKSIG)
+        .into_script();
 
-/// Generates a random P2WSH address.
-pub fn random_p2wsh_address(network: Network) -> Address {
-    let mut bytes = [0u8; 32];
-    fill_bytes(&mut bytes);
-    Address::p2wsh(&Script::from_bytes(&bytes).to_p2wsh(), network)
+    Address::p2sh(&script, network).expect("Valid script should create valid P2SH address")
 }
 
 fn coinbase_input() -> TxIn {
@@ -85,7 +72,7 @@ impl BlockBuilder {
         self
     }
 
-    pub fn build(self) -> BitcoinBlock {
+    pub fn build(self) -> DogecoinBlock {
         let txdata = if self.transactions.is_empty() {
             // Create a random coinbase transaction.
             vec![TransactionBuilder::coinbase().build()]
@@ -107,19 +94,23 @@ impl BlockBuilder {
             Some(prev_header) => header(&prev_header, merkle_root),
         };
 
-        BitcoinBlock { header, txdata }
+        DogecoinBlock {
+            header,
+            auxpow: None,
+            txdata,
+        }
     }
 }
 
 /// Builds a random chain with the given number of block and transactions
 /// starting with the Regtest genesis block.
 pub fn build_regtest_chain(num_blocks: u32, num_transactions_per_block: u32) -> Vec<Block> {
-    let bitcoin_network = Network::Regtest;
-    let genesis_block = Block::new(genesis_block(bitcoin_network));
+    let dogecoin_network = Network::Regtest;
+    let genesis_block = Block::new(genesis_block(dogecoin_network));
 
     // Use a static address to send outputs to.
     // `random_p2pkh_address` isn't used here as it doesn't work in wasm.
-    let address = Address::from_str("bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8")
+    let address = Address::from_str("mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM")
         .unwrap()
         .assume_checked();
     let mut blocks = vec![genesis_block.clone()];
@@ -230,7 +221,7 @@ impl TransactionBuilder {
             self.input
         };
         let output = if self.output.is_empty() {
-            // Use default of 50 BTC.
+            // Use default of 50 DOGE.
             vec![TxOut {
                 value: Amount::from_sat(50_0000_0000),
                 script_pubkey: random_p2pkh_address(Network::Regtest).script_pubkey(),
@@ -273,7 +264,7 @@ fn header(prev_header: &Header, merkle_root: TxMerkleNode) -> Header {
 
 fn solve(header: &mut Header) {
     let target = header.target();
-    while header.validate_pow(target).is_err() {
+    while header.validate_pow_with_scrypt(target).is_err() {
         header.nonce += 1;
     }
 }
@@ -282,7 +273,7 @@ fn solve(header: &mut Header) {
 mod test {
     mod transaction_builder {
         use crate::{random_p2pkh_address, TransactionBuilder};
-        use bitcoin::{Network, OutPoint};
+        use bitcoin::{dogecoin::Network, OutPoint};
 
         #[test]
         fn new_build() {

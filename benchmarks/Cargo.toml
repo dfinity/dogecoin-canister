@@ -16,6 +16,6 @@ hex = { workspace = true }
 ic-doge-canister = { workspace = true, features = ["canbench-rs", "mock_time"] }
 ic-doge-interface = { workspace = true }
 ic-doge-test-utils = { workspace = true }
-ic-doge-types = { workspace = true, features = ["btc"] }
+ic-doge-types = { workspace = true, features = ["doge"] }
 ic-cdk = { workspace = true }
 ic-cdk-macros = { workspace = true }

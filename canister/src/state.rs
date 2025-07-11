@@ -4,7 +4,7 @@ use crate::{
     metrics::Metrics,
     runtime::{inc_performance_counter, performance_counter, print, time_secs},
     types::{
-        into_bitcoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
+        into_dogecoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
         GetSuccessorsPartialResponse, Slicing,
     },
     unstable_blocks::{self, UnstableBlocks},
@@ -16,7 +16,7 @@ use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{
-    BitcoinHeaderValidator, HeaderValidator, ValidateHeaderError as InsertBlockError,
+    DogecoinHeaderValidator, HeaderValidator, ValidateHeaderError as InsertBlockError,
 };
 use serde::{Deserialize, Serialize};
 
@@ -59,7 +59,7 @@ pub struct State {
     pub disable_api_if_not_fully_synced: Flag,
 
     /// The principal of the watchdog canister.
-    /// The watchdog canister has the authority to disable the Bitcoin canister's API
+    /// The watchdog canister has the authority to disable the Dogecoin canister's API
     /// if it suspects that there is a problem.
     pub watchdog_canister: Option<Principal>,
 
@@ -117,7 +117,7 @@ impl State {
         self.utxos.next_height()
     }
 
-    /// Returns the UTXO set of a given bitcoin address.
+    /// Returns the UTXO set of a given dogecoin address.
     pub fn get_utxos(&self, address: Address) -> AddressUtxoSet<'_> {
         AddressUtxoSet::new(address, &self.utxos, &self.unstable_blocks)
     }
@@ -127,7 +127,7 @@ impl State {
 /// Returns an error if the block doesn't extend any known block in the state.
 pub fn insert_block(state: &mut State, block: Block) -> Result<(), InsertBlockError> {
     let start = performance_counter();
-    let header_validator = BitcoinHeaderValidator::new(into_bitcoin_network(state.network()));
+    let header_validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
     header_validator.validate_header(
         &ValidationContext::new(state, block.header())
             .map_err(|_| InsertBlockError::PrevHeaderNotFound)?,
@@ -208,6 +208,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
     // Note that the actual limit available on system subnets is 50B. The threshold is set
     // lower to be conservative.
     const MAX_INSTRUCTIONS_THRESHOLD: u64 = 30_000_000_000;
+    let validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
 
     for block_header_blob in next_block_headers.iter() {
         if inc_performance_counter() > MAX_INSTRUCTIONS_THRESHOLD {
@@ -235,11 +236,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
             match ValidationContext::new_with_next_block_headers(state, &block_header)
                 .map_err(|_| InsertBlockError::PrevHeaderNotFound)
             {
-                Ok(store) => {
-                    let validator =
-                        BitcoinHeaderValidator::new(into_bitcoin_network(state.network()));
-                    validator.validate_header(&store, &block_header, time_secs())
-                }
+                Ok(store) => validator.validate_header(&store, &block_header, time_secs()),
                 Err(err) => Err(err),
             };
 

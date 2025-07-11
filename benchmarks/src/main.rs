@@ -1,8 +1,8 @@
 use bitcoin::consensus::Decodable;
-use bitcoin::{block::Header, consensus::Encodable, Block as BitcoinBlock};
+use bitcoin::{block::Header, consensus::Encodable, dogecoin::Block as DogecoinBlock};
 use canbench_rs::{bench, bench_fn, BenchResult};
 use ic_cdk_macros::init;
-use ic_doge_canister::{types::BlockHeaderBlob, with_state_mut};
+use ic_doge_canister::{types::BlockHeaderBlob, with_state, with_state_mut};
 use ic_doge_interface::{InitConfig, Network};
 use ic_doge_test_utils::build_regtest_chain;
 use ic_doge_types::Block;
@@ -22,7 +22,9 @@ fn init() {
                 .split('\n')
                 .map(|block_hex| {
                     let block_bytes = hex::decode(block_hex).unwrap();
-                    Block::new(BitcoinBlock::consensus_decode(&mut block_bytes.as_slice()).unwrap())
+                    Block::new(
+                        DogecoinBlock::consensus_decode(&mut block_bytes.as_slice()).unwrap(),
+                    )
                 })
                 .collect(),
         );
@@ -34,7 +36,7 @@ fn init() {
     ic_doge_canister::runtime::mock_time::set_mock_time_secs(june_2025);
 }
 
-// Benchmarks inserting the first 300 blocks of the Bitcoin testnet.
+// Benchmarks inserting the first 300 blocks of the Dogecoin testnet.
 #[bench(raw)]
 fn insert_300_blocks() -> BenchResult {
     ic_doge_canister::init(InitConfig {
@@ -80,10 +82,10 @@ fn get_metrics() -> BenchResult {
     })
 }
 
-// Benchmarks inserting 100 block headers into a tree containing 1000 blocks
+// Benchmarks inserting 100 block headers into a tree containing 800 blocks
 #[bench(raw)]
 fn insert_block_headers() -> BenchResult {
-    let blocks_to_insert = 1000;
+    let blocks_to_insert = 800;
     let block_headers_to_insert = 100;
 
     ic_doge_canister::init(InitConfig {
@@ -116,16 +118,33 @@ fn insert_block_headers() -> BenchResult {
     });
 
     // Benchmark inserting the block headers.
-    bench_fn(|| {
+    let bench_result = bench_fn(|| {
         with_state_mut(|s| {
             ic_doge_canister::state::insert_next_block_headers(s, next_block_headers.as_slice());
         });
-    })
+    });
+
+    with_state(|s| {
+        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
+            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
+        );
+        assert_eq!(
+            max_height,
+            blocks_to_insert + block_headers_to_insert,
+            "Expected all headers to be inserted. Max height should be {}, got {}.",
+            blocks_to_insert + block_headers_to_insert,
+            max_height
+        );
+    });
+
+    bench_result
 }
 
 // Inserts the same block headers multiple times.
 #[bench(raw)]
 fn insert_block_headers_multiple_times() -> BenchResult {
+    let block_headers_to_insert = 900;
+
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Testnet),
         ..Default::default()
@@ -135,7 +154,7 @@ fn insert_block_headers_multiple_times() -> BenchResult {
     let next_block_headers = TESTNET_BLOCKS.with(|b| {
         let blocks = b.borrow();
         let mut next_block_headers = vec![];
-        for i in 0..1000 {
+        for i in 0..block_headers_to_insert {
             let mut block_header_blob = vec![];
             Header::consensus_encode(blocks[i as usize].header(), &mut block_header_blob).unwrap();
             next_block_headers.push(BlockHeaderBlob::from(block_header_blob));
@@ -145,7 +164,7 @@ fn insert_block_headers_multiple_times() -> BenchResult {
     });
 
     // Benchmark inserting the block headers.
-    bench_fn(|| {
+    let bench_result = bench_fn(|| {
         with_state_mut(|s| {
             for _ in 0..10 {
                 ic_doge_canister::state::insert_next_block_headers(
@@ -154,7 +173,20 @@ fn insert_block_headers_multiple_times() -> BenchResult {
                 );
             }
         });
-    })
+    });
+
+    with_state(|s| {
+        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
+            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
+        );
+        assert_eq!(
+            max_height, block_headers_to_insert,
+            "Expected all headers to be inserted. Max height should be {}, got {}.",
+            block_headers_to_insert, max_height
+        );
+    });
+
+    bench_result
 }
 
 #[bench(raw)]

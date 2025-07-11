@@ -1,6 +1,6 @@
 use bitcoin::{
-    block::Header, blockdata::constants::genesis_block, consensus::Encodable, Address, Block,
-    Network as BitcoinNetwork,
+    block::Header, consensus::Encodable, dogecoin::constants::genesis_block, dogecoin::Address,
+    dogecoin::Block, dogecoin::Network as DogecoinNetwork,
 };
 use candid::CandidType;
 use ic_cdk_macros::{init, update};
@@ -14,7 +14,7 @@ type BlockBlob = Vec<u8>;
 type BlockHeaderBlob = Vec<u8>;
 type BlockHash = Vec<u8>;
 
-const ADDRESS: &str = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8";
+const ADDRESS: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
 
 // The number of blocks to generate (on top of genesis)
 const NUM_BLOCKS: usize = 2;
@@ -79,7 +79,7 @@ thread_local! {
 // Initialize the blocks.
 #[init]
 fn init() {
-    let network = BitcoinNetwork::Regtest;
+    let network = DogecoinNetwork::Regtest;
 
     // Generate NUM_BLOCKS blocks, each with NUM_TRANSACTIONS transactions.
     let mut prev_header = genesis_block(network).header;

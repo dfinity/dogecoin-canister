@@ -191,7 +191,7 @@ impl UnstableBlocks {
     }
 
     // Public only for testing purpose.
-    pub(crate) fn next_block_headers_max_height(&self) -> Option<Height> {
+    pub fn next_block_headers_max_height(&self) -> Option<Height> {
         self.next_block_headers.get_max_height()
     }
 
