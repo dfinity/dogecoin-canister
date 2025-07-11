@@ -545,6 +545,7 @@ jobs:
       - name: Run health_status test
         run: |
           bash watchdog/e2e-tests/health_status.sh
+  
 
   watchdog_get_config:
     runs-on: ubuntu-latest
