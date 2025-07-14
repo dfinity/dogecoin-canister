@@ -32,10 +32,10 @@ pub mod btc_files {
 
 #[cfg(feature = "doge")]
 pub mod doge_files {
-    pub const MAINNET_HEADERS_0_5000_RAW: &str = "doge/headers_0_5000_mainnet_raw.csv";
-    pub const TESTNET_HEADERS_0_5000_RAW: &str = "doge/headers_0_5000_testnet_raw.csv";
-    pub const MAINNET_HEADERS_1_5000_PARSED: &str = "doge/headers_1_5000_mainnet_parsed.csv";
-    pub const TESTNET_HEADERS_1_5000_PARSED: &str = "doge/headers_1_5000_testnet_parsed.csv";
+    pub const MAINNET_HEADERS_0_15000_RAW: &str = "doge/headers_0_15000_mainnet_raw.csv";
+    pub const TESTNET_HEADERS_0_15000_RAW: &str = "doge/headers_0_15000_testnet_raw.csv";
+    pub const MAINNET_HEADERS_1_15000_PARSED: &str = "doge/headers_1_15000_mainnet_parsed.csv";
+    pub const TESTNET_HEADERS_1_15000_PARSED: &str = "doge/headers_1_15000_testnet_parsed.csv";
 }
 
 pub fn test_data_file(file: &str) -> PathBuf {

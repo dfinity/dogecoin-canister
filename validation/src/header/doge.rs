@@ -237,6 +237,11 @@ impl HeaderValidator for DogecoinHeaderValidator {
         let last_adjustment_time = last_adjustment_header.time;
         let timespan = prev_header.time.saturating_sub(last_adjustment_time) as u64;
 
-        CompactTarget::from_next_work_required_dogecoin(prev_header.bits, timespan, self.network)
+        CompactTarget::from_next_work_required_dogecoin(
+            prev_header.bits,
+            timespan,
+            self.network,
+            height,
+        )
     }
 }
