@@ -151,7 +151,7 @@ fn verify_difficulty_adjustment<T: HeaderValidator>(
     }
 
     println!("Verifying next targets...");
-    proptest!(|(i in 0..up_to_height)| {
+    proptest!(|(i in 0..=up_to_height)| {
         // Compute what the target of the next header should be.
         let expected_next_target =
             validator.get_next_target(&store, &headers[i], i as u32, headers[i + 1].time);
