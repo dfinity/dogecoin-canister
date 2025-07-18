@@ -1,9 +1,11 @@
-use crate::constants::doge::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
 use crate::header::{is_timestamp_valid, HeaderStore, HeaderValidator, ValidateHeaderError};
 use crate::BlockHeight;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
 use bitcoin::{block::Header, CompactTarget, Target};
 use std::time::Duration;
+
+/// Height at which mining a min-difficulty block is allowed after some delay when Digishield is enabled.
+pub(crate) const ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT: u32 = 157_500;
 
 pub struct DogecoinHeaderValidator {
     network: DogecoinNetwork,
@@ -108,38 +110,39 @@ impl HeaderValidator for DogecoinHeaderValidator {
         prev_height: BlockHeight,
         timestamp: u32,
     ) -> Target {
-        match self.network() {
-            DogecoinNetwork::Testnet | DogecoinNetwork::Regtest => {
-                if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0 {
-                    if timestamp
-                        > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32
-                    {
-                        // If no block has been found in `pow_target_spacing * 2` minutes, then use
-                        // the maximum difficulty target
-                        self.max_target()
-                    } else {
-                        // If the block has been found within `pow_target_spacing * 2` minutes, then
-                        // use the previous difficulty target that is not equal to the maximum
-                        // difficulty target
-                        Target::from_compact(self.find_next_difficulty_in_chain(
-                            store,
-                            prev_header,
-                            prev_height,
-                        ))
-                    }
+        let height = prev_height + 1;
+
+        if height >= ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT
+            && self.allow_min_difficulty_blocks(height)
+        {
+            if timestamp > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32 {
+                // If no block has been found in `pow_target_spacing * 2` minutes, then use
+                // the maximum difficulty target
+                return self.max_target();
+            }
+        }
+
+        if height % self.difficulty_adjustment_interval(height) != 0 {
+            if self.allow_min_difficulty_blocks(height) {
+                if timestamp > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32 {
+                    // If no block has been found in `pow_target_spacing * 2` minutes, then use
+                    // the maximum difficulty target
+                    return self.max_target();
                 } else {
-                    Target::from_compact(self.compute_next_difficulty(
+                    // If the block has been found within `pow_target_spacing * 2` minutes, then
+                    // use the previous difficulty target that is not equal to the maximum
+                    // difficulty target
+                    return Target::from_compact(self.find_next_difficulty_in_chain(
                         store,
                         prev_header,
                         prev_height,
-                    ))
-                }
+                    ));
+                };
             }
-            DogecoinNetwork::Dogecoin => {
-                Target::from_compact(self.compute_next_difficulty(store, prev_header, prev_height))
-            }
-            &other => unreachable!("Unsupported network: {:?}", other),
-        }
+            return Target::from_compact(prev_header.bits);
+        };
+
+        Target::from_compact(self.compute_next_difficulty(store, prev_header, prev_height))
     }
 
     fn find_next_difficulty_in_chain(
@@ -162,7 +165,8 @@ impl HeaderValidator for DogecoinHeaderValidator {
                 loop {
                     // Check if non-limit PoW found or it's time to adjust difficulty.
                     if current_header.bits != pow_limit_bits
-                        || current_height % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN == 0
+                        || current_height % self.difficulty_adjustment_interval(prev_height + 1)
+                            == 0
                     {
                         return current_header.bits;
                     }
@@ -200,18 +204,17 @@ impl HeaderValidator for DogecoinHeaderValidator {
         // regtest, simply return the previous difficulty target.
 
         let height = prev_height + 1;
-        if height % DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN != 0 || self.no_pow_retargeting() {
-            return prev_header.bits;
-        }
+        let difficulty_adjustment_interval = self.difficulty_adjustment_interval(height);
+
         // Computing the `last_adjustment_header`.
         // `last_adjustment_header` is the last header with height multiple of 240 - 1
         // Dogecoin solves the "off-by-one" or time wrap bug in Bitcoin by going back to the full
         // retarget period (hence the - 1).
         // See: <https://litecoin.info/docs/history/time-warp-attack>
-        let last_adjustment_height = if height <= DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN {
+        let last_adjustment_height = if height <= difficulty_adjustment_interval {
             0
         } else {
-            height - DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN - 1
+            height - difficulty_adjustment_interval - 1
         };
         let last_adjustment_header = store
             .get_with_height(last_adjustment_height)
@@ -228,7 +231,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
         // This allows individual block timestamps to decrease relative to their
         // predecessor, which can result in a negative timespan.
         let last_adjustment_time = last_adjustment_header.time;
-        let timespan = prev_header.time.saturating_sub(last_adjustment_time) as u64;
+        let timespan = (prev_header.time as i64) - (last_adjustment_time as i64);
 
         CompactTarget::from_next_work_required_dogecoin(
             prev_header.bits,
