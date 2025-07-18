@@ -50,7 +50,16 @@ impl HeaderValidator for DogecoinHeaderValidator {
     }
 
     fn pow_target_spacing(&self) -> Duration {
-        Duration::from_secs(self.network().params().bitcoin_params.pow_target_spacing)
+        Duration::from_secs(self.network().params().pow_target_spacing as u64)
+    }
+
+    fn difficulty_adjustment_interval(&self, height: u32) -> u32 {
+        (self.network().params().pow_target_timespan(height)
+            / self.network().params().pow_target_spacing) as u32
+    }
+
+    fn allow_min_difficulty_blocks(&self, height: u32) -> bool {
+        self.network().params().allow_min_difficulty_blocks(height)
     }
 
     fn validate_header(

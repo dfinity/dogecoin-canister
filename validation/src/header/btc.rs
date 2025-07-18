@@ -53,6 +53,15 @@ impl HeaderValidator for BitcoinHeaderValidator {
         Duration::from_secs(self.network().params().pow_target_spacing)
     }
 
+    fn difficulty_adjustment_interval(&self, _height: u32) -> u32 {
+        (self.network().params().pow_target_timespan / self.network().params().pow_target_spacing)
+            as u32
+    }
+
+    fn allow_min_difficulty_blocks(&self, height: u32) -> bool {
+        self.network().params().allow_min_difficulty_blocks(height)
+    }
+
     fn validate_header(
         &self,
         store: &impl HeaderStore,
