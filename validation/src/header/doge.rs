@@ -34,35 +34,19 @@ impl HeaderValidator for DogecoinHeaderValidator {
         &self.network
     }
 
-    /// Returns the maximum difficulty target depending on the network
     fn max_target(&self) -> Target {
-        match self.network() {
-            Self::Network::Dogecoin => Target::MAX_ATTAINABLE_MAINNET_DOGE,
-            Self::Network::Testnet => Target::MAX_ATTAINABLE_TESTNET_DOGE,
-            Self::Network::Regtest => Target::MAX_ATTAINABLE_REGTEST_DOGE,
-            &other => unreachable!("Unsupported network: {:?}", other),
-        }
+        self.network().params().max_attainable_target
     }
 
-    /// Returns false iff PoW difficulty level of blocks can be
-    /// readjusted in the network after a fixed time interval.
     fn no_pow_retargeting(&self) -> bool {
-        match self.network() {
-            Self::Network::Dogecoin | Self::Network::Testnet => false,
-            Self::Network::Regtest => true,
-            &other => unreachable!("Unsupported network: {:?}", other),
-        }
+        self.network().params().no_pow_retargeting
     }
 
-    /// Returns the PoW limit bits depending on the network
     fn pow_limit_bits(&self) -> CompactTarget {
-        let bits = match self.network() {
-            Self::Network::Dogecoin => 0x1e0fffff, // In Dogecoin this is higher than the Genesis compact target (0x1e0ffff0)
-            Self::Network::Testnet => 0x1e0fffff,
-            Self::Network::Regtest => 0x207fffff,
-            &other => unreachable!("Unsupported network: {:?}", other),
-        };
-        CompactTarget::from_consensus(bits)
+        self.network()
+            .params()
+            .max_attainable_target
+            .to_compact_lossy()
     }
 
     fn pow_target_spacing(&self) -> Duration {
