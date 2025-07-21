@@ -4,7 +4,7 @@ use bitcoin::dogecoin::Network as DogecoinNetwork;
 use bitcoin::{block::Header, CompactTarget, Target};
 use std::time::Duration;
 
-/// Height at which mining a min-difficulty block is allowed after some delay when Digishield is enabled.
+/// Height after which the allow_min_difficulty_blocks parameter becomes active for Digishield blocks.
 pub(crate) const ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT: u32 = 157_500;
 
 pub struct DogecoinHeaderValidator {
@@ -114,12 +114,11 @@ impl HeaderValidator for DogecoinHeaderValidator {
 
         if height >= ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT
             && self.allow_min_difficulty_blocks(height)
+            && timestamp > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32
         {
-            if timestamp > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32 {
-                // If no block has been found in `pow_target_spacing * 2` minutes, then use
-                // the maximum difficulty target
-                return self.max_target();
-            }
+            // If no block has been found in `pow_target_spacing * 2` minutes, then use
+            // the maximum difficulty target
+            return self.max_target();
         }
 
         if height % self.difficulty_adjustment_interval(height) != 0 {

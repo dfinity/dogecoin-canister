@@ -58,8 +58,8 @@ impl HeaderValidator for BitcoinHeaderValidator {
             as u32
     }
 
-    fn allow_min_difficulty_blocks(&self, height: u32) -> bool {
-        self.network().params().allow_min_difficulty_blocks(height)
+    fn allow_min_difficulty_blocks(&self, _height: u32) -> bool {
+        self.network().params().allow_min_difficulty_blocks
     }
 
     fn validate_header(
