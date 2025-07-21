@@ -146,9 +146,14 @@ def read_headers_from_single_blk(file_path, include_parsed_headers, network_conf
         # Move to next potential block
         offset = block_end
 
+    next_hash = {}
+
+    for curr_hash, prev_hash in prev_hash.items():
+        next_hash[prev_hash] = curr_hash
+
     return headers, prev_hash
 
-def reconstruct_chain(headers, prev_hash, genesis_hash, start_block=0, end_block=None):
+def reconstruct_chain(headers, next_hash, genesis_hash, start_block=0, end_block=None):
     """
     Reconstruct the blockchain chain starting from genesis block.
     
@@ -183,20 +188,15 @@ def reconstruct_chain(headers, prev_hash, genesis_hash, start_block=0, end_block
             elif block_number > end_block:
                 break  # Reached end of desired range
         
-        # Find the next block in the chain (block that has current_hash as previous_block_hash)
-        next_hash = None
-        for block_hash, previous_block_hash in prev_hash.items():
-            if previous_block_hash == current_hash:
-                next_hash = block_hash
-                break
+        # Find the next block in the chain
+        current_hash = next_hash.get(current_hash)
                 
-        if not next_hash:
+        if not current_hash:
             if end_block is not None and block_number < end_block:
                 print(f"Warning: Chain ends at block {block_number}, but end_block is {end_block}")
                 print("You may need to provide additional blk*.dat files to cover the desired range.")
             break  # No successor found - end of chain
             
-        current_hash = next_hash
         block_number += 1
 
     return chain
@@ -249,11 +249,11 @@ def main():
     for f in args.blk_files:
         print(f"  - {f}")
     
-    headers, prev_hash = read_headers_from_blk_files(args.blk_files, args.parsed, network_config)
+    headers, next_hash = read_headers_from_blk_files(args.blk_files, args.parsed, network_config)
     print(f"Total parsed {len(headers)} headers from all files.")
 
     # Reconstruct the blockchain chain starting from genesis
-    chain_headers = reconstruct_chain(headers, prev_hash, genesis_hash, args.start_block, args.end_block)
+    chain_headers = reconstruct_chain(headers, next_hash, genesis_hash, args.start_block, args.end_block)
     
     # Display range information
     if args.end_block is not None:
