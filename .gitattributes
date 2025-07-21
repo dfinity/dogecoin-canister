@@ -1,2 +1,4 @@
 validation/tests/data/btc/headers_0_782282_mainnet_raw.csv filter=lfs diff=lfs merge=lfs -text
 validation/tests/data/btc/headers_0_2425489_testnet_raw.csv filter=lfs diff=lfs merge=lfs -text
+validation/tests/data/doge/headers_0_700000_mainnet_raw.csv filter=lfs diff=lfs merge=lfs -text
+validation/tests/data/doge/headers_0_2000000_testnet_raw.csv filter=lfs diff=lfs merge=lfs -text

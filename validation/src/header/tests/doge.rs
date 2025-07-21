@@ -102,8 +102,8 @@ fn test_target_exceeds_maximum_mainnet() {
 fn test_difficulty_adjustments_mainnet() {
     verify_difficulty_adjustment(
         DogecoinHeaderValidator::mainnet(),
-        doge_files::MAINNET_HEADERS_0_15000_RAW,
-        15_000,
+        doge_files::MAINNET_HEADERS_0_700000_RAW,
+        700_000,
     );
 }
 
@@ -111,8 +111,8 @@ fn test_difficulty_adjustments_mainnet() {
 fn test_difficulty_adjustments_testnet() {
     verify_difficulty_adjustment(
         DogecoinHeaderValidator::testnet(),
-        doge_files::TESTNET_HEADERS_0_15000_RAW,
-        15_000,
+        doge_files::TESTNET_HEADERS_0_2000000_RAW,
+        2_000_000,
     );
 }
 
