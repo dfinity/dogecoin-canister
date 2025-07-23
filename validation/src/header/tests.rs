@@ -80,6 +80,7 @@ fn verify_with_invalid_pow<T: HeaderValidator>(
     assert!(matches!(
         result,
         Err(ValidateHeaderError::InvalidPoWForHeaderTarget)
+            | Err(ValidateHeaderError::InvalidPoWForComputedTarget)
     ));
 }
 

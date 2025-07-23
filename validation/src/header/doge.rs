@@ -90,10 +90,6 @@ impl HeaderValidator for DogecoinHeaderValidator {
             return Err(ValidateHeaderError::TargetDifficultyAboveMax);
         }
 
-        if header.validate_pow_with_scrypt(header_target).is_err() {
-            return Err(ValidateHeaderError::InvalidPoWForHeaderTarget);
-        }
-
         let target = self.get_next_target(store, &prev_header, prev_height, header.time);
 
         if let Err(err) = header.validate_pow_with_scrypt(target) {
