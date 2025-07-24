@@ -40,7 +40,9 @@ fn test_sequential_header_validation_mainnet() {
     verify_header_sequence(
         DogecoinHeaderValidator::mainnet(),
         doge_files::MAINNET_HEADERS_1_5000_PARSED,
-        dogecoin_genesis_block(DogecoinNetwork::Dogecoin).header,
+        dogecoin_genesis_block(DogecoinNetwork::Dogecoin)
+            .header
+            .pure_header, // TODO: replace with proper genesis_header
         0,
     );
 }
@@ -50,7 +52,9 @@ fn test_sequential_header_validation_testnet() {
     verify_header_sequence(
         DogecoinHeaderValidator::testnet(),
         doge_files::TESTNET_HEADERS_1_5000_PARSED,
-        dogecoin_genesis_block(DogecoinNetwork::Testnet).header,
+        dogecoin_genesis_block(DogecoinNetwork::Testnet)
+            .header
+            .pure_header, // TODO: replace with proper genesis_header
         0,
     );
 }

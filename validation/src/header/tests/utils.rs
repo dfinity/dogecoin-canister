@@ -157,10 +157,9 @@ pub fn bitcoin_genesis_header(network: BitcoinNetwork, bits: CompactTarget) -> H
 
 #[cfg(feature = "doge")]
 pub fn dogecoin_genesis_header(network: DogecoinNetwork, bits: CompactTarget) -> Header {
-    Header {
-        bits,
-        ..dogecoin_genesis_block(network).header
-    }
+    let mut genesis_header = dogecoin_genesis_block(network).header;
+    genesis_header.bits = bits;
+    genesis_header.pure_header
 }
 
 pub fn next_block_header<T: HeaderValidator>(
