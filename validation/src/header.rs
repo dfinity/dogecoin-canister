@@ -36,6 +36,15 @@ pub enum ValidateHeaderError {
     /// Used when the predecessor of the input header is not found in the
     /// HeaderStore.
     PrevHeaderNotFound,
+    #[cfg(feature = "doge")]
+    /// Used when version field is obsolete
+    VersionObsolete,
+    #[cfg(feature = "doge")]
+    /// Used when legacy blocks are not allowed
+    LegacyBlockNotAllowed,
+    #[cfg(feature = "doge")]
+    /// Used when AuxPow blocks are not allowed
+    AuxPowBlockNotAllowed,
 }
 
 #[cfg(feature = "doge")]
@@ -194,6 +203,8 @@ pub trait AuxPowHeaderValidator: HeaderValidator {
     fn strict_chain_id(&self) -> bool;
     /// Returns the chain id used in this blockchain for AuxPow mining.
     fn auxpow_chain_id(&self) -> i32;
+    /// Returns `true` if mining a legacy block is allowed.
+    fn allow_legacy_blocks(&self, height: u32) -> bool;
 
     /// Validates an AuxPow header. If a failure occurs, a
     /// [ValidateAuxPowHeaderError](ValidateAuxPowHeaderError) will be returned.

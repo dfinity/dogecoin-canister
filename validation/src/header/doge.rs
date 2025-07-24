@@ -4,7 +4,7 @@ use crate::header::{
     ValidateAuxPowHeaderError, ValidateHeaderError,
 };
 use crate::BlockHeight;
-use bitcoin::dogecoin::{has_auxpow, Network as DogecoinNetwork};
+use bitcoin::dogecoin::{base_version, has_auxpow, is_legacy, Network as DogecoinNetwork};
 use bitcoin::{
     block::Header as PureHeader, dogecoin::Header as DogecoinHeader, CompactTarget, Target,
 };
@@ -39,6 +39,7 @@ impl DogecoinHeaderValidator {
         current_time: u64,
     ) -> Result<Target, ValidateHeaderError> {
         let prev_height = store.height();
+        let height = prev_height + 1;
         let prev_header = match store.get_with_block_hash(&header.prev_blockhash) {
             Some(result) => result,
             None => {
@@ -46,7 +47,21 @@ impl DogecoinHeaderValidator {
             }
         };
 
+        if !self.allow_legacy_blocks(height) && is_legacy(header) {
+            return Err(ValidateHeaderError::LegacyBlockNotAllowed);
+        }
+
+        if self.allow_legacy_blocks(height) && has_auxpow(header) {
+            return Err(ValidateHeaderError::AuxPowBlockNotAllowed);
+        }
+
         is_timestamp_valid(store, header, current_time)?;
+
+        if (base_version(header) < 3 && height >= self.network().params().bip66_height)
+            || (base_version(header) < 4 && height >= self.network().params().bip65_height)
+        {
+            return Err(ValidateHeaderError::VersionObsolete);
+        }
 
         let header_target = header.target();
         if header_target > self.max_target() {
@@ -271,6 +286,10 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
 
     fn auxpow_chain_id(&self) -> i32 {
         self.network().params().auxpow_chain_id
+    }
+
+    fn allow_legacy_blocks(&self, height: u32) -> bool {
+        self.network.params().allow_legacy_blocks(height)
     }
 
     fn validate_auxpow_header(
