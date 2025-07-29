@@ -4,7 +4,9 @@ use crate::header::{
     ValidateAuxPowHeaderError, ValidateHeaderError,
 };
 use crate::BlockHeight;
-use bitcoin::dogecoin::{base_version, has_auxpow, is_legacy, Network as DogecoinNetwork};
+use bitcoin::dogecoin::{
+    base_version, get_chain_id, has_auxpow, is_legacy, Network as DogecoinNetwork,
+};
 use bitcoin::{
     block::Header as PureHeader, dogecoin::Header as DogecoinHeader, CompactTarget, Target,
 };
@@ -298,9 +300,9 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
         header: &DogecoinHeader,
         current_time: u64,
     ) -> Result<(), ValidateAuxPowHeaderError> {
-        if !header.is_legacy()
+        if !is_legacy(header)
             && self.strict_chain_id()
-            && header.chain_id() != self.auxpow_chain_id()
+            && get_chain_id(header) != self.auxpow_chain_id()
         {
             return Err(ValidateAuxPowHeaderError::InvalidChainId);
         }
@@ -327,11 +329,12 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
         if !target.is_met_by(aux_pow.parent_block_header.block_hash_with_scrypt()) {
             return Err(ValidateAuxPowHeaderError::InvalidParentPoW);
         }
-        if let Err(_) = aux_pow.check(
+        if let Err(err) = aux_pow.check(
             header.block_hash(),
-            self.auxpow_chain_id(),
+            get_chain_id(header),
             self.strict_chain_id(),
         ) {
+            println!("{}", err);
             return Err(ValidateAuxPowHeaderError::InvalidAuxPoW);
         }
 
