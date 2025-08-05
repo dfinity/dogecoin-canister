@@ -138,7 +138,7 @@ fn test_backdated_difficulty_adjustment_testnet() {
     let genesis_target = CompactTarget::from_consensus(0x1e0ffff0);
     let genesis_header = dogecoin_genesis_header(DogecoinNetwork::Testnet, genesis_target);
     let expected_target = Target::from(genesis_target)
-        .min_transition_threshold_dogecoin(0)
+        .min_transition_threshold_dogecoin(DogecoinNetwork::Testnet, 0)
         .to_compact_lossy(); // Target is expected to reach the minimum valid Target threshold allowed in a difficulty adjustment.
     verify_backdated_block_difficulty(
         DogecoinHeaderValidator::testnet(),
