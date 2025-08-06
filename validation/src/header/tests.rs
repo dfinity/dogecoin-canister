@@ -33,10 +33,10 @@ fn verify_consecutive_headers<T: HeaderValidator>(
 fn verify_header_sequence<T: HeaderValidator>(
     validator: T,
     file: &str,
-    header: Header,
-    height: BlockHeight,
+    start_header: Header,
+    start_height: BlockHeight,
 ) {
-    let mut store = SimpleHeaderStore::new(header, height);
+    let mut store = SimpleHeaderStore::new(start_header, start_height);
     let headers = get_headers(file);
     for (i, header) in headers.iter().enumerate() {
         let result = validator.validate_header(&store, header, MOCK_CURRENT_TIME);
