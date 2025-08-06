@@ -5,6 +5,7 @@ use bitcoin::{block::Header, CompactTarget, Target};
 use std::time::Duration;
 
 /// Height after which the allow_min_difficulty_blocks parameter becomes active for Digishield blocks.
+/// Ref: <https://github.com/dogecoin/dogecoin/blob/51cbc1fd5d0d045dda2ad84f53572bbf524c6a8e/src/dogecoin.cpp#L33>
 pub(crate) const ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT: u32 = 157_500;
 
 pub struct DogecoinHeaderValidator {
@@ -110,6 +111,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
         prev_height: BlockHeight,
         timestamp: u32,
     ) -> Target {
+        // Dogecoin core ref: <https://github.com/dogecoin/dogecoin/blob/1be681a1b97b686f838af90682a57f2030d26015/src/pow.cpp#L32>
         let height = prev_height + 1;
 
         if height >= ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT
