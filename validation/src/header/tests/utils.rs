@@ -10,7 +10,7 @@ use bitcoin::{
 #[cfg(feature = "doge")]
 use bitcoin::{
     dogecoin::constants::genesis_block as dogecoin_genesis_block,
-    dogecoin::Network as DogecoinNetwork,
+    dogecoin::Header as DogecoinHeader, dogecoin::Network as DogecoinNetwork,
 };
 use bitcoin::{BlockHash, CompactTarget, TxMerkleNode};
 use csv::Reader;
@@ -45,6 +45,11 @@ pub fn test_data_file(file: &str) -> PathBuf {
 }
 
 pub fn deserialize_header(encoded_bytes: &str) -> Header {
+    let bytes = Vec::from_hex(encoded_bytes).expect("failed to decoded bytes");
+    deserialize(bytes.as_slice()).expect("failed to deserialize")
+}
+
+pub fn deserialize_auxpow_header(encoded_bytes: &str) -> DogecoinHeader {
     let bytes = Vec::from_hex(encoded_bytes).expect("failed to decoded bytes");
     deserialize(bytes.as_slice()).expect("failed to deserialize")
 }

@@ -4,9 +4,9 @@ mod btc;
 mod doge;
 mod utils;
 
-use crate::header::tests::utils::test_data_file;
-use crate::header::timestamp_is_less_than_2h_in_future;
+use crate::header::tests::utils::{deserialize_auxpow_header, test_data_file};
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
+use crate::header::{timestamp_is_less_than_2h_in_future, AuxPowHeaderValidator};
 use crate::ValidateHeaderError;
 use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
@@ -27,6 +27,24 @@ fn verify_consecutive_headers<T: HeaderValidator>(
     let header_2 = deserialize_header(header_2);
     let store = SimpleHeaderStore::new(header_1, height_1);
     let result = validator.validate_header(&store, &header_2, MOCK_CURRENT_TIME);
+    assert!(result.is_ok());
+}
+
+#[cfg(feature = "doge")]
+fn verify_consecutive_headers_auxpow<T: AuxPowHeaderValidator>(
+    validator: T,
+    header_0: &str,
+    height_0: BlockHeight,
+    header_1: &str,
+    header_2: &str,
+) {
+    let header_0 = deserialize_auxpow_header(header_0);
+    let header_1 = deserialize_auxpow_header(header_1);
+    let header_2 = deserialize_auxpow_header(header_2);
+    let mut store = SimpleHeaderStore::new(*header_0, height_0);
+    store.add(*header_1);
+    let result = validator.validate_auxpow_header(&store, &header_2, MOCK_CURRENT_TIME);
+    println!("{:?}", result);
     assert!(result.is_ok());
 }
 
