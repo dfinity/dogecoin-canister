@@ -158,7 +158,7 @@ def reconstruct_chain(headers, next_hash, genesis_hash, start_block=0, end_block
     
     Args:
         headers (dict): Map of block_hash -> header_data
-        prev_hash (dict): Map of block_hash -> previous_block_hash
+        next_hash (dict): Map of previous_block_hash -> block_hash
         genesis_hash (bytes): Hash of the genesis block to start from
         start_block (int): Block number to start extraction from (0-indexed)
         end_block (int): Block number to end extraction at (inclusive), None for no limit
