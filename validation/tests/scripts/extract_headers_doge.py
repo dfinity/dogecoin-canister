@@ -61,9 +61,9 @@ def read_headers_from_blk_files(file_paths, include_parsed_headers, network_conf
         network_config (dict): Network configuration containing magic bytes and genesis hash
     
     Returns:
-        tuple: (headers, prev_hash)
+        tuple: (headers, next_hash)
             - headers: Maps block_hash -> parsed_header_tuple or hex_string
-            - prev_hash: Maps block_hash -> previous_block_hash for chain building
+            - next_hash: Maps previous_block_hash -> block_hash for chain building
     """
     headers = {}
     prev_hash = {}
@@ -75,8 +75,12 @@ def read_headers_from_blk_files(file_paths, include_parsed_headers, network_conf
         prev_hash.update(file_prev_hash)
         print(f"  Found {len(file_headers)} headers in {file_path}")
     
-    return headers, prev_hash
-
+    next_hash = {}
+    for curr_hash, prev_block_hash in prev_hash.items():
+        next_hash[prev_block_hash] = curr_hash
+    
+    return headers, next_hash
+    
 def read_headers_from_single_blk(file_path, include_parsed_headers, network_config):
     """
     Extract all block headers from a single Dogecoin blockchain data file (blk*.dat).
@@ -145,11 +149,6 @@ def read_headers_from_single_blk(file_path, include_parsed_headers, network_conf
 
         # Move to next potential block
         offset = block_end
-
-    next_hash = {}
-
-    for curr_hash, prev_hash in prev_hash.items():
-        next_hash[prev_hash] = curr_hash
 
     return headers, prev_hash
 
