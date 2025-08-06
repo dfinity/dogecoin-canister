@@ -1,9 +1,10 @@
 use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::{
     absolute::LockTime,
-    block::{Header, Version},
+    block::{Header as PureHeader, Version},
     dogecoin::Address,
     dogecoin::Block as DogecoinBlock,
+    dogecoin::Header as DogecoinHeader,
     dogecoin::Network,
     secp256k1::Secp256k1,
     Amount, BlockHash, OutPoint, PublicKey, Script, Sequence, Target, Transaction, TxIn,
@@ -48,7 +49,7 @@ fn coinbase_input() -> TxIn {
 }
 
 pub struct BlockBuilder {
-    prev_header: Option<Header>,
+    prev_header: Option<PureHeader>,
     transactions: Vec<Transaction>,
 }
 
@@ -60,7 +61,7 @@ impl BlockBuilder {
         }
     }
 
-    pub fn with_prev_header(prev_header: Header) -> Self {
+    pub fn with_prev_header(prev_header: PureHeader) -> Self {
         Self {
             prev_header: Some(prev_header),
             transactions: vec![],
@@ -95,8 +96,7 @@ impl BlockBuilder {
         };
 
         DogecoinBlock {
-            header,
-            auxpow: None,
+            header: DogecoinHeader::new_from_pure_header(header),
             txdata,
         }
     }
@@ -144,11 +144,11 @@ pub fn build_regtest_chain(num_blocks: u32, num_transactions_per_block: u32) -> 
     blocks
 }
 
-fn genesis(merkle_root: TxMerkleNode) -> Header {
+fn genesis(merkle_root: TxMerkleNode) -> PureHeader {
     let target = Target::MAX_ATTAINABLE_REGTEST;
     let bits = target.to_compact_lossy();
 
-    let mut header = Header {
+    let mut header = PureHeader {
         version: Version::from_consensus(1),
         time: 0,
         nonce: 0,
@@ -245,11 +245,11 @@ impl Default for TransactionBuilder {
     }
 }
 
-fn header(prev_header: &Header, merkle_root: TxMerkleNode) -> Header {
+fn header(prev_header: &PureHeader, merkle_root: TxMerkleNode) -> PureHeader {
     let time = prev_header.time + 60 * 10; // 10 minutes.
     let bits = prev_header.target().to_compact_lossy();
 
-    let mut header = Header {
+    let mut header = PureHeader {
         version: Version::from_consensus(1),
         time,
         nonce: 0,
@@ -262,7 +262,7 @@ fn header(prev_header: &Header, merkle_root: TxMerkleNode) -> Header {
     header
 }
 
-fn solve(header: &mut Header) {
+fn solve(header: &mut PureHeader) {
     let target = header.target();
     while header.validate_pow_with_scrypt(target).is_err() {
         header.nonce += 1;

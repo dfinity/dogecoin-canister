@@ -84,7 +84,7 @@ fn init() {
     // Generate NUM_BLOCKS blocks, each with NUM_TRANSACTIONS transactions.
     let mut prev_header = genesis_block(network).header;
     for _ in 0..NUM_BLOCKS {
-        let block = BlockBuilder::with_prev_header(prev_header)
+        let block = BlockBuilder::with_prev_header(*prev_header)
             .with_transaction(
                 TransactionBuilder::new()
                     .with_output(&Address::from_str(ADDRESS).unwrap().assume_checked(), 1)
@@ -96,7 +96,7 @@ fn init() {
     }
 
     for _ in 0..SYNCED_THRESHOLD + 1 {
-        let next_block = BlockBuilder::with_prev_header(prev_header)
+        let next_block = BlockBuilder::with_prev_header(*prev_header)
             .with_transaction(
                 TransactionBuilder::new()
                     .with_output(&Address::from_str(ADDRESS).unwrap().assume_checked(), 1)
