@@ -72,7 +72,7 @@ fn build_valid_auxpow(aux_block_hash: BlockHash, chain_id: i32) -> AuxPow {
     }
 }
 
-/// Helper to mine a block that either matches or doesn't match the difficulty target specified in the block header.
+/// Helper to mine a block that either matches or doesn't match the difficulty target specified in the header.
 fn mine_header_to_target(header: &mut PureHeader, should_pass: bool) {
     let target = Target::from_compact(header.bits);
     header.nonce = 0;
@@ -103,7 +103,7 @@ fn create_header_store_before_auxpow_activation_regtest() -> (SimpleHeaderStore,
     (store, last_header)
 }
 
-/// Helper to create header chain that extends beyond AuxPow activation in regtest
+/// Helper to create a header chain that extends beyond AuxPow activation in regtest
 fn create_header_store_after_auxpow_activation_regtest() -> (SimpleHeaderStore, Header) {
     let validator = DogecoinHeaderValidator::regtest();
     let genesis_header = genesis_block(&validator.network()).header;
@@ -176,6 +176,13 @@ fn test_auxpow_version() {
         Err(ValidateAuxPowHeaderError::InvalidChainId)
     );
 
+    // Version 2 (with no chain ID) - should pass (before AuxPow activation)
+    let dogecoin_header =
+        create_dogecoin_header(prev_header_legacy, 2, 0, false, true, false, false);
+    assert!(validator
+        .validate_auxpow_header(&store_legacy, &dogecoin_header, current_time)
+        .is_ok());
+
     // Version 2 (with correct chain ID) - should pass (after AuxPow activation)
     let dogecoin_header = create_dogecoin_header(
         prev_header_auxpow,
@@ -189,6 +196,21 @@ fn test_auxpow_version() {
     assert!(validator
         .validate_auxpow_header(&store_auxpow, &dogecoin_header, current_time)
         .is_ok());
+
+    // AuxPow bit set (with correct chain ID) - should fail (before AuxPow activation)
+    let dogecoin_header = create_dogecoin_header(
+        prev_header_legacy,
+        BASE_VERSION,
+        AUXPOW_CHAIN_ID,
+        true,
+        false,
+        true,
+        true,
+    );
+    assert_eq!(
+        validator.validate_auxpow_header(&store_legacy, &dogecoin_header, current_time),
+        Err(ValidateHeaderError::AuxPowBlockNotAllowed.into())
+    );
 
     // AuxPow bit set (with correct chain ID) - should pass (after AuxPow activation)
     let dogecoin_header = create_dogecoin_header(

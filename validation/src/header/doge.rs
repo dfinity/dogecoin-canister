@@ -74,7 +74,7 @@ impl DogecoinHeaderValidator {
 
         let header_target = header.target();
         if target != header_target {
-            return Err(ValidateHeaderError::InvalidPoWForComputedTarget); // TODO: add BadTarget error and use it here after refactoring BitcoinHeaderValidator
+            return Err(ValidateHeaderError::InvalidPoWForComputedTarget);
         }
 
         Ok(target)
@@ -322,9 +322,7 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
             return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
         }
 
-        let target = self
-            .contextual_check_header(store, &header.pure_header, current_time)
-            .map_err(ValidateAuxPowHeaderError::from)?;
+        let target = self.contextual_check_header(store, &header.pure_header, current_time)?;
 
         if !target.is_met_by(aux_pow.parent_block_header.block_hash_with_scrypt()) {
             return Err(ValidateAuxPowHeaderError::InvalidParentPoW);

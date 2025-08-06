@@ -50,7 +50,7 @@ pub enum ValidateHeaderError {
 #[cfg(feature = "doge")]
 #[derive(Debug, PartialEq)]
 pub enum ValidateAuxPowHeaderError {
-    ValidateHeader(ValidateHeaderError),
+    ValidatePureHeader(ValidateHeaderError),
     /// Used when the chain ID in the header is invalid
     InvalidChainId,
     /// Used when the AuxPow bit in the version field is not set properly
@@ -64,7 +64,7 @@ pub enum ValidateAuxPowHeaderError {
 #[cfg(feature = "doge")]
 impl From<ValidateHeaderError> for ValidateAuxPowHeaderError {
     fn from(err: ValidateHeaderError) -> Self {
-        ValidateAuxPowHeaderError::ValidateHeader(err)
+        ValidateAuxPowHeaderError::ValidatePureHeader(err)
     }
 }
 
