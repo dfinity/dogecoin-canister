@@ -120,9 +120,9 @@ fn test_missing_previous_header() {
 fn test_invalid_pow_mainnet() {
     verify_with_invalid_pow(
         &DogecoinHeaderValidator::mainnet(),
-        MAINNET_HEADER_DOGE_151556,
-        151_556,
-        MAINNET_HEADER_DOGE_151557,
+        MAINNET_HEADER_DOGE_17,
+        17,
+        MAINNET_HEADER_DOGE_18,
     );
 }
 
