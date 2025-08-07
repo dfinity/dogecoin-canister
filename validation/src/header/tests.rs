@@ -18,7 +18,7 @@ use utils::{
 };
 
 fn verify_consecutive_headers<T: HeaderValidator>(
-    validator: T,
+    validator: &T,
     header_1: &str,
     height_1: BlockHeight,
     header_2: &str,
@@ -49,12 +49,12 @@ fn verify_consecutive_headers_auxpow<T: AuxPowHeaderValidator>(
 }
 
 fn verify_header_sequence<T: HeaderValidator>(
-    validator: T,
+    validator: &T,
     file: &str,
-    header: Header,
-    height: BlockHeight,
+    start_header: Header,
+    start_height: BlockHeight,
 ) {
-    let mut store = SimpleHeaderStore::new(header, height);
+    let mut store = SimpleHeaderStore::new(start_header, start_height);
     let headers = get_headers(file);
     for (i, header) in headers.iter().enumerate() {
         let result = validator.validate_header(&store, header, MOCK_CURRENT_TIME);
@@ -92,7 +92,7 @@ fn verify_header_sequence_auxpow<T: AuxPowHeaderValidator>(
 }
 
 fn verify_with_missing_parent<T: HeaderValidator>(
-    validator: T,
+    validator: &T,
     header_1: &str,
     height_1: BlockHeight,
     header_2: &str,
@@ -108,7 +108,7 @@ fn verify_with_missing_parent<T: HeaderValidator>(
 }
 
 fn verify_with_invalid_pow<T: HeaderValidator>(
-    validator: T,
+    validator: &T,
     header_1: &str,
     height_1: BlockHeight,
     header_2: &str,
@@ -126,14 +126,14 @@ fn verify_with_invalid_pow<T: HeaderValidator>(
 }
 
 fn verify_with_invalid_pow_with_computed_target<T: HeaderValidator>(
-    validator_regtest: T,
+    validator_regtest: &T,
     genesis_header: Header,
 ) {
     let pow_regtest = validator_regtest.pow_limit_bits();
     let h0 = genesis_header;
-    let h1 = next_block_header(&validator_regtest, h0, pow_regtest);
-    let h2 = next_block_header(&validator_regtest, h1, pow_regtest);
-    let h3 = next_block_header(&validator_regtest, h2, pow_regtest);
+    let h1 = next_block_header(validator_regtest, h0, pow_regtest);
+    let h2 = next_block_header(validator_regtest, h1, pow_regtest);
+    let h3 = next_block_header(validator_regtest, h2, pow_regtest);
     let mut store = SimpleHeaderStore::new(h0, 0);
     store.add(h1);
     store.add(h2);
@@ -148,8 +148,8 @@ fn verify_with_invalid_pow_with_computed_target<T: HeaderValidator>(
 }
 
 fn verify_with_excessive_target<T: HeaderValidator>(
-    validator_mainnet: T,
-    validator_regtest: T,
+    validator_mainnet: &T,
+    validator_regtest: &T,
     header_1: &str,
     height_1: BlockHeight,
     header_2: &str,
@@ -166,7 +166,7 @@ fn verify_with_excessive_target<T: HeaderValidator>(
 }
 
 fn verify_difficulty_adjustment<T: HeaderValidator>(
-    validator: T,
+    validator: &T,
     headers_path: &str,
     up_to_height: usize,
 ) {
@@ -193,7 +193,7 @@ fn verify_difficulty_adjustment<T: HeaderValidator>(
     }
 
     println!("Verifying next targets...");
-    proptest!(|(i in 0..up_to_height)| {
+    proptest!(|(i in 0..=up_to_height)| {
         // Compute what the target of the next header should be.
         let expected_next_target =
             validator.get_next_target(&store, &headers[i], i as u32, headers[i + 1].time);
@@ -211,14 +211,14 @@ fn verify_difficulty_adjustment<T: HeaderValidator>(
 // in all the other headers.
 // Expect difficulty to be equal to the non-limit PoW.
 fn verify_regtest_difficulty_calculation<T: HeaderValidator>(
-    validator: T,
+    validator: &T,
     genesis_header: Header,
     expected_pow: CompactTarget,
 ) {
     // Arrange.
     for chain_length in 1..10 {
         let (store, last_header) =
-            utils::build_header_chain(&validator, genesis_header, chain_length);
+            utils::build_header_chain(validator, genesis_header, chain_length);
         assert_eq!(store.height() + 1, chain_length);
         // Act.
         let target = validator.get_next_target(
@@ -233,7 +233,7 @@ fn verify_regtest_difficulty_calculation<T: HeaderValidator>(
 }
 
 fn verify_backdated_block_difficulty<T: HeaderValidator>(
-    validator: T,
+    validator: &T,
     difficulty_adjustment_interval: u32,
     genesis_header: Header,
     expected_target: CompactTarget,
@@ -261,7 +261,7 @@ fn verify_backdated_block_difficulty<T: HeaderValidator>(
 }
 
 fn verify_timestamp_rules<T: HeaderValidator>(
-    validator: T,
+    validator: &T,
     header_1: &str,
     height_1: u32,
     header_2: &str,

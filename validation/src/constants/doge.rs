@@ -1,8 +1,3 @@
-use crate::BlockHeight;
-
-/// Expected number of blocks for 4 hours in Dogecoin (240).
-pub const DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN: BlockHeight = 4 * 60;
-
 #[cfg(test)]
 pub mod test {
     /// Mainnet 0c120ab190655673a709bc92ad86f80dc1cd9f11f9e0f09ebc5e6a3058b73002
