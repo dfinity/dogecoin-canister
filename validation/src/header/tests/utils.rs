@@ -32,8 +32,8 @@ pub mod btc_files {
 
 #[cfg(feature = "doge")]
 pub mod doge_files {
-    pub const MAINNET_HEADERS_0_15000_RAW: &str = "doge/headers_0_15000_mainnet_raw.csv";
-    pub const TESTNET_HEADERS_0_15000_RAW: &str = "doge/headers_0_15000_testnet_raw.csv";
+    pub const MAINNET_HEADERS_0_700000_RAW: &str = "doge/headers_0_700000_mainnet_raw.csv";
+    pub const TESTNET_HEADERS_0_2000000_RAW: &str = "doge/headers_0_2000000_testnet_raw.csv";
     pub const MAINNET_HEADERS_1_15000_PARSED: &str = "doge/headers_1_15000_mainnet_parsed.csv";
     pub const TESTNET_HEADERS_1_15000_PARSED: &str = "doge/headers_1_15000_testnet_parsed.csv";
 }
@@ -156,7 +156,7 @@ pub fn bitcoin_genesis_header(network: BitcoinNetwork, bits: CompactTarget) -> H
 }
 
 #[cfg(feature = "doge")]
-pub fn dogecoin_genesis_header(network: DogecoinNetwork, bits: CompactTarget) -> Header {
+pub fn dogecoin_genesis_header(network: &DogecoinNetwork, bits: CompactTarget) -> Header {
     Header {
         bits,
         ..dogecoin_genesis_block(network).header

@@ -121,6 +121,12 @@ pub trait HeaderValidator {
     /// Returns the target spacing between blocks in seconds.
     fn pow_target_spacing(&self) -> Duration;
 
+    /// Returns the number of blocks between difficulty adjustments at the given height.
+    fn difficulty_adjustment_interval(&self, height: u32) -> u32;
+
+    /// Returns `true` if mining a min-difficulty block is allowed after some delay.
+    fn allow_min_difficulty_blocks(&self, height: u32) -> bool;
+
     /// Validates a header. If a failure occurs, a
     /// [ValidateHeaderError](ValidateHeaderError) will be returned.
     fn validate_header(

@@ -35,39 +35,31 @@ impl HeaderValidator for BitcoinHeaderValidator {
     }
 
     fn max_target(&self) -> Target {
-        match self.network() {
-            Self::Network::Bitcoin => Target::MAX_ATTAINABLE_MAINNET,
-            Self::Network::Testnet | Self::Network::Testnet4 => Target::MAX_ATTAINABLE_TESTNET,
-            Self::Network::Regtest => Target::MAX_ATTAINABLE_REGTEST,
-            Self::Network::Signet => Target::MAX_ATTAINABLE_SIGNET,
-            &other => unreachable!("Unsupported network: {:?}", other),
-        }
+        self.network().params().max_attainable_target
     }
 
     fn no_pow_retargeting(&self) -> bool {
-        match self.network() {
-            Self::Network::Bitcoin
-            | Self::Network::Testnet
-            | Self::Network::Testnet4
-            | Self::Network::Signet => false,
-            Self::Network::Regtest => true,
-            &other => unreachable!("Unsupported network: {:?}", other),
-        }
+        self.network().params().no_pow_retargeting
     }
 
     fn pow_limit_bits(&self) -> CompactTarget {
-        let bits = match self.network() {
-            Self::Network::Bitcoin => 0x1d00ffff,
-            Self::Network::Testnet | Self::Network::Testnet4 => 0x1d00ffff,
-            Self::Network::Regtest => 0x207fffff,
-            Self::Network::Signet => 0x1e0377ae,
-            &other => unreachable!("Unsupported network: {:?}", other),
-        };
-        CompactTarget::from_consensus(bits)
+        self.network()
+            .params()
+            .max_attainable_target
+            .to_compact_lossy()
     }
 
     fn pow_target_spacing(&self) -> Duration {
         Duration::from_secs(self.network().params().pow_target_spacing)
+    }
+
+    fn difficulty_adjustment_interval(&self, _height: u32) -> u32 {
+        (self.network().params().pow_target_timespan / self.network().params().pow_target_spacing)
+            as u32
+    }
+
+    fn allow_min_difficulty_blocks(&self, _height: u32) -> bool {
+        self.network().params().allow_min_difficulty_blocks
     }
 
     fn validate_header(
