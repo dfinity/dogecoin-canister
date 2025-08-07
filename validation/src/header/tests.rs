@@ -4,7 +4,7 @@ mod btc;
 mod doge;
 mod utils;
 
-use crate::header::tests::utils::{deserialize_auxpow_header, test_data_file};
+use crate::header::tests::utils::{deserialize_auxpow_header, get_auxpow_headers, test_data_file};
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
 use crate::header::{timestamp_is_less_than_2h_in_future, AuxPowHeaderValidator};
 use crate::ValidateHeaderError;
@@ -65,6 +65,29 @@ fn verify_header_sequence<T: HeaderValidator>(
             result
         );
         store.add(*header);
+    }
+}
+
+#[cfg(feature = "doge")]
+fn verify_header_sequence_auxpow<T: AuxPowHeaderValidator>(
+    validator: T,
+    file: &str,
+    header_1: Header,
+    height_1: BlockHeight,
+    header_2: Header,
+) {
+    let mut store = SimpleHeaderStore::new(header_1, height_1);
+    store.add(header_2);
+    let headers = get_auxpow_headers(file);
+    for (i, header) in headers.iter().enumerate() {
+        let result = validator.validate_auxpow_header(&store, header, MOCK_CURRENT_TIME);
+        assert!(
+            result.is_ok(),
+            "Failed to validate header on line {}: {:?}",
+            i,
+            result
+        );
+        store.add(header.pure_header);
     }
 }
 

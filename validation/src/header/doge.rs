@@ -74,6 +74,7 @@ impl DogecoinHeaderValidator {
 
         let header_target = header.target();
         if target != header_target {
+            println!("bad target");
             return Err(ValidateHeaderError::InvalidPoWForComputedTarget);
         }
 
