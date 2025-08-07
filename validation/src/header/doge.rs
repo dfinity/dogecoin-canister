@@ -199,17 +199,18 @@ impl HeaderValidator for DogecoinHeaderValidator {
         prev_header: &Header,
         prev_height: BlockHeight,
     ) -> CompactTarget {
-        // Difficulty is adjusted only once in every interval of 4 hours (240 blocks)
+        // Pre-Digishield: difficulty is adjusted every 240 blocks.
         // If an interval boundary is not reached, then previous difficulty target is
         // returned. Regtest network doesn't adjust PoW difficulty levels. For
         // regtest, simply return the previous difficulty target.
+        // Digishield: difficulty is adjusted every block.
 
         let height = prev_height + 1;
         let difficulty_adjustment_interval = self.difficulty_adjustment_interval(height);
 
         // Computing the `last_adjustment_header`.
-        // `last_adjustment_header` is the last header with height multiple of 240 - 1
-        // Dogecoin solves the "off-by-one" or time wrap bug in Bitcoin by going back to the full
+        // `last_adjustment_header` is the header before the previous difficulty adjustment point.
+        // Dogecoin solves the "off-by-one" or Time Wrap bug in Bitcoin by going back to the full
         // retarget period (hence the - 1).
         // See: <https://litecoin.info/docs/history/time-warp-attack>
         let last_adjustment_height = if height <= difficulty_adjustment_interval {
@@ -221,12 +222,11 @@ impl HeaderValidator for DogecoinHeaderValidator {
             .get_with_height(last_adjustment_height)
             .expect("Last adjustment header must exist");
 
-        // Computing the time interval between the last adjustment header time and
-        // current time. The expected value timespan is 4 hours assuming
-        // the expected block time is 1 min. But most of the time, the
-        // timespan will deviate slightly from 4 hours. Our goal is to
-        // readjust the difficulty target so that the expected time taken for the next
-        // 240 blocks is again 4 hours.
+        // Computing the timespan between the last adjustment header time and
+        // current time. Our goal is to readjust the difficulty target so that the
+        // timespan taken for the next interval is equal to the `pow_target_timespan`
+        // of the network.
+        //
         // IMPORTANT: With the Median Time Past (MTP) rule, a block's timestamp
         // is only required to be greater than the median of the previous 11 blocks.
         // This allows individual block timestamps to decrease relative to their
