@@ -60,8 +60,9 @@ fn verify_header_sequence<T: HeaderValidator>(
         let result = validator.validate_header(&store, header, MOCK_CURRENT_TIME);
         assert!(
             result.is_ok(),
-            "Failed to validate header on line {}: {:?}",
+            "Failed to validate header on line {} for header {}: {:?}",
             i,
+            header.block_hash(),
             result
         );
         store.add(*header);
@@ -83,8 +84,9 @@ fn verify_header_sequence_auxpow<T: AuxPowHeaderValidator>(
         let result = validator.validate_auxpow_header(&store, header, MOCK_CURRENT_TIME);
         assert!(
             result.is_ok(),
-            "Failed to validate header on line {}: {:?}",
+            "Failed to validate header on line {} for header {}: {:?}",
             i,
+            header.block_hash(),
             result
         );
         store.add(header.pure_header);

@@ -185,12 +185,22 @@ pub fn get_auxpow_headers(file: &str) -> Vec<DogecoinHeader> {
             parent_hash: BlockHash::from_str(record.get(7).unwrap()).unwrap(),
             coinbase_branch: deserialize(Vec::from_hex(record.get(8).unwrap()).unwrap().as_slice())
                 .unwrap(),
-            coinbase_index: i32::from_str_radix(record.get(9).unwrap(), 16).unwrap(),
+            coinbase_index: i32::from_le_bytes(
+                hex::decode(record.get(9).unwrap())
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+            ),
             blockchain_branch: deserialize(
                 Vec::from_hex(record.get(10).unwrap()).unwrap().as_slice(),
             )
             .unwrap(),
-            blockchain_index: i32::from_str_radix(record.get(11).unwrap(), 16).unwrap(),
+            blockchain_index: i32::from_le_bytes(
+                hex::decode(record.get(11).unwrap())
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+            ),
             parent_block_header: deserialize_header(record.get(12).unwrap()),
         });
         let header = DogecoinHeader {

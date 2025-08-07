@@ -9,7 +9,7 @@ use crate::constants::doge::test::{
     TESTNET_HEADER_DOGE_88, TESTNET_HEADER_DOGE_89,
 };
 use crate::header::doge::ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT;
-use crate::header::tests::utils::{deserialize_header, doge_files, dogecoin_genesis_header};
+use crate::header::tests::utils::{deserialize_auxpow_header, doge_files, dogecoin_genesis_header};
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers,
     verify_consecutive_headers_auxpow, verify_difficulty_adjustment, verify_header_sequence,
@@ -85,24 +85,24 @@ fn test_sequential_header_validation_testnet() {
 }
 
 #[test]
-fn test_sequential_header_validation_auxpow_mainnet() {
+fn test_sequential_header_validation_mainnet_auxpow() {
     verify_header_sequence_auxpow(
         DogecoinHeaderValidator::mainnet(),
         doge_files::MAINNET_HEADERS_521337_536336_PARSED,
-        deserialize_header(MAINNET_HEADER_DOGE_521335),
+        *deserialize_auxpow_header(MAINNET_HEADER_DOGE_521335),
         521335,
-        deserialize_header(MAINNET_HEADER_DOGE_521336),
+        *deserialize_auxpow_header(MAINNET_HEADER_DOGE_521336),
     );
 }
 
 #[test]
-fn test_sequential_header_validation_auxpow_testnet() {
+fn test_sequential_header_validation_testnet_auxpow() {
     verify_header_sequence_auxpow(
         DogecoinHeaderValidator::testnet(),
         doge_files::TESTNET_HEADERS_293100_308099_PARSED,
-        deserialize_header(TESTNET_HEADER_DOGE_293098),
+        *deserialize_auxpow_header(TESTNET_HEADER_DOGE_293098),
         293098,
-        deserialize_header(TESTNET_HEADER_DOGE_293099),
+        *deserialize_auxpow_header(TESTNET_HEADER_DOGE_293099),
     );
 }
 
