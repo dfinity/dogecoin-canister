@@ -1,4 +1,3 @@
-use crate::constants::doge::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
 use crate::header::{
     is_timestamp_valid, AuxPowHeaderValidator, HeaderStore, HeaderValidator,
     ValidateAuxPowHeaderError, ValidateHeaderError,
@@ -270,7 +269,6 @@ impl HeaderValidator for DogecoinHeaderValidator {
         // predecessor, which can result in a negative timespan.
         let last_adjustment_time = last_adjustment_header.time;
         let timespan = (prev_header.time as i64) - (last_adjustment_time as i64);
-        let timespan = (prev_header.time as i64) - (last_adjustment_time as i64);
 
         CompactTarget::from_next_work_required_dogecoin(
             prev_header.bits,
@@ -294,12 +292,6 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
         self.network.params().allow_legacy_blocks(height)
     }
 
-        CompactTarget::from_next_work_required_dogecoin(
-            prev_header.bits,
-            timespan,
-            self.network,
-            height,
-        )
     fn validate_auxpow_header(
         &self,
         store: &impl HeaderStore,
