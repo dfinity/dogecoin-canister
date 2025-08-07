@@ -8,10 +8,8 @@ use crate::constants::doge::test::{
     TESTNET_HEADER_DOGE_158380, TESTNET_HEADER_DOGE_293098, TESTNET_HEADER_DOGE_293099,
     TESTNET_HEADER_DOGE_88, TESTNET_HEADER_DOGE_89,
 };
-use crate::constants::doge::DIFFICULTY_ADJUSTMENT_INTERVAL_DOGECOIN;
-use crate::header::tests::utils::{deserialize_header, doge_files, dogecoin_genesis_header};
 use crate::header::doge::ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT;
-use crate::header::tests::utils::{doge_files, dogecoin_genesis_header};
+use crate::header::tests::utils::{deserialize_header, doge_files, dogecoin_genesis_header};
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers,
     verify_consecutive_headers_auxpow, verify_difficulty_adjustment, verify_header_sequence,
@@ -71,7 +69,7 @@ fn test_sequential_header_validation_mainnet() {
     verify_header_sequence(
         &DogecoinHeaderValidator::mainnet(),
         doge_files::MAINNET_HEADERS_1_15000_PARSED,
-        dogecoin_genesis_block(DogecoinNetwork::Dogecoin).header,
+        *dogecoin_genesis_block(DogecoinNetwork::Dogecoin).header,
         0,
     );
 }
@@ -81,7 +79,7 @@ fn test_sequential_header_validation_testnet() {
     verify_header_sequence(
         &DogecoinHeaderValidator::testnet(),
         doge_files::TESTNET_HEADERS_1_15000_PARSED,
-        dogecoin_genesis_block(DogecoinNetwork::Testnet).header,
+        *dogecoin_genesis_block(DogecoinNetwork::Testnet).header,
         0,
     );
 }
@@ -213,6 +211,6 @@ fn test_digishield_with_min_difficulty_height() {
     for network in networks.iter() {
         assert!(network
             .params()
-            .digishield_activated(ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT));
+            .is_digishield_activated(ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT));
     }
 }
