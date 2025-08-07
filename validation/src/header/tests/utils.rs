@@ -156,7 +156,7 @@ pub fn bitcoin_genesis_header(network: BitcoinNetwork, bits: CompactTarget) -> H
 }
 
 #[cfg(feature = "doge")]
-pub fn dogecoin_genesis_header(network: DogecoinNetwork, bits: CompactTarget) -> Header {
+pub fn dogecoin_genesis_header(network: &DogecoinNetwork, bits: CompactTarget) -> Header {
     Header {
         bits,
         ..dogecoin_genesis_block(network).header
