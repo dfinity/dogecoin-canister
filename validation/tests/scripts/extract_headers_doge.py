@@ -453,8 +453,8 @@ def write_headers_to_csv(headers, output_file, include_header):
         with open(output_file, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(['version', 'prev_block', 'merkle_root', 'timestamp', 'bits', 'nonce', 
-                           'coinbase_tx', 'parent_hash', 'coinbase_branch', 'coinbase_index', 
-                           'blockchain_branch', 'blockchain_index', 'parent_block_header'])
+                           'auxpow_coinbase_tx', 'auxpow_parent_hash', 'auxpow_coinbase_branch', 'auxpow_coinbase_index', 
+                           'auxpow_blockchain_branch', 'auxpow_blockchain_index', 'auxpow_parent_block_header'])
             for header in headers:
                 writer.writerow(header)
     else:
