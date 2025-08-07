@@ -127,16 +127,11 @@ def extract_auxpow_data(block_data, header_version, parsed_mode=False):
 
     # AuxPow data starts after the 80-byte header
     auxpow_start = HEADER_SIZE
-
-    if len(block_data) < auxpow_start + 1:
-        if parsed_mode:
-            return {"coinbase_tx": "", "parent_hash": "", "coinbase_branch": "",
-                   "coinbase_index": "", "blockchain_branch": "", "blockchain_index": "",
-                   "parent_block_header": ""}, HEADER_SIZE
-        else:
-            return "", HEADER_SIZE
-
+    
     try:
+        if len(block_data) < auxpow_start + 1:
+            raise ValueError("Block too short for auxpow data")
+    
         # Parse the auxpow structure:
         # 1. Coinbase transaction (variable length)
         # 2. Parent hash (32 bytes)
@@ -208,8 +203,8 @@ def extract_auxpow_data(block_data, header_version, parsed_mode=False):
         offset += 32
 
         # Coinbase merkle branch count and hashes
-        coinbase_merkle_count, offset = read_varint(block_data, offset)
         coinbase_branch_start = offset
+        coinbase_merkle_count, offset = read_varint(block_data, offset)
         offset += coinbase_merkle_count * 32
         if offset > len(block_data):
             raise ValueError("Not enough data for coinbase merkle branch")
@@ -218,12 +213,12 @@ def extract_auxpow_data(block_data, header_version, parsed_mode=False):
         # Coinbase merkle index (4 bytes)
         if offset + 4 > len(block_data):
             raise ValueError("Not enough data for coinbase index")
-        coinbase_index = struct.unpack('<I', block_data[offset:offset + 4])[0]
+        coinbase_index = block_data[offset:offset + 4]
         offset += 4
 
         # Blockchain merkle branch count and hashes
-        blockchain_merkle_count, offset = read_varint(block_data, offset)
         blockchain_branch_start = offset
+        blockchain_merkle_count, offset = read_varint(block_data, offset)
         offset += blockchain_merkle_count * 32
         if offset > len(block_data):
             raise ValueError("Not enough data for blockchain merkle branch")
@@ -232,7 +227,7 @@ def extract_auxpow_data(block_data, header_version, parsed_mode=False):
         # Blockchain merkle index (4 bytes)
         if offset + 4 > len(block_data):
             raise ValueError("Not enough data for blockchain index")
-        blockchain_index = struct.unpack('<I', block_data[offset:offset + 4])[0]
+        blockchain_index = block_data[offset:offset + 4]
         offset += 4
 
         # Parent block header (80 bytes)
@@ -246,9 +241,9 @@ def extract_auxpow_data(block_data, header_version, parsed_mode=False):
                 "coinbase_tx": coinbase_tx.hex(),
                 "parent_hash": parent_hash[::-1].hex(),  # Reverse for display (little->big endian)
                 "coinbase_branch": coinbase_branch.hex(),
-                "coinbase_index": str(coinbase_index),
+                "coinbase_index": coinbase_index.hex(),
                 "blockchain_branch": blockchain_branch.hex(),
-                "blockchain_index": str(blockchain_index),
+                "blockchain_index": blockchain_index.hex(),
                 "parent_block_header": parent_block_header.hex()
             }, offset
         else:
@@ -289,7 +284,8 @@ def read_headers_from_blk_files(file_paths, include_parsed_headers, network_conf
         headers.update(file_headers)
         prev_hash.update(file_prev_hash)
         print(f"  Found {len(file_headers)} headers in {file_path}")
-
+    
+    # Convert prev_hash mapping to next_hash mapping
     next_hash = {}
     for curr_hash, prev_block_hash in prev_hash.items():
         next_hash[prev_block_hash] = curr_hash
