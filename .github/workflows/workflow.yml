@@ -667,7 +667,7 @@ jobs:
         e2e-scenario-2,
         e2e-scenario-3,
         charge-cycles-on-reject,
-        upgradability,
+        #        upgradability, TODO: Re-enable this job once a release for the Dogecoin canister is available
         set_config,
         cycles_burn,
         benchmark,
@@ -707,9 +707,9 @@ jobs:
       - name: check charge-cycles-on-reject result
         if: ${{ needs.charge-cycles-on-reject.result != 'success' }}
         run: exit 1
-      - name: check upgradability result
-        if: ${{ needs.upgradability.result != 'success' }}
-        run: exit 1
+      #      - name: check upgradability result
+      #        if: ${{ needs.upgradability.result != 'success' }}
+      #        run: exit 1 TODO: Re-enable this job once a release for the Dogecoin canister is available
       - name: check set_config result
         if: ${{ needs.set_config.result != 'success' }}
         run: exit 1
