@@ -2,17 +2,15 @@ use crate::header::HeaderValidator;
 use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
-use bitcoin::dogecoin::auxpow::AuxPow;
-use bitcoin::dogecoin::has_auxpow;
+#[cfg(feature = "doge")]
+use bitcoin::dogecoin::{
+    auxpow::AuxPow, constants::genesis_block as dogecoin_genesis_block, has_auxpow,
+    Header as DogecoinHeader, Network as DogecoinNetwork,
+};
 use bitcoin::hashes::hex::FromHex;
 #[cfg(feature = "btc")]
 use bitcoin::{
     constants::genesis_block as bitcoin_genesis_block, network::Network as BitcoinNetwork,
-};
-#[cfg(feature = "doge")]
-use bitcoin::{
-    dogecoin::constants::genesis_block as dogecoin_genesis_block,
-    dogecoin::Header as DogecoinHeader, dogecoin::Network as DogecoinNetwork,
 };
 use bitcoin::{BlockHash, CompactTarget, TxMerkleNode};
 use csv::Reader;
@@ -55,6 +53,7 @@ pub fn deserialize_header(encoded_bytes: &str) -> Header {
     deserialize(bytes.as_slice()).expect("failed to deserialize")
 }
 
+#[cfg(feature = "doge")]
 pub fn deserialize_auxpow_header(encoded_bytes: &str) -> DogecoinHeader {
     let bytes = Vec::from_hex(encoded_bytes).expect("failed to decoded bytes");
     deserialize(bytes.as_slice()).expect("failed to deserialize")

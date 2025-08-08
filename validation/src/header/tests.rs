@@ -4,9 +4,14 @@ mod btc;
 mod doge;
 mod utils;
 
-use crate::header::tests::utils::{deserialize_auxpow_header, get_auxpow_headers, test_data_file};
+use crate::header::tests::utils::test_data_file;
+use crate::header::timestamp_is_less_than_2h_in_future;
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
-use crate::header::{timestamp_is_less_than_2h_in_future, AuxPowHeaderValidator};
+#[cfg(feature = "doge")]
+use crate::header::{
+    tests::utils::{deserialize_auxpow_header, get_auxpow_headers},
+    AuxPowHeaderValidator,
+};
 use crate::ValidateHeaderError;
 use crate::{BlockHeight, HeaderStore};
 use bitcoin::block::{Header, Version};
