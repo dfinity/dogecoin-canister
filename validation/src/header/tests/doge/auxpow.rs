@@ -1,3 +1,10 @@
+//! Tests for AuxPoW behavior, adapted from the original Dogecoin C++ test suite.
+//!
+//! These tests are based on:
+//! <https://github.com/dogecoin/dogecoin/blob/51cbc1fd5d0d045dda2ad84f53572bbf524c6a8e/src/test/auxpow_tests.cpp#L358>
+//!
+//! The goal is to verify correctness of merged mining validation logic, particularly around
+//! version number and chain ID rules, and child/parent PoW validation.
 use crate::header::tests::utils::{build_header_chain, SimpleHeaderStore};
 use crate::header::{AuxPowHeaderValidator, ValidateAuxPowHeaderError};
 use crate::{DogecoinHeaderValidator, HeaderValidator, ValidateHeaderError};

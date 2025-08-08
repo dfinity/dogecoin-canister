@@ -37,6 +37,7 @@ impl DogecoinHeaderValidator {
     }
 
     /// Context-dependent header validity checks
+    /// Ref: <https://github.com/dogecoin/dogecoin/blob/215fc33d08ef55cdb52a639bb2d8ce0af502c126/src/validation.cpp#L3065>
     fn contextual_check_header(
         &self,
         store: &impl HeaderStore,
@@ -292,6 +293,8 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
         self.network.params().allow_legacy_blocks(height)
     }
 
+    /// AuxPow header validation
+    /// Ref: <https://github.com/dogecoin/dogecoin/blob/51cbc1fd5d0d045dda2ad84f53572bbf524c6a8e/src/dogecoin.cpp#L89>
     fn validate_auxpow_header(
         &self,
         store: &impl HeaderStore,
