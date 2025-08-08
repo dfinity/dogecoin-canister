@@ -101,7 +101,7 @@ impl BlockBuilder {
 
     pub fn with_prev_header(prev_header: &Header) -> Self {
         Self {
-            builder: ExternalBlockBuilder::with_prev_header(*prev_header),
+            builder: ExternalBlockBuilder::new_with_prev_header(*prev_header),
             mock_difficulty: None,
         }
     }
@@ -148,7 +148,7 @@ impl TransactionBuilder {
 
     pub fn coinbase() -> Self {
         Self {
-            builder: ExternalTransactionBuilder::coinbase(),
+            builder: ExternalTransactionBuilder::new(),
         }
     }
 

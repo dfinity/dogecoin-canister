@@ -214,6 +214,7 @@ pub trait AuxPowHeaderValidator: HeaderValidator {
 
     /// Validates an AuxPow header. If a failure occurs, a
     /// [ValidateAuxPowHeaderError](ValidateAuxPowHeaderError) will be returned.
+    #[allow(dead_code)]
     fn validate_auxpow_header(
         &self,
         store: &impl HeaderStore,
