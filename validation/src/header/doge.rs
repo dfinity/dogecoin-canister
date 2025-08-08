@@ -3,9 +3,7 @@ use crate::header::{
     ValidateAuxPowHeaderError, ValidateHeaderError,
 };
 use crate::BlockHeight;
-use bitcoin::dogecoin::{
-    extract_base_version, extract_chain_id, has_auxpow, is_legacy, Network as DogecoinNetwork,
-};
+use bitcoin::dogecoin::Network as DogecoinNetwork;
 use bitcoin::{
     block::Header as PureHeader, dogecoin::Header as DogecoinHeader, CompactTarget, Target,
 };
@@ -53,18 +51,18 @@ impl DogecoinHeaderValidator {
             }
         };
 
-        if !self.allow_legacy_blocks(height) && is_legacy(header) {
+        if !self.allow_legacy_blocks(height) && header.is_legacy() {
             return Err(ValidateHeaderError::LegacyBlockNotAllowed);
         }
 
-        if self.allow_legacy_blocks(height) && has_auxpow(header) {
+        if self.allow_legacy_blocks(height) && header.has_auxpow() {
             return Err(ValidateHeaderError::AuxPowBlockNotAllowed);
         }
 
         is_timestamp_valid(store, header, current_time)?;
 
-        if (extract_base_version(header) < 3 && height >= self.network().params().bip66_height)
-            || (extract_base_version(header) < 4 && height >= self.network().params().bip65_height)
+        if (header.extract_base_version() < 3 && height >= self.network().params().bip66_height)
+            || (header.extract_base_version() < 4 && height >= self.network().params().bip65_height)
         {
             return Err(ValidateHeaderError::VersionObsolete);
         }
@@ -301,15 +299,15 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
         header: &DogecoinHeader,
         current_time: u64,
     ) -> Result<(), ValidateAuxPowHeaderError> {
-        if !is_legacy(header)
+        if !header.is_legacy()
             && self.strict_chain_id()
-            && extract_chain_id(header) != self.auxpow_chain_id()
+            && header.extract_chain_id() != self.auxpow_chain_id()
         {
             return Err(ValidateAuxPowHeaderError::InvalidChainId);
         }
 
         if header.aux_pow.is_none() {
-            if has_auxpow(header) {
+            if header.has_auxpow() {
                 return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
             }
 
@@ -319,7 +317,7 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
 
         let aux_pow = header.aux_pow.as_ref().unwrap();
 
-        if !has_auxpow(header) {
+        if !header.has_auxpow() {
             return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
         }
 
@@ -330,7 +328,7 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
         }
         if let Err(err) = aux_pow.check(
             header.block_hash(),
-            extract_chain_id(header),
+            header.extract_chain_id(),
             self.strict_chain_id(),
         ) {
             println!("{}", err);

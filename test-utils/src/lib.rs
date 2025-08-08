@@ -6,7 +6,6 @@ use bitcoin::{
     block::{Header as PureHeader, Version},
     dogecoin::Address,
     dogecoin::Block as DogecoinBlock,
-    dogecoin::Header as DogecoinHeader,
     dogecoin::Network,
     secp256k1::Secp256k1,
     Amount, BlockHash, OutPoint, PublicKey, Script, ScriptBuf, Sequence, Target, Transaction, TxIn,
@@ -119,7 +118,7 @@ impl BlockBuilder {
         };
 
         DogecoinBlock {
-            header: DogecoinHeader::new_from_pure_header(header),
+            header: header.into(),
             txdata,
         }
     }
