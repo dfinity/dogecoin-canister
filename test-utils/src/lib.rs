@@ -18,11 +18,11 @@ use std::str::FromStr;
 
 mod simple_rng;
 
-const DUMMY_CHAIN_ID: i32 = 42; // Dummy chain ID
-const DOGECOIN_CHAIN_ID: i32 = 98; // Dogecoin chain ID
+const DUMMY_CHAIN_ID: i32 = 42;
+const DOGECOIN_CHAIN_ID: i32 = 98;
 const BASE_VERSION: i32 = 5;
-const MERKLE_HEIGHT: usize = 3; // Merkle tree height
-const MERKLE_NONCE: u32 = 7; // Nonce used to calculate block header indexes into blockchain merkle tree
+const CHAIN_MERKLE_HEIGHT: usize = 3; // Height of the blockchain Merkle tree used in AuxPow
+const CHAIN_MERKLE_NONCE: u32 = 7; // Nonce used to calculate block header indexes into blockchain Merkle tree
 
 /// Generates a random P2PKH address.
 pub fn random_p2pkh_address(network: Network) -> Address {
@@ -196,8 +196,8 @@ impl AuxPowBuilder {
     pub fn new_dogecoin(aux_block_hash: BlockHash) -> Self {
         Self {
             aux_block_hash,
-            merkle_height: MERKLE_HEIGHT,
-            merkle_nonce: MERKLE_NONCE,
+            merkle_height: CHAIN_MERKLE_HEIGHT,
+            merkle_nonce: CHAIN_MERKLE_NONCE,
             chain_id: DOGECOIN_CHAIN_ID,
             parent_chain_id: DUMMY_CHAIN_ID,
             base_version: BASE_VERSION,
