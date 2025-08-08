@@ -4,8 +4,8 @@ use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
 #[cfg(feature = "doge")]
 use bitcoin::dogecoin::{
-    auxpow::AuxPow, constants::genesis_block as dogecoin_genesis_block, has_auxpow,
-    Header as DogecoinHeader, Network as DogecoinNetwork,
+    auxpow::AuxPow, constants::genesis_block as dogecoin_genesis_block, Header as DogecoinHeader,
+    Network as DogecoinNetwork,
 };
 use bitcoin::hashes::hex::FromHex;
 #[cfg(feature = "btc")]
@@ -178,7 +178,7 @@ pub fn get_auxpow_headers(file: &str) -> Vec<DogecoinHeader> {
             ),
             nonce: u32::from_str_radix(record.get(5).unwrap(), 16).unwrap(),
         };
-        let aux_pow = has_auxpow(&pure_header).then(|| AuxPow {
+        let aux_pow = pure_header.has_auxpow().then(|| AuxPow {
             coinbase_tx: deserialize(Vec::from_hex(record.get(6).unwrap()).unwrap().as_slice())
                 .unwrap(),
             parent_hash: BlockHash::from_str(record.get(7).unwrap()).unwrap(),
