@@ -141,7 +141,7 @@ impl HeaderBuilder {
 
     fn new_with_prev_header(prev_header: PureHeader, merkle_root: TxMerkleNode) -> Self {
         Self {
-            version: BASE_VERSION,
+            version: BASE_VERSION | (DOGECOIN_CHAIN_ID << 16),
             prev_header: Some(prev_header),
             merkle_root,
         }
@@ -192,7 +192,7 @@ pub struct AuxPowBuilder {
 }
 
 impl AuxPowBuilder {
-    pub fn new_dogecoin(aux_block_hash: BlockHash) -> Self {
+    pub fn new(aux_block_hash: BlockHash) -> Self {
         Self {
             aux_block_hash,
             merkle_height: CHAIN_MERKLE_HEIGHT,
