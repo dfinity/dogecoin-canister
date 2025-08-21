@@ -259,6 +259,14 @@ impl TransactionBuilder {
         }
     }
 
+    pub fn coinbase() -> Self {
+        Self {
+            input: vec![Self::coinbase_input(Script::new().into())],
+            output: vec![],
+            lock_time: 0,
+        }
+    }
+
     fn coinbase_input(script_sig: ScriptBuf) -> TxIn {
         TxIn {
             previous_output: OutPoint::null(),

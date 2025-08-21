@@ -148,7 +148,7 @@ impl TransactionBuilder {
 
     pub fn coinbase() -> Self {
         Self {
-            builder: ExternalTransactionBuilder::new(),
+            builder: ExternalTransactionBuilder::coinbase(),
         }
     }
 
