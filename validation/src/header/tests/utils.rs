@@ -37,9 +37,9 @@ pub mod doge_files {
     pub const MAINNET_HEADERS_1_15000_PARSED: &str = "doge/headers_1_15000_mainnet_parsed.csv";
     pub const TESTNET_HEADERS_1_15000_PARSED: &str = "doge/headers_1_15000_testnet_parsed.csv";
     pub const MAINNET_HEADERS_521337_536336_PARSED: &str =
-        "doge/headers_521337_536336_mainnet_parsed.csv"; // Contains 14,955 auxpow blocks out of 15,000
+        "doge/headers_521337_536336_mainnet_parsed_with_auxpow.csv"; // Contains 14,955 auxpow blocks out of 15,000
     pub const TESTNET_HEADERS_293100_308099_PARSED: &str =
-        "doge/headers_293100_308099_testnet_parsed.csv"; // Contains 14,746 auxpow blocks out of 15,000
+        "doge/headers_293100_308099_testnet_parsed_with_auxpow.csv"; // Contains 14,746 auxpow blocks out of 15,000
 }
 
 pub fn test_data_file(file: &str) -> PathBuf {
