@@ -67,11 +67,9 @@ fn create_dogecoin_header(
     let mut dogecoin_header: DogecoinHeader = header.into();
 
     if with_aux_pow {
-        dogecoin_header.aux_pow = Some(AuxPowBuilder::new(header.block_hash()).build());
-
-        // Mine the parent block to pass PoW
-        let auxpow = dogecoin_header.aux_pow.as_mut().unwrap();
+        let mut auxpow = AuxPowBuilder::new(header.block_hash()).build();
         mine_header_to_target(&mut auxpow.parent_block_header, should_mine_parent_header);
+        dogecoin_header.aux_pow = Some(auxpow);
     }
 
     dogecoin_header
