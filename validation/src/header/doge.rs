@@ -55,7 +55,7 @@ impl DogecoinHeaderValidator {
             return Err(ValidateHeaderError::LegacyBlockNotAllowed);
         }
 
-        if self.allow_legacy_blocks(height) && header.has_auxpow() {
+        if self.allow_legacy_blocks(height) && header.has_auxpow_bit() {
             return Err(ValidateHeaderError::AuxPowBlockNotAllowed);
         }
 
@@ -306,33 +306,30 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
             return Err(ValidateAuxPowHeaderError::InvalidChainId);
         }
 
-        if header.aux_pow.is_none() {
-            if header.has_auxpow() {
+        if let Some(aux_pow) = header.aux_pow.as_ref() {
+            if !header.has_auxpow_bit() {
+                return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
+            }
+
+            let target = self.contextual_check_header(store, &header.pure_header, current_time)?;
+
+            if !target.is_met_by(aux_pow.parent_block_header.block_hash_with_scrypt()) {
+                return Err(ValidateAuxPowHeaderError::InvalidParentPoW);
+            }
+            if let Err(err) = aux_pow.check(
+                header.block_hash(),
+                header.extract_chain_id(),
+                self.strict_chain_id(),
+            ) {
+                println!("{}", err);
+                return Err(ValidateAuxPowHeaderError::InvalidAuxPoW);
+            }
+        } else {
+            if header.has_auxpow_bit() {
                 return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
             }
 
             self.validate_header(store, &header.pure_header, current_time)?;
-            return Ok(());
-        }
-
-        let aux_pow = header.aux_pow.as_ref().unwrap();
-
-        if !header.has_auxpow() {
-            return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
-        }
-
-        let target = self.contextual_check_header(store, &header.pure_header, current_time)?;
-
-        if !target.is_met_by(aux_pow.parent_block_header.block_hash_with_scrypt()) {
-            return Err(ValidateAuxPowHeaderError::InvalidParentPoW);
-        }
-        if let Err(err) = aux_pow.check(
-            header.block_hash(),
-            header.extract_chain_id(),
-            self.strict_chain_id(),
-        ) {
-            println!("{}", err);
-            return Err(ValidateAuxPowHeaderError::InvalidAuxPoW);
         }
 
         Ok(())

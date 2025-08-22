@@ -76,6 +76,8 @@ def read_varint(data, offset):
     """
     Read a variable-length integer from binary data.
 
+    Ref: <https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer>
+
     Args:
         data (bytes): Binary data to read from
         offset (int): Starting offset in data

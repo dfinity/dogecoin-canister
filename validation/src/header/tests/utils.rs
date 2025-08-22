@@ -178,7 +178,7 @@ pub fn get_auxpow_headers(file: &str) -> Vec<DogecoinHeader> {
             ),
             nonce: u32::from_str_radix(record.get(5).unwrap(), 16).unwrap(),
         };
-        let aux_pow = pure_header.has_auxpow().then(|| AuxPow {
+        let aux_pow = pure_header.has_auxpow_bit().then(|| AuxPow {
             coinbase_tx: deserialize(Vec::from_hex(record.get(6).unwrap()).unwrap().as_slice())
                 .unwrap(),
             parent_hash: BlockHash::from_str(record.get(7).unwrap()).unwrap(),
