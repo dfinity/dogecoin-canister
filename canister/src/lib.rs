@@ -362,7 +362,7 @@ mod test {
             ..Default::default()
         });
 
-        let blocks = build_regtest_chain(num_blocks, num_transactions_in_block);
+        let blocks = build_regtest_chain(num_blocks, num_transactions_in_block, false);
 
         // Insert all the blocks. Note that we skip the genesis block, as that
         // is already included as part of initializing the state.

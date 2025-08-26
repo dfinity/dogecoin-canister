@@ -132,6 +132,7 @@ impl BlockBuilder {
             None => HeaderBuilder::genesis(merkle_root),
             Some(prev_header) => HeaderBuilder::new()
                 .with_prev_header(prev_header)
+                .with_version(BASE_VERSION)
                 .with_merkle_root(merkle_root),
         };
 

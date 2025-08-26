@@ -191,7 +191,7 @@ fn insert_block_headers_multiple_times() -> BenchResult {
 
 #[bench(raw)]
 fn pre_upgrade_with_many_unstable_blocks() -> BenchResult {
-    let blocks = build_regtest_chain(3000, 100);
+    let blocks = build_regtest_chain(3000, 100, false);
 
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Regtest),
