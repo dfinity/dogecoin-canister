@@ -50,6 +50,7 @@ pub enum ValidateHeaderError {
 #[cfg(feature = "doge")]
 #[derive(Debug, PartialEq)]
 pub enum ValidateAuxPowHeaderError {
+    /// Used when the PureHeader fails validation
     ValidatePureHeader(ValidateHeaderError),
     /// Used when the chain ID in the header is invalid
     InvalidChainId,

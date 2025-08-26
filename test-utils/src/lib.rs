@@ -4,8 +4,10 @@ use bitcoin::hashes::Hash;
 use bitcoin::{
     absolute::LockTime,
     block::{Header as PureHeader, Version},
+    dogecoin::auxpow::VERSION_AUXPOW,
     dogecoin::Address,
     dogecoin::Block as DogecoinBlock,
+    dogecoin::Header,
     dogecoin::Network,
     secp256k1::Secp256k1,
     Amount, BlockHash, OutPoint, PublicKey, Script, ScriptBuf, Sequence, Target, Transaction, TxIn,
@@ -18,7 +20,7 @@ use std::str::FromStr;
 mod simple_rng;
 
 const DUMMY_CHAIN_ID: i32 = 42;
-const DOGECOIN_CHAIN_ID: i32 = 98;
+pub const DOGECOIN_CHAIN_ID: i32 = 98;
 const BASE_VERSION: i32 = 5;
 const CHAIN_MERKLE_HEIGHT: usize = 3; // Height of the blockchain Merkle tree used in AuxPow
 const CHAIN_MERKLE_NONCE: u32 = 7; // Nonce used to calculate block header indexes into blockchain Merkle tree
@@ -69,27 +71,39 @@ pub fn mine_header_to_target(header: &mut PureHeader, should_pass: bool) {
 }
 
 pub struct BlockBuilder {
+    header: Option<Header>,
     prev_header: Option<PureHeader>,
     transactions: Vec<Transaction>,
+    with_auxpow: bool,
 }
 
 impl BlockBuilder {
-    pub fn genesis() -> Self {
+    pub fn new() -> Self {
         Self {
+            header: None,
             prev_header: None,
             transactions: vec![],
+            with_auxpow: false,
         }
     }
 
-    pub fn new_with_prev_header(prev_header: PureHeader) -> Self {
-        Self {
-            prev_header: Some(prev_header),
-            transactions: vec![],
-        }
+    pub fn with_prev_header(mut self, prev_header: PureHeader) -> Self {
+        self.prev_header = Some(prev_header);
+        self
+    }
+
+    pub fn with_header(mut self, header: Header) -> Self {
+        self.header = Some(header);
+        self
     }
 
     pub fn with_transaction(mut self, transaction: Transaction) -> Self {
         self.transactions.push(transaction);
+        self
+    }
+
+    pub fn with_auxpow(mut self, auxpow: bool) -> Self {
+        self.with_auxpow = auxpow;
         self
     }
 
@@ -101,6 +115,10 @@ impl BlockBuilder {
             self.transactions
         };
 
+        if let Some(header) = self.header {
+            return DogecoinBlock { header, txdata };
+        }
+
         let merkle_root = bitcoin::merkle_tree::calculate_root(
             txdata
                 .iter()
@@ -110,16 +128,32 @@ impl BlockBuilder {
         .unwrap();
         let merkle_root = TxMerkleNode::from_raw_hash(merkle_root);
 
-        let header = match self.prev_header {
-            None => HeaderBuilder::genesis(merkle_root).build(),
-            Some(prev_header) => {
-                HeaderBuilder::new_with_prev_header(prev_header, merkle_root).build()
-            }
+        let header_builder = match self.prev_header {
+            None => HeaderBuilder::genesis(merkle_root),
+            Some(prev_header) => HeaderBuilder::new()
+                .with_prev_header(prev_header)
+                .with_merkle_root(merkle_root),
         };
 
-        DogecoinBlock {
-            header: header.into(),
-            txdata,
+        if self.with_auxpow {
+            let pure_header = header_builder
+                .with_version(BASE_VERSION)
+                .with_chain_id(DOGECOIN_CHAIN_ID)
+                .with_auxpow_bit(true)
+                .build();
+            let aux_pow = AuxPowBuilder::new(pure_header.block_hash()).build();
+            DogecoinBlock {
+                header: Header {
+                    pure_header,
+                    aux_pow: Some(aux_pow),
+                },
+                txdata,
+            }
+        } else {
+            DogecoinBlock {
+                header: header_builder.build().into(),
+                txdata,
+            }
         }
     }
 }
@@ -128,34 +162,63 @@ pub struct HeaderBuilder {
     version: i32,
     prev_header: Option<PureHeader>,
     merkle_root: TxMerkleNode,
+    with_valid_pow: bool,
 }
 
 impl HeaderBuilder {
+    pub fn new() -> Self {
+        Self {
+            version: 1,
+            prev_header: None,
+            merkle_root: TxMerkleNode::all_zeros(),
+            with_valid_pow: true,
+        }
+    }
+
     fn genesis(merkle_root: TxMerkleNode) -> Self {
         Self {
             version: 1,
             prev_header: None,
             merkle_root,
+            with_valid_pow: true,
         }
     }
 
-    fn new_with_prev_header(prev_header: PureHeader, merkle_root: TxMerkleNode) -> Self {
-        Self {
-            version: BASE_VERSION | (DOGECOIN_CHAIN_ID << 16),
-            prev_header: Some(prev_header),
-            merkle_root,
-        }
+    pub fn with_prev_header(mut self, prev_header: PureHeader) -> Self {
+        self.prev_header = Some(prev_header);
+        self
     }
 
-    fn new_with_version(version: i32, merkle_root: TxMerkleNode) -> Self {
-        Self {
-            version,
-            prev_header: None,
-            merkle_root,
-        }
+    pub fn with_merkle_root(mut self, merkle_root: TxMerkleNode) -> Self {
+        self.merkle_root = merkle_root;
+        self
     }
 
-    fn build(self) -> PureHeader {
+    pub fn with_version(mut self, version: i32) -> Self {
+        self.version = version;
+        self
+    }
+
+    pub fn with_chain_id(mut self, chain_id: i32) -> Self {
+        self.version |= chain_id << 16;
+        self
+    }
+
+    pub fn with_auxpow_bit(mut self, auxpow_bit: bool) -> Self {
+        if auxpow_bit {
+            self.version |= VERSION_AUXPOW;
+        } else {
+            self.version &= !VERSION_AUXPOW;
+        }
+        self
+    }
+
+    pub fn with_valid_pow(mut self, valid_pow: bool) -> Self {
+        self.with_valid_pow = valid_pow;
+        self
+    }
+
+    pub fn build(self) -> PureHeader {
         let time = match &self.prev_header {
             Some(header) => header.time + 60,
             None => 0,
@@ -176,7 +239,7 @@ impl HeaderBuilder {
                 .map_or(BlockHash::all_zeros(), |h| h.block_hash()),
         };
 
-        mine_header_to_target(&mut header, true);
+        mine_header_to_target(&mut header, self.with_valid_pow);
 
         header
     }
@@ -189,6 +252,7 @@ pub struct AuxPowBuilder {
     chain_id: i32,
     parent_chain_id: i32,
     base_version: i32,
+    with_valid_pow: bool,
 }
 
 impl AuxPowBuilder {
@@ -200,7 +264,13 @@ impl AuxPowBuilder {
             chain_id: DOGECOIN_CHAIN_ID,
             parent_chain_id: DUMMY_CHAIN_ID,
             base_version: BASE_VERSION,
+            with_valid_pow: true,
         }
+    }
+
+    pub fn with_valid_pow(mut self, valid_pow: bool) -> Self {
+        self.with_valid_pow = valid_pow;
+        self
     }
 
     pub fn build(self) -> AuxPow {
@@ -226,11 +296,15 @@ impl AuxPowBuilder {
             .with_coinbase_script(ScriptBuf::from_bytes(script_data))
             .build();
 
-        let parent_block_header = HeaderBuilder::new_with_version(
-            self.base_version | (self.parent_chain_id << 16),
-            TxMerkleNode::from_byte_array(coinbase_tx.compute_txid().to_byte_array()),
-        )
-        .build();
+        let mut parent_block_header = HeaderBuilder::new()
+            .with_version(self.base_version)
+            .with_chain_id(self.parent_chain_id)
+            .with_merkle_root(TxMerkleNode::from_byte_array(
+                coinbase_tx.compute_txid().to_byte_array(),
+            ))
+            .build();
+
+        mine_header_to_target(&mut parent_block_header, self.with_valid_pow);
 
         AuxPow {
             coinbase_tx,
@@ -340,7 +414,11 @@ impl Default for TransactionBuilder {
 
 /// Builds a random chain with the given number of block and transactions
 /// starting with the Regtest genesis block.
-pub fn build_regtest_chain(num_blocks: u32, num_transactions_per_block: u32) -> Vec<Block> {
+pub fn build_regtest_chain(
+    num_blocks: u32,
+    num_transactions_per_block: u32,
+    with_auxpow: bool,
+) -> Vec<Block> {
     let dogecoin_network = Network::Regtest;
     let genesis_block = Block::new(genesis_block(dogecoin_network));
 
@@ -354,8 +432,13 @@ pub fn build_regtest_chain(num_blocks: u32, num_transactions_per_block: u32) -> 
     let mut value = 1;
 
     // Since we start with a genesis block, we need `num_blocks - 1` additional blocks.
-    for _ in 0..num_blocks - 1 {
-        let mut block_builder = BlockBuilder::new_with_prev_header(*prev_block.header());
+    for i in 0..num_blocks - 1 {
+        let mut block_builder = BlockBuilder::new().with_prev_header(*prev_block.header());
+
+        if with_auxpow && i >= dogecoin_network.params().auxpow_height {
+            block_builder = block_builder.with_auxpow(true);
+        }
+
         let mut transactions = vec![];
         for _ in 0..num_transactions_per_block {
             transactions.push(

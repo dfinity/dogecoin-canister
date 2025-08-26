@@ -49,7 +49,6 @@ fn verify_consecutive_headers_auxpow<T: AuxPowHeaderValidator>(
     let mut store = SimpleHeaderStore::new(*header_0, height_0);
     store.add(*header_1);
     let result = validator.validate_auxpow_header(&store, &header_2, MOCK_CURRENT_TIME);
-    println!("{:?}", result);
     assert!(result.is_ok());
 }
 

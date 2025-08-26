@@ -94,14 +94,14 @@ pub struct BlockBuilder {
 impl BlockBuilder {
     pub fn genesis() -> Self {
         Self {
-            builder: ExternalBlockBuilder::genesis(),
+            builder: ExternalBlockBuilder::new(),
             mock_difficulty: None,
         }
     }
 
     pub fn with_prev_header(prev_header: &Header) -> Self {
         Self {
-            builder: ExternalBlockBuilder::new_with_prev_header(*prev_header),
+            builder: ExternalBlockBuilder::new().with_prev_header(*prev_header),
             mock_difficulty: None,
         }
     }
