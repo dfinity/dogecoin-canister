@@ -41,7 +41,7 @@ fn test_auxpow_version() {
     let (store_auxpow, prev_header_auxpow) = create_header_store_after_auxpow_activation_regtest();
 
     // Version 1 (legacy) - should pass (before AuxPow activation)
-    let dogecoin_header = HeaderBuilder::new()
+    let dogecoin_header = HeaderBuilder::default()
         .with_prev_header(prev_header_legacy)
         .with_version(1)
         .with_chain_id(0)
@@ -55,7 +55,7 @@ fn test_auxpow_version() {
 
     // Version 3 (with no chain ID) - should fail (before AuxPow activation)
     // This should fail because version 3 is not legacy but doesn't have chain ID
-    let dogecoin_header = HeaderBuilder::new()
+    let dogecoin_header = HeaderBuilder::default()
         .with_prev_header(prev_header_legacy)
         .with_version(3)
         .with_chain_id(0)
@@ -69,7 +69,7 @@ fn test_auxpow_version() {
     );
 
     // Version 2 (with no chain ID) - should pass (before AuxPow activation)
-    let dogecoin_header = HeaderBuilder::new()
+    let dogecoin_header = HeaderBuilder::default()
         .with_prev_header(prev_header_legacy)
         .with_version(2)
         .with_chain_id(0)
@@ -82,7 +82,7 @@ fn test_auxpow_version() {
         .is_ok());
 
     // Version 2 (with correct chain ID) - should pass (after AuxPow activation)
-    let dogecoin_header = HeaderBuilder::new()
+    let dogecoin_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
         .with_version(2)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -95,7 +95,7 @@ fn test_auxpow_version() {
         .is_ok());
 
     // AuxPow bit set (with correct chain ID) - should fail (before AuxPow activation)
-    let pure_header = HeaderBuilder::new()
+    let pure_header = HeaderBuilder::default()
         .with_prev_header(prev_header_legacy)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -115,7 +115,7 @@ fn test_auxpow_version() {
     );
 
     // AuxPow bit set (with correct chain ID) - should pass (after AuxPow activation)
-    let pure_header = HeaderBuilder::new()
+    let pure_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -134,7 +134,7 @@ fn test_auxpow_version() {
         .is_ok());
 
     // AuxPow bit set (with wrong chain ID) - should fail (after AuxPow activation)
-    let dogecoin_header = HeaderBuilder::new()
+    let dogecoin_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID + 1)
@@ -154,7 +154,7 @@ fn test_without_auxpow_data() {
     let (legacy_store, prev_header_legacy) = create_header_store_before_auxpow_activation_regtest();
 
     // AuxPow flag unset and no AuxPow data with correct PoW - should pass
-    let dogecoin_header = HeaderBuilder::new()
+    let dogecoin_header = HeaderBuilder::default()
         .with_prev_header(prev_header_legacy)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -167,7 +167,7 @@ fn test_without_auxpow_data() {
         .is_ok());
 
     // AuxPow flag unset and no AuxPow data but bad PoW - should fail
-    let dogecoin_header = HeaderBuilder::new()
+    let dogecoin_header = HeaderBuilder::default()
         .with_prev_header(prev_header_legacy)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -181,7 +181,7 @@ fn test_without_auxpow_data() {
     );
 
     // AuxPow flag set but no AuxPow data - should fail
-    let dogecoin_header = HeaderBuilder::new()
+    let dogecoin_header = HeaderBuilder::default()
         .with_prev_header(prev_header_legacy)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -201,7 +201,7 @@ fn test_with_auxpow_data() {
     let (store_auxpow, prev_header_auxpow) = create_header_store_after_auxpow_activation_regtest();
 
     // Parent block with valid PoW - should pass
-    let pure_header = HeaderBuilder::new()
+    let pure_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -220,7 +220,7 @@ fn test_with_auxpow_data() {
         .is_ok());
 
     // Parent block with invalid PoW - should fail
-    let pure_header = HeaderBuilder::new()
+    let pure_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -240,7 +240,7 @@ fn test_with_auxpow_data() {
     );
 
     // Parent block with invalid PoW and block with valid PoW - should fail
-    let pure_header = HeaderBuilder::new()
+    let pure_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -260,7 +260,7 @@ fn test_with_auxpow_data() {
     );
 
     // AuxPow flag unset but with AuxPow data - should fail
-    let pure_header = HeaderBuilder::new()
+    let pure_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)
@@ -285,7 +285,7 @@ fn test_header_modification_invalidates_auxpow_proof() {
     let validator = DogecoinHeaderValidator::regtest();
     let (store_auxpow, prev_header_auxpow) = create_header_store_after_auxpow_activation_regtest();
 
-    let pure_header = HeaderBuilder::new()
+    let pure_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
         .with_version(BASE_VERSION)
         .with_chain_id(DOGECOIN_CHAIN_ID)

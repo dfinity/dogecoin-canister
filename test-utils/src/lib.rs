@@ -70,6 +70,7 @@ pub fn mine_header_to_target(header: &mut PureHeader, should_pass: bool) {
     }
 }
 
+#[derive(Default)]
 pub struct BlockBuilder {
     header: Option<Header>,
     prev_header: Option<PureHeader>,
@@ -78,15 +79,6 @@ pub struct BlockBuilder {
 }
 
 impl BlockBuilder {
-    pub fn new() -> Self {
-        Self {
-            header: None,
-            prev_header: None,
-            transactions: vec![],
-            with_auxpow: false,
-        }
-    }
-
     pub fn with_prev_header(mut self, prev_header: PureHeader) -> Self {
         self.prev_header = Some(prev_header);
         self
@@ -130,9 +122,8 @@ impl BlockBuilder {
 
         let header_builder = match self.prev_header {
             None => HeaderBuilder::genesis(merkle_root),
-            Some(prev_header) => HeaderBuilder::new()
+            Some(prev_header) => HeaderBuilder::default()
                 .with_prev_header(prev_header)
-                .with_version(BASE_VERSION)
                 .with_merkle_root(merkle_root),
         };
 
@@ -166,16 +157,18 @@ pub struct HeaderBuilder {
     with_valid_pow: bool,
 }
 
-impl HeaderBuilder {
-    pub fn new() -> Self {
+impl Default for HeaderBuilder {
+    fn default() -> Self {
         Self {
-            version: 1,
+            version: BASE_VERSION,
             prev_header: None,
             merkle_root: TxMerkleNode::all_zeros(),
             with_valid_pow: true,
         }
     }
+}
 
+impl HeaderBuilder {
     fn genesis(merkle_root: TxMerkleNode) -> Self {
         Self {
             version: 1,
@@ -297,7 +290,7 @@ impl AuxPowBuilder {
             .with_coinbase_script(ScriptBuf::from_bytes(script_data))
             .build();
 
-        let mut parent_block_header = HeaderBuilder::new()
+        let mut parent_block_header = HeaderBuilder::default()
             .with_version(self.base_version)
             .with_chain_id(self.parent_chain_id)
             .with_merkle_root(TxMerkleNode::from_byte_array(
@@ -434,7 +427,7 @@ pub fn build_regtest_chain(
 
     // Since we start with a genesis block, we need `num_blocks - 1` additional blocks.
     for i in 0..num_blocks - 1 {
-        let mut block_builder = BlockBuilder::new().with_prev_header(*prev_block.header());
+        let mut block_builder = BlockBuilder::default().with_prev_header(*prev_block.header());
 
         if with_auxpow && i >= dogecoin_network.params().auxpow_height {
             block_builder = block_builder.with_auxpow(true);
