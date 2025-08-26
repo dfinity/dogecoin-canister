@@ -70,12 +70,22 @@ pub fn mine_header_to_target(header: &mut PureHeader, should_pass: bool) {
     }
 }
 
-#[derive(Default)]
 pub struct BlockBuilder {
-    header: Option<Header>,
     prev_header: Option<PureHeader>,
+    version: i32,
     transactions: Vec<Transaction>,
     with_auxpow: bool,
+}
+
+impl Default for BlockBuilder {
+    fn default() -> Self {
+        Self {
+            prev_header: None,
+            version: BASE_VERSION,
+            transactions: vec![],
+            with_auxpow: false,
+        }
+    }
 }
 
 impl BlockBuilder {
@@ -84,8 +94,8 @@ impl BlockBuilder {
         self
     }
 
-    pub fn with_header(mut self, header: Header) -> Self {
-        self.header = Some(header);
+    pub fn with_version(mut self, version: i32) -> Self {
+        self.version = version;
         self
     }
 
@@ -107,10 +117,6 @@ impl BlockBuilder {
             self.transactions
         };
 
-        if let Some(header) = self.header {
-            return DogecoinBlock { header, txdata };
-        }
-
         let merkle_root = bitcoin::merkle_tree::calculate_root(
             txdata
                 .iter()
@@ -124,6 +130,7 @@ impl BlockBuilder {
             None => HeaderBuilder::genesis(merkle_root),
             Some(prev_header) => HeaderBuilder::default()
                 .with_prev_header(prev_header)
+                .with_version(self.version)
                 .with_merkle_root(merkle_root),
         };
 

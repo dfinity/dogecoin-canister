@@ -90,6 +90,7 @@ fn init() {
 
     let block_1 = BlockBuilder::default()
         .with_prev_header(*genesis_block(network).header)
+        .with_version(1)
         .with_transaction(tx_1)
         .build();
     append_block(&block_1);
@@ -114,7 +115,9 @@ fn init() {
         )
     }
 
-    let mut block_2 = BlockBuilder::default().with_prev_header(*block_1.header);
+    let mut block_2 = BlockBuilder::default()
+        .with_prev_header(*block_1.header)
+        .with_version(1);
     for tx in block_2_txs.iter() {
         block_2 = block_2.with_transaction(tx.clone());
     }
@@ -125,6 +128,7 @@ fn init() {
     // Remaining blocks contain a single coinbase transaction giving ADDRESS_3 some DOGE.
     let block_3 = BlockBuilder::default()
         .with_prev_header(*block_2.header)
+        .with_version(1)
         .with_transaction(
             TransactionBuilder::new()
                 .with_output(
@@ -138,6 +142,7 @@ fn init() {
 
     let block_4 = BlockBuilder::default()
         .with_prev_header(*block_3.header)
+        .with_version(1)
         .with_transaction(
             TransactionBuilder::new()
                 .with_output(
@@ -169,7 +174,9 @@ fn init() {
         )
     }
 
-    let mut block_5 = BlockBuilder::default().with_prev_header(*block_4.header);
+    let mut block_5 = BlockBuilder::default()
+        .with_prev_header(*block_4.header)
+        .with_version(1);
     for tx in block_5_txs.into_iter() {
         block_5 = block_5.with_transaction(tx);
     }
