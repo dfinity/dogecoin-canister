@@ -321,7 +321,6 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
                 header.extract_chain_id(),
                 self.strict_chain_id(),
             ) {
-                println!("{}", err);
                 return Err(ValidateAuxPowHeaderError::InvalidAuxPoW);
             }
         } else {
