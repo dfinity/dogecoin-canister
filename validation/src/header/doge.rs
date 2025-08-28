@@ -316,11 +316,14 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
             if !target.is_met_by(aux_pow.parent_block_header.block_hash_with_scrypt()) {
                 return Err(ValidateAuxPowHeaderError::InvalidParentPoW);
             }
-            if let Err(err) = aux_pow.check(
-                header.block_hash(),
-                header.extract_chain_id(),
-                self.strict_chain_id(),
-            ) {
+            if aux_pow
+                .check(
+                    header.block_hash(),
+                    header.extract_chain_id(),
+                    self.strict_chain_id(),
+                )
+                .is_err()
+            {
                 return Err(ValidateAuxPowHeaderError::InvalidAuxPoW);
             }
         } else {
