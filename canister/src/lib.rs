@@ -319,8 +319,8 @@ pub(crate) fn is_synced() -> bool {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::test_utils::build_chain;
     use ic_doge_interface::{Fees, Network, NetworkInRequest};
-    use ic_doge_test_utils::build_regtest_chain;
     use proptest::prelude::*;
     use state::ResponseToProcess;
 
@@ -348,12 +348,15 @@ mod test {
         }
     }
 
-    #[test_strategy::proptest(ProptestConfig::with_cases(1))]
+    #[test_strategy::proptest(ProptestConfig::with_cases(10))]
     fn upgrade(
         #[strategy(1..100u128)] stability_threshold: u128,
         #[strategy(1..250u32)] num_blocks: u32,
         #[strategy(1..100u32)] num_transactions_in_block: u32,
     ) {
+        // Reset stable memory for each test case to avoid errors related to UTXOs being inserted twice
+        memory::set_memory(ic_stable_structures::DefaultMemoryImpl::default());
+
         let network = Network::Regtest;
 
         init(InitConfig {
@@ -362,7 +365,7 @@ mod test {
             ..Default::default()
         });
 
-        let blocks = build_regtest_chain(num_blocks, num_transactions_in_block, false);
+        let blocks = build_chain(network, num_blocks, num_transactions_in_block, false);
 
         // Insert all the blocks. Note that we skip the genesis block, as that
         // is already included as part of initializing the state.
