@@ -310,10 +310,7 @@ impl StableStructuresStorable for BlockHeaderBlob {
         Self::from(bytes.to_vec())
     }
 
-    const BOUND: StableStructuresBound = StableStructuresBound::Bounded {
-        max_size: 80,
-        is_fixed_size: true,
-    };
+    const BOUND: StableStructuresBound = StableStructuresBound::Unbounded;
 }
 
 impl From<&Header> for BlockHeaderBlob {
@@ -333,12 +330,6 @@ impl BlockHeaderBlob {
 
 impl From<Vec<u8>> for BlockHeaderBlob {
     fn from(bytes: Vec<u8>) -> Self {
-        assert_eq!(
-            bytes.len(),
-            Self::BOUND.max_size() as usize,
-            "Header must be exactly {} bytes",
-            Self::BOUND.max_size()
-        );
         Self(bytes)
     }
 }
