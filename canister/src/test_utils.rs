@@ -18,29 +18,17 @@ pub fn build_chain(
     network: Network,
     num_blocks: u32,
     num_transactions_per_block: u32,
-) -> Vec<Block> {
-    build_chain_with_genesis_block(
-        network,
-        BlockBuilder::genesis().build(),
-        num_blocks,
-        num_transactions_per_block,
-    )
-}
-
-fn build_chain_with_genesis_block(
-    network: Network,
-    genesis_block: Block,
-    num_blocks: u32,
-    num_transactions_per_block: u32,
+    with_auxpow: bool,
 ) -> Vec<Block> {
     let doge_network = into_dogecoin_network(network);
     let address = random_p2pkh_address(doge_network).into();
+    let genesis_block = genesis_block(network);
     let mut blocks = vec![genesis_block.clone()];
     let mut prev_block: Block = genesis_block;
     let mut value = 1;
 
     // Since we start with a genesis block, we need `num_blocks - 1` additional blocks.
-    for _ in 0..num_blocks - 1 {
+    for i in 1..num_blocks {
         let mut block_builder = BlockBuilder::with_prev_header(prev_block.header());
         let mut transactions = vec![];
         for _ in 0..num_transactions_per_block {
@@ -56,6 +44,10 @@ fn build_chain_with_genesis_block(
 
         for transaction in transactions.iter() {
             block_builder = block_builder.with_transaction(transaction.clone());
+        }
+
+        if !doge_network.params().allow_legacy_blocks(i) {
+            block_builder = block_builder.with_auxpow(with_auxpow);
         }
 
         let block = block_builder.build();
@@ -116,6 +108,13 @@ impl BlockBuilder {
     pub fn with_difficulty(self, difficulty: u128) -> Self {
         Self {
             mock_difficulty: Some(difficulty),
+            ..self
+        }
+    }
+
+    pub fn with_auxpow(self, auxpow: bool) -> Self {
+        Self {
+            builder: self.builder.with_auxpow(auxpow),
             ..self
         }
     }
@@ -193,6 +192,7 @@ pub struct BlockChainBuilder {
     prev_block_header: Option<Header>,
     #[allow(clippy::type_complexity)]
     difficulty_ranges: Vec<((Bound<usize>, Bound<usize>), u128)>,
+    with_auxpow: bool,
 }
 
 impl BlockChainBuilder {
@@ -201,6 +201,7 @@ impl BlockChainBuilder {
             num_blocks,
             prev_block_header: None,
             difficulty_ranges: vec![],
+            with_auxpow: false,
         }
     }
 
@@ -209,7 +210,13 @@ impl BlockChainBuilder {
             num_blocks,
             prev_block_header: Some(*prev_block.header()),
             difficulty_ranges: vec![],
+            with_auxpow: false,
         }
+    }
+
+    pub fn with_auxpow(mut self) -> Self {
+        self.with_auxpow = true;
+        self
     }
 
     /// Sets the difficulty of blocks at the given range of heights.
@@ -239,6 +246,7 @@ impl BlockChainBuilder {
             if let Some(difficulty) = self.get_difficulty(i) {
                 block = block.with_difficulty(difficulty);
             }
+            block = block.with_auxpow(self.with_auxpow);
             blocks.push(block.build());
         }
 

@@ -81,7 +81,7 @@ impl Default for BlockBuilder {
     fn default() -> Self {
         Self {
             prev_header: None,
-            version: BASE_VERSION,
+            version: BASE_VERSION | (DOGECOIN_CHAIN_ID << 16),
             transactions: vec![],
             with_auxpow: false,
         }
@@ -135,11 +135,7 @@ impl BlockBuilder {
         };
 
         if self.with_auxpow {
-            let pure_header = header_builder
-                .with_version(BASE_VERSION)
-                .with_chain_id(DOGECOIN_CHAIN_ID)
-                .with_auxpow_bit(true)
-                .build();
+            let pure_header = header_builder.with_auxpow_bit(true).build();
             let aux_pow = AuxPowBuilder::new(pure_header.block_hash()).build();
             DogecoinBlock {
                 header: Header {
@@ -167,7 +163,7 @@ pub struct HeaderBuilder {
 impl Default for HeaderBuilder {
     fn default() -> Self {
         Self {
-            version: BASE_VERSION,
+            version: BASE_VERSION | (DOGECOIN_CHAIN_ID << 16),
             prev_header: None,
             merkle_root: TxMerkleNode::all_zeros(),
             with_valid_pow: true,
@@ -433,11 +429,11 @@ pub fn build_regtest_chain(
     let mut value = 1;
 
     // Since we start with a genesis block, we need `num_blocks - 1` additional blocks.
-    for i in 0..num_blocks - 1 {
+    for i in 1..num_blocks {
         let mut block_builder = BlockBuilder::default().with_prev_header(*prev_block.header());
 
-        if with_auxpow && i >= dogecoin_network.params().auxpow_height {
-            block_builder = block_builder.with_auxpow(true);
+        if !dogecoin_network.params().allow_legacy_blocks(i) {
+            block_builder = block_builder.with_auxpow(with_auxpow);
         }
 
         let mut transactions = vec![];
