@@ -14,10 +14,10 @@ type BlockHeaderBlob = Vec<u8>;
 type BlockHash = Vec<u8>;
 
 const ADDRESS_1: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
-const ADDRESS_2: &str = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto"; // bcrt1qxp8ercrmfxlu0s543najcj6fe6267j97tv7rgf
-const ADDRESS_3: &str = "mvTiuZm1LtzMLzr7QcF2JHo37oQwsGWG8Z"; // bcrt1qp045tvzkxx0292645rxem9eryc7jpwsk3dy60h
-const ADDRESS_4: &str = "mrMGZmyXejVdfDdRwDywKt1q8WQStZRW7q"; // bcrt1qjft8fhexv4znxu22hed7gxtpy2wazjn0x079mn
-const ADDRESS_5: &str = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW"; // bcrt1qenhfslne5vdqld0djs0h0tfw225tkkzzc60exh
+const ADDRESS_2: &str = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
+const ADDRESS_3: &str = "mvTiuZm1LtzMLzr7QcF2JHo37oQwsGWG8Z";
+const ADDRESS_4: &str = "mrMGZmyXejVdfDdRwDywKt1q8WQStZRW7q";
+const ADDRESS_5: &str = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 
 #[derive(CandidType, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 enum Network {
