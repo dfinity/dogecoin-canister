@@ -83,7 +83,7 @@ fn init() {
     let mut prev_header = genesis_block(network).header;
     let mut lock_time_offset = 0;
     for _ in 0..NUM_BLOCKS {
-        let mut block = BlockBuilder::with_prev_header(prev_header);
+        let mut block = BlockBuilder::default().with_prev_header(*prev_header);
         for i in lock_time_offset..lock_time_offset + TXS_PER_BLOCK {
             // A transaction giving 1 satoshi to the address.
             block = block.with_transaction(

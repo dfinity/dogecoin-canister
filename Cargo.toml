@@ -25,7 +25,7 @@ resolver = "2"
 
 [workspace.dependencies]
 assert_matches = "1.5.0"
-bitcoin = { git = "https://github.com/dfinity/rust-dogecoin.git", rev = "2f6c5a7de7b042051acf5a97eeb8e078d1b6af09" }
+bitcoin = { git = "https://github.com/dfinity/rust-dogecoin.git", rev = "851705aa88e0a2f0f8b5002173b4cdb1d218a4e5" }
 byteorder = "1.4.3"
 canbench-rs = "0.2.0"
 candid = "0.10.6"

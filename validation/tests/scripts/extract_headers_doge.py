@@ -1,13 +1,20 @@
 """
-Dogecoin Block Header Extractor
+Dogecoin Block Header Extractor with AuxPow Support
 
 This script extracts block headers from Dogecoin blockchain data files (blk*.dat) and
 reconstructs the blockchain chain starting from the genesis block. It can output headers
-in either raw hex format or parsed format.
+in either raw hex format or parsed format, and supports auxiliary proof of work (auxpow).
 
 The script supports mainnet, testnet, and regtest networks. It reads binary blockchain data,
 identifies blocks using the appropriate network magic bytes, extracts 80-byte headers, and
 builds a chain by following previous block hash references.
+
+For blocks with auxpow (auxiliary proof of work), the script automatically detects them
+based on the version field and extracts the auxpow data:
+- Raw mode: outputs header + auxpow data concatenated as hex
+- Parsed mode: outputs header fields plus 7 separate auxpow columns:
+  coinbase_tx, parent_hash, coinbase_branch, coinbase_index,
+  blockchain_branch, blockchain_index, parent_block_header
 
 Since each blk*.dat file contains a limited number of blocks, you may need to provide
 multiple files to cover your desired block range.
@@ -18,6 +25,12 @@ Usage:
 Example:
     python extract_headers_doge.py blk00000.dat --end-block 5000 -o data/block_headers_mainnet_doge.csv
     python extract_headers_doge.py blk00000.dat --start-block 1 --end-block 5000 -o data/headers_doge_1_5000.csv --parsed
+
+Note: AuxPow (Auxiliary Proof of Work) blocks are automatically detected and handled.
+      In raw mode, auxpow data is concatenated to the header hex.
+      In parsed mode, auxpow data is split into 7 separate columns:
+      coinbase_tx, parent_hash, coinbase_branch, coinbase_index,
+      blockchain_branch, blockchain_index, parent_block_header
 """
 
 import struct
@@ -45,6 +58,205 @@ HEADER_SIZE = 80
 
 def double_sha256(b):
     return hashlib.sha256(hashlib.sha256(b).digest()).digest()
+
+def has_auxpow(version):
+    """
+    Check if a block version indicates it has auxiliary proof of work.
+
+    Args:
+        version (int): Block version as 32-bit integer
+
+    Returns:
+        bool: True if block has auxpow, False otherwise
+    """
+    # Check if auxpow flag (0x100) is set in version
+    return (version & 0x100) != 0
+
+def read_varint(data, offset):
+    """
+    Read a variable-length integer from binary data.
+
+    Ref: <https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer>
+
+    Args:
+        data (bytes): Binary data to read from
+        offset (int): Starting offset in data
+
+    Returns:
+        tuple: (value, new_offset) where value is the parsed integer
+               and new_offset is the position after the varint
+    """
+    if offset >= len(data):
+        return 0, offset
+
+    first_byte = data[offset]
+
+    if first_byte < 0xfd:
+        return first_byte, offset + 1
+    elif first_byte == 0xfd:
+        if offset + 3 > len(data):
+            return 0, offset
+        return struct.unpack('<H', data[offset + 1:offset + 3])[0], offset + 3
+    elif first_byte == 0xfe:
+        if offset + 5 > len(data):
+            return 0, offset
+        return struct.unpack('<I', data[offset + 1:offset + 5])[0], offset + 5
+    else:  # first_byte == 0xff
+        if offset + 9 > len(data):
+            return 0, offset
+        return struct.unpack('<Q', data[offset + 1:offset + 9])[0], offset + 9
+
+def extract_auxpow_data(block_data, header_version, parsed_mode=False):
+    """
+    Extract auxpow data from block if present.
+
+    Args:
+        block_data (bytes): Full block data starting from header
+        header_version (int): Block version to check for auxpow flag
+        parsed_mode (bool): If True, return parsed components; if False, return raw hex
+
+    Returns:
+        For parsed_mode=False: tuple (auxpow_data_hex, total_size)
+        For parsed_mode=True: tuple (auxpow_components, total_size) where auxpow_components is dict
+    """
+    if not has_auxpow(header_version):
+        if parsed_mode:
+            return {"coinbase_tx": "", "parent_hash": "", "coinbase_branch": "",
+                   "coinbase_index": "", "blockchain_branch": "", "blockchain_index": "",
+                   "parent_block_header": ""}, HEADER_SIZE
+        else:
+            return "", HEADER_SIZE
+
+    # AuxPow data starts after the 80-byte header
+    auxpow_start = HEADER_SIZE
+    
+    try:
+        if len(block_data) < auxpow_start + 1:
+            raise ValueError("Block too short for auxpow data")
+    
+        # Parse the auxpow structure:
+        # 1. Coinbase transaction (variable length)
+        # 2. Parent hash (32 bytes)
+        # 3. Coinbase merkle branch (variable length array)
+        # 4. Coinbase merkle index (4 bytes)
+        # 5. Blockchain merkle branch (variable length array)
+        # 6. Blockchain merkle index (4 bytes)
+        # 7. Parent block header (80 bytes)
+
+        offset = auxpow_start
+        coinbase_start = offset
+
+        # Read coinbase transaction - starts with version (4 bytes)
+        if offset + 4 > len(block_data):
+            raise ValueError("Not enough data for coinbase version")
+
+        coinbase_version = struct.unpack('<I', block_data[offset:offset + 4])[0]
+        offset += 4
+
+        # Read input count
+        input_count, offset = read_varint(block_data, offset)
+
+        # Skip inputs
+        for _ in range(input_count):
+            # Previous transaction hash (32 bytes) + output index (4 bytes)
+            offset += 36
+            if offset > len(block_data):
+                raise ValueError("Not enough data for input")
+
+            # Script length and script
+            script_len, offset = read_varint(block_data, offset)
+            offset += script_len
+            if offset > len(block_data):
+                raise ValueError("Not enough data for input script")
+
+            # Sequence (4 bytes)
+            offset += 4
+            if offset > len(block_data):
+                raise ValueError("Not enough data for sequence")
+
+        # Read output count
+        output_count, offset = read_varint(block_data, offset)
+
+        # Skip outputs
+        for _ in range(output_count):
+            # Value (8 bytes)
+            offset += 8
+            if offset > len(block_data):
+                raise ValueError("Not enough data for output value")
+
+            # Script length and script
+            script_len, offset = read_varint(block_data, offset)
+            offset += script_len
+            if offset > len(block_data):
+                raise ValueError("Not enough data for output script")
+
+        # Lock time (4 bytes)
+        offset += 4
+        if offset > len(block_data):
+            raise ValueError("Not enough data for lock time")
+
+        # Extract coinbase transaction
+        coinbase_tx = block_data[coinbase_start:offset]
+
+        # Parent hash (32 bytes)
+        if offset + 32 > len(block_data):
+            raise ValueError("Not enough data for parent hash")
+        parent_hash = block_data[offset:offset + 32]
+        offset += 32
+
+        # Coinbase merkle branch count and hashes
+        coinbase_branch_start = offset
+        coinbase_merkle_count, offset = read_varint(block_data, offset)
+        offset += coinbase_merkle_count * 32
+        if offset > len(block_data):
+            raise ValueError("Not enough data for coinbase merkle branch")
+        coinbase_branch = block_data[coinbase_branch_start:offset]
+
+        # Coinbase merkle index (4 bytes)
+        if offset + 4 > len(block_data):
+            raise ValueError("Not enough data for coinbase index")
+        coinbase_index = block_data[offset:offset + 4]
+        offset += 4
+
+        # Blockchain merkle branch count and hashes
+        blockchain_branch_start = offset
+        blockchain_merkle_count, offset = read_varint(block_data, offset)
+        offset += blockchain_merkle_count * 32
+        if offset > len(block_data):
+            raise ValueError("Not enough data for blockchain merkle branch")
+        blockchain_branch = block_data[blockchain_branch_start:offset]
+
+        # Blockchain merkle index (4 bytes)
+        if offset + 4 > len(block_data):
+            raise ValueError("Not enough data for blockchain index")
+        blockchain_index = block_data[offset:offset + 4]
+        offset += 4
+
+        # Parent block header (80 bytes)
+        if offset + 80 > len(block_data):
+            raise ValueError("Not enough data for parent block header")
+        parent_block_header = block_data[offset:offset + 80]
+        offset += 80
+
+        if parsed_mode:
+            return {
+                "coinbase_tx": coinbase_tx.hex(),
+                "parent_hash": parent_hash[::-1].hex(),  # Reverse for display (little->big endian)
+                "coinbase_branch": coinbase_branch.hex(),
+                "coinbase_index": coinbase_index.hex(),
+                "blockchain_branch": blockchain_branch.hex(),
+                "blockchain_index": blockchain_index.hex(),
+                "parent_block_header": parent_block_header.hex()
+            }, offset
+        else:
+            # Extract all auxpow data for raw mode
+            auxpow_data = block_data[auxpow_start:offset]
+            return auxpow_data.hex(), offset
+
+    except (struct.error, ValueError, IndexError) as e:
+        # If we can't parse the auxpow data, raise error to stop script execution
+        raise ValueError(f"Failed to parse auxpow data: {str(e)}. "
+                        f"Block may be corrupted or have unsupported auxpow format.")
 
 def read_headers_from_blk_files(file_paths, include_parsed_headers, network_config):
     """
@@ -75,12 +287,13 @@ def read_headers_from_blk_files(file_paths, include_parsed_headers, network_conf
         prev_hash.update(file_prev_hash)
         print(f"  Found {len(file_headers)} headers in {file_path}")
     
+    # Convert prev_hash mapping to next_hash mapping
     next_hash = {}
     for curr_hash, prev_block_hash in prev_hash.items():
         next_hash[prev_block_hash] = curr_hash
-    
+
     return headers, next_hash
-    
+
 def read_headers_from_single_blk(file_path, include_parsed_headers, network_config):
     """
     Extract all block headers from a single Dogecoin blockchain data file (blk*.dat).
@@ -135,14 +348,37 @@ def read_headers_from_single_blk(file_path, include_parsed_headers, network_conf
         # Extract the 80-byte header (always at start of block)
         header = block[:HEADER_SIZE]
         
+        # Parse version to check for auxpow
+        version = struct.unpack('<I', header[0:4])[0]
+
         # Calculate block hash using double SHA-256 (Bitcoin/Dogecoin standard)
         block_hash = double_sha256(header)
 
-        # Store header (parsed tuple or hex string) and previous hash mapping
-        if include_parsed_headers:
-            headers[block_hash] = parse_block_header(header)
-        else:
-            headers[block_hash] = header.hex()
+        # Extract auxpow data if present
+        try:
+            if include_parsed_headers:
+                auxpow_data, total_header_size = extract_auxpow_data(block, version, parsed_mode=True)
+                parsed_header = parse_block_header(header)
+                # Add auxpow components as additional fields for parsed headers
+                headers[block_hash] = (*parsed_header,
+                                     auxpow_data["coinbase_tx"],
+                                     auxpow_data["parent_hash"],
+                                     auxpow_data["coinbase_branch"],
+                                     auxpow_data["coinbase_index"],
+                                     auxpow_data["blockchain_branch"],
+                                     auxpow_data["blockchain_index"],
+                                     auxpow_data["parent_block_header"])
+            else:
+                # For raw headers, concatenate header with auxpow data
+                auxpow_hex, total_header_size = extract_auxpow_data(block, version, parsed_mode=False)
+                if auxpow_hex:
+                    headers[block_hash] = header.hex() + auxpow_hex
+                else:
+                    headers[block_hash] = header.hex()
+        except ValueError as e:
+            # Add context about which block failed
+            block_hash_hex = block_hash.hex()
+            raise ValueError(f"Error processing block {block_hash_hex} in file {file_path}: {str(e)}")
 
         # Map block hash to previous block hash extracted from header (bytes 4-36)
         prev_hash[block_hash] = header[4:36]
@@ -195,7 +431,7 @@ def reconstruct_chain(headers, next_hash, genesis_hash, start_block=0, end_block
                 print(f"Warning: Chain ends at block {block_number}, but end_block is {end_block}")
                 print("You may need to provide additional blk*.dat files to cover the desired range.")
             break  # No successor found - end of chain
-            
+
         block_number += 1
 
     return chain
@@ -214,7 +450,9 @@ def write_headers_to_csv(headers, output_file, include_header):
     if include_header:
         with open(output_file, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(['version', 'prev_block', 'merkle_root', 'timestamp', 'bits', 'nonce'])
+            writer.writerow(['version', 'prev_block', 'merkle_root', 'timestamp', 'bits', 'nonce',
+                           'auxpow_coinbase_tx', 'auxpow_parent_hash', 'auxpow_coinbase_branch', 'auxpow_coinbase_index',
+                           'auxpow_blockchain_branch', 'auxpow_blockchain_index', 'auxpow_parent_block_header'])
             for header in headers:
                 writer.writerow(header)
     else:
@@ -265,4 +503,11 @@ def main():
     print(f"Written {len(chain_headers)} headers to CSV: {args.output}")
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except ValueError as e:
+        print(f"Error: {str(e)}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}", file=sys.stderr)
+        sys.exit(1)

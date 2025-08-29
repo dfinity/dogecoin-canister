@@ -5,6 +5,9 @@ pub mod doge;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "doge")]
+use bitcoin::dogecoin::Header as AuxPowHeader;
+
 use crate::BlockHeight;
 use bitcoin::{block::Header, BlockHash, CompactTarget, Target};
 use std::time::Duration;
@@ -33,6 +36,37 @@ pub enum ValidateHeaderError {
     /// Used when the predecessor of the input header is not found in the
     /// HeaderStore.
     PrevHeaderNotFound,
+    #[cfg(feature = "doge")]
+    /// Used when version field is obsolete
+    VersionObsolete,
+    #[cfg(feature = "doge")]
+    /// Used when legacy blocks are not allowed
+    LegacyBlockNotAllowed,
+    #[cfg(feature = "doge")]
+    /// Used when AuxPow blocks are not allowed
+    AuxPowBlockNotAllowed,
+}
+
+#[cfg(feature = "doge")]
+#[derive(Debug, PartialEq)]
+pub enum ValidateAuxPowHeaderError {
+    /// Used when the PureHeader fails validation
+    ValidatePureHeader(ValidateHeaderError),
+    /// Used when the chain ID in the header is invalid
+    InvalidChainId,
+    /// Used when the AuxPow bit in the version field is not set properly
+    InconsistentAuxPowBitSet,
+    /// Used when the AuxPow proof is incorrect
+    InvalidAuxPoW,
+    /// Used when the PoW in the parent block is invalid
+    InvalidParentPoW,
+}
+
+#[cfg(feature = "doge")]
+impl From<ValidateHeaderError> for ValidateAuxPowHeaderError {
+    fn from(err: ValidateHeaderError) -> Self {
+        ValidateAuxPowHeaderError::ValidatePureHeader(err)
+    }
 }
 
 const ONE_HOUR: u64 = 3_600;
@@ -168,4 +202,24 @@ pub trait HeaderValidator {
         prev_header: &Header,
         prev_height: BlockHeight,
     ) -> CompactTarget;
+}
+
+#[cfg(feature = "doge")]
+pub trait AuxPowHeaderValidator: HeaderValidator {
+    /// Returns `true` if the strict-chain-id rule is enabled.
+    fn strict_chain_id(&self) -> bool;
+    /// Returns the chain id used in this blockchain for AuxPow mining.
+    fn auxpow_chain_id(&self) -> i32;
+    /// Returns `true` if mining a legacy block is allowed.
+    fn allow_legacy_blocks(&self, height: u32) -> bool;
+
+    /// Validates an AuxPow header. If a failure occurs, a
+    /// [ValidateAuxPowHeaderError](ValidateAuxPowHeaderError) will be returned.
+    #[allow(dead_code)]
+    fn validate_auxpow_header(
+        &self,
+        store: &impl HeaderStore,
+        header: &AuxPowHeader,
+        current_time: u64,
+    ) -> Result<(), ValidateAuxPowHeaderError>;
 }

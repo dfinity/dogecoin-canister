@@ -1,7 +1,12 @@
-use crate::header::{is_timestamp_valid, HeaderStore, HeaderValidator, ValidateHeaderError};
+use crate::header::{
+    is_timestamp_valid, AuxPowHeaderValidator, HeaderStore, HeaderValidator,
+    ValidateAuxPowHeaderError, ValidateHeaderError,
+};
 use crate::BlockHeight;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
-use bitcoin::{block::Header, CompactTarget, Target};
+use bitcoin::{
+    block::Header as PureHeader, dogecoin::Header as DogecoinHeader, CompactTarget, Target,
+};
 use std::time::Duration;
 
 /// Height after which the allow_min_difficulty_blocks parameter becomes active for Digishield blocks.
@@ -27,6 +32,55 @@ impl DogecoinHeaderValidator {
 
     pub fn regtest() -> Self {
         Self::new(DogecoinNetwork::Regtest)
+    }
+
+    /// Context-dependent header validity checks
+    /// Ref: <https://github.com/dogecoin/dogecoin/blob/215fc33d08ef55cdb52a639bb2d8ce0af502c126/src/validation.cpp#L3065>
+    fn contextual_check_header(
+        &self,
+        store: &impl HeaderStore,
+        header: &PureHeader,
+        current_time: u64,
+    ) -> Result<Target, ValidateHeaderError> {
+        let prev_height = store.height();
+        let height = prev_height + 1;
+        let prev_header = match store.get_with_block_hash(&header.prev_blockhash) {
+            Some(result) => result,
+            None => {
+                return Err(ValidateHeaderError::PrevHeaderNotFound);
+            }
+        };
+
+        if !self.allow_legacy_blocks(height) && header.is_legacy() {
+            return Err(ValidateHeaderError::LegacyBlockNotAllowed);
+        }
+
+        if self.allow_legacy_blocks(height) && header.has_auxpow_bit() {
+            return Err(ValidateHeaderError::AuxPowBlockNotAllowed);
+        }
+
+        is_timestamp_valid(store, header, current_time)?;
+
+        if (header.extract_base_version() < 3 && height >= self.network().params().bip66_height)
+            || (header.extract_base_version() < 4 && height >= self.network().params().bip65_height)
+        {
+            return Err(ValidateHeaderError::VersionObsolete);
+        }
+
+        let header_target = header.target();
+        if header_target > self.max_target() {
+            return Err(ValidateHeaderError::TargetDifficultyAboveMax);
+        }
+
+        let target = self.get_next_target(store, &prev_header, prev_height, header.time);
+
+        let header_target = header.target();
+        if target != header_target {
+            println!("bad target");
+            return Err(ValidateHeaderError::InvalidPoWForComputedTarget);
+        }
+
+        Ok(target)
     }
 }
 
@@ -68,29 +122,10 @@ impl HeaderValidator for DogecoinHeaderValidator {
     fn validate_header(
         &self,
         store: &impl HeaderStore,
-        header: &Header,
+        header: &PureHeader,
         current_time: u64,
     ) -> Result<(), ValidateHeaderError> {
-        let prev_height = store.height();
-        let prev_header = match store.get_with_block_hash(&header.prev_blockhash) {
-            Some(result) => result,
-            None => {
-                return Err(ValidateHeaderError::PrevHeaderNotFound);
-            }
-        };
-
-        is_timestamp_valid(store, header, current_time)?;
-
-        let header_target = header.target();
-        if header_target > self.max_target() {
-            return Err(ValidateHeaderError::TargetDifficultyAboveMax);
-        }
-
-        if header.validate_pow_with_scrypt(header_target).is_err() {
-            return Err(ValidateHeaderError::InvalidPoWForHeaderTarget);
-        }
-
-        let target = self.get_next_target(store, &prev_header, prev_height, header.time);
+        let target = self.contextual_check_header(store, header, current_time)?;
 
         if let Err(err) = header.validate_pow_with_scrypt(target) {
             match err {
@@ -107,7 +142,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
     fn get_next_target(
         &self,
         store: &impl HeaderStore,
-        prev_header: &Header,
+        prev_header: &PureHeader,
         prev_height: BlockHeight,
         timestamp: u32,
     ) -> Target {
@@ -149,7 +184,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
     fn find_next_difficulty_in_chain(
         &self,
         store: &impl HeaderStore,
-        prev_header: &Header,
+        prev_header: &PureHeader,
         prev_height: BlockHeight,
     ) -> CompactTarget {
         // This is the maximum difficulty target for the network
@@ -196,7 +231,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
     fn compute_next_difficulty(
         &self,
         store: &impl HeaderStore,
-        prev_header: &Header,
+        prev_header: &PureHeader,
         prev_height: BlockHeight,
     ) -> CompactTarget {
         // Pre-Digishield: difficulty is adjusted every 240 blocks.
@@ -240,5 +275,65 @@ impl HeaderValidator for DogecoinHeaderValidator {
             self.network,
             height,
         )
+    }
+}
+
+impl AuxPowHeaderValidator for DogecoinHeaderValidator {
+    fn strict_chain_id(&self) -> bool {
+        self.network().params().strict_chain_id
+    }
+
+    fn auxpow_chain_id(&self) -> i32 {
+        self.network().params().auxpow_chain_id
+    }
+
+    fn allow_legacy_blocks(&self, height: u32) -> bool {
+        self.network.params().allow_legacy_blocks(height)
+    }
+
+    /// AuxPow header validation
+    /// Ref: <https://github.com/dogecoin/dogecoin/blob/51cbc1fd5d0d045dda2ad84f53572bbf524c6a8e/src/dogecoin.cpp#L89>
+    fn validate_auxpow_header(
+        &self,
+        store: &impl HeaderStore,
+        header: &DogecoinHeader,
+        current_time: u64,
+    ) -> Result<(), ValidateAuxPowHeaderError> {
+        if !header.is_legacy()
+            && self.strict_chain_id()
+            && header.extract_chain_id() != self.auxpow_chain_id()
+        {
+            return Err(ValidateAuxPowHeaderError::InvalidChainId);
+        }
+
+        if let Some(aux_pow) = header.aux_pow.as_ref() {
+            if !header.has_auxpow_bit() {
+                return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
+            }
+
+            let target = self.contextual_check_header(store, &header.pure_header, current_time)?;
+
+            if !target.is_met_by(aux_pow.parent_block_header.block_hash_with_scrypt()) {
+                return Err(ValidateAuxPowHeaderError::InvalidParentPoW);
+            }
+            if aux_pow
+                .check(
+                    header.block_hash(),
+                    header.extract_chain_id(),
+                    self.strict_chain_id(),
+                )
+                .is_err()
+            {
+                return Err(ValidateAuxPowHeaderError::InvalidAuxPoW);
+            }
+        } else {
+            if header.has_auxpow_bit() {
+                return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
+            }
+
+            self.validate_header(store, &header.pure_header, current_time)?;
+        }
+
+        Ok(())
     }
 }
