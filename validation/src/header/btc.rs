@@ -5,6 +5,9 @@ use bitcoin::network::Network as BitcoinNetwork;
 use bitcoin::{block::Header, CompactTarget, Target};
 use std::time::Duration;
 
+/// Expected number of blocks for 2 weeks in Bitcoin (2_016).
+pub const DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN: BlockHeight = 6 * 24 * 14;
+
 pub struct BitcoinHeaderValidator {
     network: BitcoinNetwork,
 }
