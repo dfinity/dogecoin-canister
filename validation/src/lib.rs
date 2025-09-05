@@ -1,4 +1,3 @@
-mod constants;
 mod header;
 
 pub use crate::header::{HeaderStore, HeaderValidator, ValidateHeaderError};
