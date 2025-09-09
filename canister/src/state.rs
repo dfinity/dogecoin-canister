@@ -16,7 +16,7 @@ use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{
-    AuxPowHeaderValidator, DogecoinHeaderValidator, ValidateAuxPowHeaderError as InsertBlockError,
+    AuxPowHeaderValidator, DogecoinHeaderValidator, ValidateHeaderError as InsertBlockError,
     ValidateHeaderError,
 };
 use serde::{Deserialize, Serialize};

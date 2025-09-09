@@ -52,11 +52,11 @@ impl DogecoinHeaderValidator {
         };
 
         if !self.allow_legacy_blocks(height) && header.is_legacy() {
-            return Err(ValidateHeaderError::LegacyBlockNotAllowed);
+            return Err(ValidateAuxPowHeaderError::LegacyBlockNotAllowed.into());
         }
 
         if self.allow_legacy_blocks(height) && header.has_auxpow_bit() {
-            return Err(ValidateHeaderError::AuxPowBlockNotAllowed);
+            return Err(ValidateAuxPowHeaderError::AuxPowBlockNotAllowed.into());
         }
 
         is_timestamp_valid(store, header, current_time)?;
@@ -64,7 +64,7 @@ impl DogecoinHeaderValidator {
         if (header.extract_base_version() < 3 && height >= self.network().params().bip66_height)
             || (header.extract_base_version() < 4 && height >= self.network().params().bip65_height)
         {
-            return Err(ValidateHeaderError::VersionObsolete);
+            return Err(ValidateAuxPowHeaderError::VersionObsolete.into());
         }
 
         let header_target = header.target();
@@ -298,23 +298,23 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
         store: &impl HeaderStore,
         header: &DogecoinHeader,
         current_time: u64,
-    ) -> Result<(), ValidateAuxPowHeaderError> {
+    ) -> Result<(), ValidateHeaderError> {
         if !header.is_legacy()
             && self.strict_chain_id()
             && header.extract_chain_id() != self.auxpow_chain_id()
         {
-            return Err(ValidateAuxPowHeaderError::InvalidChainId);
+            return Err(ValidateAuxPowHeaderError::InvalidChainId.into());
         }
 
         if let Some(aux_pow) = header.aux_pow.as_ref() {
             if !header.has_auxpow_bit() {
-                return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
+                return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet.into());
             }
 
             let target = self.contextual_check_header(store, &header.pure_header, current_time)?;
 
             if !target.is_met_by(aux_pow.parent_block_header.block_hash_with_scrypt()) {
-                return Err(ValidateAuxPowHeaderError::InvalidParentPoW);
+                return Err(ValidateAuxPowHeaderError::InvalidParentPoW.into());
             }
             if aux_pow
                 .check(
@@ -324,11 +324,11 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
                 )
                 .is_err()
             {
-                return Err(ValidateAuxPowHeaderError::InvalidAuxPoW);
+                return Err(ValidateAuxPowHeaderError::InvalidAuxPoW.into());
             }
         } else {
             if header.has_auxpow_bit() {
-                return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet);
+                return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet.into());
             }
 
             self.validate_header(store, &header.pure_header, current_time)?;
