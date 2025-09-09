@@ -235,7 +235,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
 
         let validation_result =
             match ValidationContext::new_with_next_block_headers(state, &block_header)
-                .map_err(|_| ValidateHeaderError::PrevHeaderNotFound.into())
+                .map_err(|_| ValidateHeaderError::PrevHeaderNotFound)
             {
                 Ok(store) => validator.validate_auxpow_header(&store, &block_header, time_secs()),
                 Err(err) => Err(err),
