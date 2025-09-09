@@ -114,7 +114,7 @@ fn test_difficulty_adjustments_mainnet() {
     verify_difficulty_adjustment(
         &BitcoinHeaderValidator::mainnet(),
         btc_files::MAINNET_HEADERS_0_782282_RAW,
-        782_282,
+        782_281,
     );
 }
 
@@ -123,7 +123,7 @@ fn test_difficulty_adjustments_testnet() {
     verify_difficulty_adjustment(
         &BitcoinHeaderValidator::testnet(),
         btc_files::TESTNET_HEADERS_0_2425489_RAW,
-        2_425_489,
+        2_425_488,
     );
 }
 
