@@ -688,28 +688,24 @@ mod test {
 
     #[test]
     fn deserialize_very_deep_block_tree() {
-        let chain = BlockChainBuilder::new(5_000).build();
-        let mut tree = BlockTree::new(chain[0].clone());
-
-        for block in chain.into_iter().skip(1) {
-            tree.extend(block).unwrap();
+        fn grow_tree(chain: Vec<Block>) -> BlockTree {
+            let mut tree = BlockTree::new(chain[0].clone());
+            for block in chain.into_iter().skip(1) {
+                tree.extend(block).unwrap();
+            }
+            tree
         }
 
-        let mut bytes = vec![];
-        ciborium::ser::into_writer(&tree, &mut bytes).unwrap();
-        let new_tree: BlockTree = ciborium::de::from_reader(&bytes[..]).unwrap();
-        assert_eq!(tree, new_tree);
+        let num_blocks = 5_000;
+
+        let tree = grow_tree(BlockChainBuilder::new(num_blocks).build());
+        let tree_with_auxpow = grow_tree(BlockChainBuilder::new(num_blocks).with_auxpow().build());
+
+        check_roundtrip_deserialization(tree);
+        check_roundtrip_deserialization(tree_with_auxpow);
     }
 
-    #[test]
-    fn deserialize_very_deep_block_tree_auxpow() {
-        let chain = BlockChainBuilder::new(5_000).with_auxpow().build();
-        let mut tree = BlockTree::new(chain[0].clone());
-
-        for block in chain.into_iter().skip(1) {
-            tree.extend(block).unwrap();
-        }
-
+    fn check_roundtrip_deserialization(tree: BlockTree) {
         let mut bytes = vec![];
         ciborium::ser::into_writer(&tree, &mut bytes).unwrap();
         let new_tree: BlockTree = ciborium::de::from_reader(&bytes[..]).unwrap();
