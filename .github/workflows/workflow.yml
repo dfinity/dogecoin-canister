@@ -498,6 +498,16 @@ jobs:
           name: canbench_results_${{ matrix.name }}_csv
           path: /tmp/canbench_results_${{ matrix.name }}.csv
 
+      - name: Pass or fail
+        run: |
+          bash ./scripts/canbench_ci_post_run_benchmark.sh
+
+  upload-pr-number:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Save PR number
         run: |
           echo ${{ github.event.number }} > /tmp/pr_number
@@ -506,10 +516,6 @@ jobs:
         with:
           name: pr_number
           path: /tmp/pr_number
-
-      - name: Pass or fail
-        run: |
-          bash ./scripts/canbench_ci_post_run_benchmark.sh
 
   watchdog_health_status:
     runs-on: ubuntu-latest
