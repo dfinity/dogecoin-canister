@@ -459,7 +459,7 @@ jobs:
             project_dir: ./benchmarks/auxpow
 
     env:
-      PROJECT_DIR: .
+      PROJECT_DIR: ${{ matrix.project_dir }}
     steps:
       - name: Checkout current PR
         uses: actions/checkout@v4
@@ -486,12 +486,12 @@ jobs:
 
       - name: Benchmark
         run: |
-          bash ./scripts/canbench_ci_run_benchmark.sh $PROJECT_DIR ${{ github.job }}
+          bash ./scripts/canbench_ci_run_benchmark.sh $PROJECT_DIR ${{ matrix.name }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: canbench_result_${{github.job}}
-          path: /tmp/canbench_result_${{ github.job }}
+          name: canbench_result_${{ matrix.name }}
+          path: /tmp/canbench_result_${{ matrix.name }}
 
       - uses: actions/upload-artifact@v4
         with:
