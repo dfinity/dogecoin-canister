@@ -445,6 +445,19 @@ jobs:
 
   benchmark:
     runs-on: ubuntu-latest
+    needs: cargo-build
+    strategy:
+      matrix:
+        name:
+          - legacy
+          - auxpow
+
+        include:
+          - name: legacy
+            project_dir: ./benchmarks/legacy
+          - name: auxpow
+            project_dir: ./benchmarks/auxpow
+
     env:
       PROJECT_DIR: .
     steps:

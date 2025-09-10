@@ -4,8 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "benchmarks"
-path = "src/main.rs"
+name = "benchmarks-legacy"
+path = "legacy/src/main.rs"
+bench = false
+
+[[bin]]
+name = "benchmarks-auxpow"
+path = "auxpow/src/main.rs"
 bench = false
 
 [dependencies]
