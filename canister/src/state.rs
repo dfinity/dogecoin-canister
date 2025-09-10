@@ -11,12 +11,13 @@ use crate::{
     validation::ValidationContext,
     UtxoSet,
 };
-use bitcoin::{block::Header, consensus::Decodable};
+use bitcoin::{consensus::Decodable, dogecoin::Header};
 use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{
-    DogecoinHeaderValidator, HeaderValidator, ValidateHeaderError as InsertBlockError,
+    AuxPowHeaderValidator, DogecoinHeaderValidator, ValidateHeaderError as InsertBlockError,
+    ValidateHeaderError,
 };
 use serde::{Deserialize, Serialize};
 
@@ -128,10 +129,10 @@ impl State {
 pub fn insert_block(state: &mut State, block: Block) -> Result<(), InsertBlockError> {
     let start = performance_counter();
     let header_validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
-    header_validator.validate_header(
+    header_validator.validate_auxpow_header(
         &ValidationContext::new(state, block.header())
-            .map_err(|_| InsertBlockError::PrevHeaderNotFound)?,
-        block.header(),
+            .map_err(|_| ValidateHeaderError::PrevHeaderNotFound)?,
+        block.auxpow_header(),
         time_secs(),
     )?;
 
@@ -234,9 +235,9 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
 
         let validation_result =
             match ValidationContext::new_with_next_block_headers(state, &block_header)
-                .map_err(|_| InsertBlockError::PrevHeaderNotFound)
+                .map_err(|_| ValidateHeaderError::PrevHeaderNotFound)
             {
-                Ok(store) => validator.validate_header(&store, &block_header, time_secs()),
+                Ok(store) => validator.validate_auxpow_header(&store, &block_header, time_secs()),
                 Err(err) => Err(err),
             };
 
@@ -251,7 +252,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
 
         if let Err(err) = state
             .unstable_blocks
-            .insert_next_block_header(block_header, state.stable_height())
+            .insert_next_block_header(*block_header, state.stable_height())
         {
             print(&format!(
                 "ERROR: Failed to insert next block header. Err: {:?}, Block header: {:?}",
@@ -460,9 +461,13 @@ mod test {
             stability_threshold in 1..150u32,
             num_blocks in 1..250u32,
             num_transactions_in_block in 1..100u32,
+            with_auxpow in any::<bool>()
         ) {
+            // Reset stable memory for each test case to avoid errors related to UTXOs being inserted twice
+            crate::memory::set_memory(ic_stable_structures::DefaultMemoryImpl::default());
+
             let network = Network::Regtest;
-            let blocks = build_chain(network, num_blocks, num_transactions_in_block);
+            let blocks = build_chain(network, num_blocks, num_transactions_in_block, with_auxpow);
 
             let mut state = State::new(stability_threshold, network, blocks[0].clone());
 
@@ -486,7 +491,7 @@ mod test {
         let num_blocks = 3;
         let num_transactions_per_block = 10;
         let network = Network::Regtest;
-        let blocks = build_chain(network, num_blocks, num_transactions_per_block);
+        let blocks = build_chain(network, num_blocks, num_transactions_per_block, false);
 
         let mut state = State::new(stability_threshold, network, blocks[0].clone());
 

@@ -11,7 +11,7 @@ compile_error!("Either feature \"btc\" or \"doge\" must be enabled.");
 use bitcoin::block::Block as BlockData;
 
 #[cfg(feature = "doge")]
-use bitcoin::dogecoin::Block as BlockData;
+use bitcoin::dogecoin::{Block as BlockData, Header as AuxPowHeader};
 
 use bitcoin::{
     block::Header, hashes::Hash, Network as BitcoinNetwork, OutPoint as BitcoinOutPoint, Target,
@@ -50,6 +50,10 @@ impl Block {
     }
 
     pub fn header(&self) -> &Header {
+        &self.block.header
+    }
+
+    pub fn auxpow_header(&self) -> &AuxPowHeader {
         &self.block.header
     }
 

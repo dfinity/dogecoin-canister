@@ -402,26 +402,27 @@ mod test {
         type Strategy = BoxedStrategy<Self>;
 
         fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
-            fn build_block_tree(tree: &mut BlockTree, num_children: &[u8]) {
+            fn build_block_tree(tree: &mut BlockTree, num_children: &[u8], use_auxpow: bool) {
                 // Add children.
                 if num_children.is_empty() {
                     return;
                 }
 
                 for _ in 0..num_children[0] {
-                    let mut subtree =
-                        BlockTree::new(BlockBuilder::with_prev_header(tree.root.header()).build());
+                    let mut block_builder = BlockBuilder::with_prev_header(tree.root.header());
+                    block_builder = block_builder.with_auxpow(use_auxpow);
 
-                    build_block_tree(&mut subtree, &num_children[1..]);
+                    let mut subtree = BlockTree::new(block_builder.build());
+                    build_block_tree(&mut subtree, &num_children[1..], use_auxpow);
                     tree.children.push(subtree);
                 }
             }
 
             // Each depth can have up to 3 children, up to a depth of 10.
-            pvec(1..3u8, 0..10)
-                .prop_map(|num_children| {
+            (pvec(1..3u8, 0..10), any::<bool>())
+                .prop_map(|(num_children, use_auxpow)| {
                     let mut tree = BlockTree::new(BlockBuilder::genesis().build());
-                    build_block_tree(&mut tree, &num_children);
+                    build_block_tree(&mut tree, &num_children, use_auxpow);
                     tree
                 })
                 .boxed()
@@ -687,13 +688,24 @@ mod test {
 
     #[test]
     fn deserialize_very_deep_block_tree() {
-        let chain = BlockChainBuilder::new(5_000).build();
-        let mut tree = BlockTree::new(chain[0].clone());
-
-        for block in chain.into_iter().skip(1) {
-            tree.extend(block).unwrap();
+        fn grow_tree(chain: Vec<Block>) -> BlockTree {
+            let mut tree = BlockTree::new(chain[0].clone());
+            for block in chain.into_iter().skip(1) {
+                tree.extend(block).unwrap();
+            }
+            tree
         }
 
+        let num_blocks = 5_000;
+
+        let tree = grow_tree(BlockChainBuilder::new(num_blocks).build());
+        let tree_with_auxpow = grow_tree(BlockChainBuilder::new(num_blocks).with_auxpow().build());
+
+        check_roundtrip_deserialization(tree);
+        check_roundtrip_deserialization(tree_with_auxpow);
+    }
+
+    fn check_roundtrip_deserialization(tree: BlockTree) {
         let mut bytes = vec![];
         ciborium::ser::into_writer(&tree, &mut bytes).unwrap();
         let new_tree: BlockTree = ciborium::de::from_reader(&bytes[..]).unwrap();

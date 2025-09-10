@@ -20,24 +20,24 @@ use std::convert::TryFrom;
 /// Ordinarily, a standard `BTreeMap` would suffice for storing UTXOs, but UTXOs
 /// have properties that make storing them more complex.
 ///
-///  * Number of entries: As of early 2022, there are tens of millions of UTXOs.
+///  * Number of entries: As of October 2019, there are 29 million UTXOs.
 ///    Storing them in a standard `BTreeMap` would make checkpointing very
 ///    inefficient as it would require serializing all the UTXOs. To work
 ///    around this, `StableBTreeMap` is used instead, where checkpointing grows
 ///    linearly only with the number of dirty memory pages.
 ///
 ///  * A `StableBTreeMap` allocates the maximum size possible for a key/value.
-///    Scripts in Bitcoin are bounded to 10k bytes, but allocating 10k for every
+///    Scripts in Dogecoin are bounded to 10k bytes, but allocating 10k for every
 ///    UTXO wastes a lot of memory and increases the number of memory read/writes.
 ///
-///    Based on a study of mainnet up to height ~705,000, the following is the
+///    Based on a study of Dogecoin mainnet up to height 2,941,980 the following is the
 ///    distribution of script sizes in UTXOs:
 ///
 ///    | Script Size           |  # UTXOs     | % of Total |
 ///    |-----------------------|--------------|------------|
-///    | <= 25 bytes           |  74,136,585  |   98.57%   |
-///    | > 25 && <= 201 bytes  |   1,074,004  |    1.43%   |
-///    | > 201 bytes           |          13  | 0.00002%   |
+///    | <= 25 bytes           |  29,634,655  |   99.95%   |
+///    | > 25 && <= 201 bytes  |      16,008  |    0.05%   |
+///    | > 201 bytes           |           0  |    0.00%   |
 ///
 ///    Because of the skewness in the sizes of the script, the KV store for
 ///    UTXOs is split into buckets:

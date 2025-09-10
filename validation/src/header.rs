@@ -37,21 +37,19 @@ pub enum ValidateHeaderError {
     /// HeaderStore.
     PrevHeaderNotFound,
     #[cfg(feature = "doge")]
-    /// Used when version field is obsolete
-    VersionObsolete,
-    #[cfg(feature = "doge")]
-    /// Used when legacy blocks are not allowed
-    LegacyBlockNotAllowed,
-    #[cfg(feature = "doge")]
-    /// Used when AuxPow blocks are not allowed
-    AuxPowBlockNotAllowed,
+    /// Used when the AuxPow Header fails validation
+    ValidateAuxPowHeader(ValidateAuxPowHeaderError),
 }
 
 #[cfg(feature = "doge")]
 #[derive(Debug, PartialEq)]
 pub enum ValidateAuxPowHeaderError {
-    /// Used when the PureHeader fails validation
-    ValidatePureHeader(ValidateHeaderError),
+    /// Used when version field is obsolete
+    VersionObsolete,
+    /// Used when legacy blocks are not allowed
+    LegacyBlockNotAllowed,
+    /// Used when AuxPow blocks are not allowed
+    AuxPowBlockNotAllowed,
     /// Used when the chain ID in the header is invalid
     InvalidChainId,
     /// Used when the AuxPow bit in the version field is not set properly
@@ -63,9 +61,9 @@ pub enum ValidateAuxPowHeaderError {
 }
 
 #[cfg(feature = "doge")]
-impl From<ValidateHeaderError> for ValidateAuxPowHeaderError {
-    fn from(err: ValidateHeaderError) -> Self {
-        ValidateAuxPowHeaderError::ValidatePureHeader(err)
+impl From<ValidateAuxPowHeaderError> for ValidateHeaderError {
+    fn from(err: ValidateAuxPowHeaderError) -> Self {
+        ValidateHeaderError::ValidateAuxPowHeader(err)
     }
 }
 
@@ -214,12 +212,11 @@ pub trait AuxPowHeaderValidator: HeaderValidator {
     fn allow_legacy_blocks(&self, height: u32) -> bool;
 
     /// Validates an AuxPow header. If a failure occurs, a
-    /// [ValidateAuxPowHeaderError](ValidateAuxPowHeaderError) will be returned.
-    #[allow(dead_code)]
+    /// [ValidateHeaderError](ValidateHeaderError) will be returned.
     fn validate_auxpow_header(
         &self,
         store: &impl HeaderStore,
         header: &AuxPowHeader,
         current_time: u64,
-    ) -> Result<(), ValidateAuxPowHeaderError>;
+    ) -> Result<(), ValidateHeaderError>;
 }

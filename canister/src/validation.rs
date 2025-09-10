@@ -148,10 +148,14 @@ mod test {
         fn validation_context(
             stability_threshold in 1..150u32,
             num_blocks in 2..250u32,
+            with_auxpow in any::<bool>()
         ) {
+            // Reset stable memory for each test case to avoid errors related to UTXOs being inserted twice
+            crate::memory::set_memory(ic_stable_structures::DefaultMemoryImpl::default());
+
             let num_transactions_in_block = 1;
             let network = Network::Regtest;
-            let blocks = build_chain(network, num_blocks, num_transactions_in_block);
+            let blocks = build_chain(network, num_blocks, num_transactions_in_block, with_auxpow);
 
             let mut state = State::new(stability_threshold, network, blocks[0].clone());
 
