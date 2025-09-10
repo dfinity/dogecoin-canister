@@ -1,12 +1,12 @@
 use crate::{
-    api::{get_balance, get_current_fee_percentiles},
+    api::{get_balance, get_current_fee_percentiles, get_utxos},
     genesis_block, heartbeat, init,
     runtime::{self, GetSuccessorsReply},
     state::main_chain_height,
     test_utils::{BlockBuilder, BlockChainBuilder, TransactionBuilder},
     types::{
-        into_dogecoin_network, BlockBlob, BlockHeaderBlob, GetSuccessorsCompleteResponse,
-        GetSuccessorsResponse,
+        into_dogecoin_network, BlockBlob, BlockHeaderBlob, GetBalanceRequest,
+        GetSuccessorsCompleteResponse, GetSuccessorsResponse, GetUtxosRequest,
     },
     utxo_set::IngestingBlock,
     verify_synced, with_state, SYNCED_THRESHOLD,
@@ -14,13 +14,14 @@ use crate::{
 use bitcoin::{
     block::Header,
     consensus::{Decodable, Encodable},
+    dogecoin::Block as DogecoinBlock,
     dogecoin::Network as DogecoinNetwork,
     p2p::Magic,
-    Block as BitcoinBlock,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use ic_cdk::api::call::RejectionCode;
-use ic_doge_interface::{Flag, InitConfig, Network};
+use ic_doge_interface::{Flag, GetUtxosResponse, InitConfig, Network, Txid, UtxosFilter};
+use ic_doge_interface::{OutPoint, Utxo};
 use ic_doge_test_utils::random_p2pkh_address;
 use ic_doge_types::{Block, BlockHash};
 use std::str::FromStr;
@@ -31,7 +32,7 @@ mod confirmation_counts;
 
 /// Helper function to save a chain to a file in hex format.
 #[cfg(feature = "save_chain_as_hex")]
-fn save_chain_as_hex_file(chain: &[BitcoinBlock], file_name: &str) -> std::io::Result<()> {
+fn save_chain_as_hex_file(chain: &[DogecoinBlock], file_name: &str) -> std::io::Result<()> {
     use std::io::{BufWriter, Write};
     let file = File::create(file_name)?;
     let mut writer = BufWriter::new(file);
@@ -46,9 +47,9 @@ fn save_chain_as_hex_file(chain: &[BitcoinBlock], file_name: &str) -> std::io::R
 }
 
 async fn process_chain(network: Network, blocks_file: &str, num_blocks: u32) {
-    let mut chain: Vec<BitcoinBlock> = vec![];
+    let mut chain: Vec<DogecoinBlock> = vec![];
 
-    let mut blocks: HashMap<BlockHash, BitcoinBlock> = HashMap::new();
+    let mut blocks: HashMap<BlockHash, DogecoinBlock> = HashMap::new();
 
     let mut blk_file = BufReader::new(
         File::open(PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(blocks_file))
@@ -79,7 +80,7 @@ async fn process_chain(network: Network, blocks_file: &str, num_blocks: u32) {
 
         let _block_size = blk_file.read_u32::<LittleEndian>().unwrap();
 
-        let block = BitcoinBlock::consensus_decode(&mut blk_file).unwrap();
+        let block = DogecoinBlock::consensus_decode(&mut blk_file).unwrap();
 
         blocks.insert(BlockHash::from(block.header.prev_blockhash), block);
     }
@@ -99,11 +100,7 @@ async fn process_chain(network: Network, blocks_file: &str, num_blocks: u32) {
 
     #[cfg(feature = "save_chain_as_hex")]
     if network == Network::Testnet {
-        save_chain_as_hex_file(
-            &chain[..4000.min(chain.len())],
-            "../benchmarks/src/testnet_blocks.txt",
-        )
-        .unwrap();
+        save_chain_as_hex_file(&chain, "../benchmarks/testnet_blocks_200k.txt").unwrap();
     }
 
     // Map the blocks into responses that are given to the hearbeat.
@@ -111,7 +108,7 @@ async fn process_chain(network: Network, blocks_file: &str, num_blocks: u32) {
         .into_iter()
         .map(|block| {
             let mut block_bytes = vec![];
-            BitcoinBlock::consensus_encode(&block, &mut block_bytes).unwrap();
+            DogecoinBlock::consensus_encode(&block, &mut block_bytes).unwrap();
             GetSuccessorsReply::Ok(GetSuccessorsResponse::Complete(
                 GetSuccessorsCompleteResponse {
                     blocks: vec![block_bytes],
@@ -154,9 +151,8 @@ fn verify_block_header(state: &crate::State, height: u32, block_hash: &str) {
     assert_eq!(header, header_2);
 }
 
-// TODO XC-419: use 100k blocks instead of 5k
 #[async_std::test]
-async fn mainnet_5k_blocks() {
+async fn mainnet_14k_blocks() {
     crate::init(crate::InitConfig {
         stability_threshold: Some(10),
         network: Some(Network::Mainnet),
@@ -166,216 +162,202 @@ async fn mainnet_5k_blocks() {
     // Set a reasonable performance counter step to trigger time-slicing.
     runtime::set_performance_counter_step(100_000);
 
-    process_chain(Network::Mainnet, "test-data/mainnet_5k_blocks.dat", 5_000).await;
+    process_chain(Network::Mainnet, "test-data/mainnet_14k_blocks.dat", 14_000).await;
 
     // Validate we've ingested all the blocks.
-    assert_eq!(with_state(main_chain_height), 5_000);
-
-    // Verify the total supply
-    // Dogecoin: initially, the block reward was random so this is irrelevant
-
-    // crate::with_state(|state| {
-    //     let total_supply = state.utxos.get_total_supply();
-    //
-    //     // NOTE: The duplicate transactions cause us to lose some of the supply,
-    //     // which we deduct in this assertion.
-    //     assert_eq!(
-    //         ((state.utxos.next_height() as u64) - DUPLICATE_TX_IDS.len() as u64) * 5000000000,
-    //         total_supply
-    //     );
-    // });
+    assert_eq!(with_state(main_chain_height), 14_000);
 
     // Check some random addresses that the balance is correct:
-    // TODO: re-enable these tests once we have a more complete dataset.
 
-    // // https://blockexplorer.one/bitcoin/mainnet/address/1PgZsaGjvssNCqHHisshLoCFeUjxPhutTh
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "1PgZsaGjvssNCqHHisshLoCFeUjxPhutTh".to_string(),
-    //         min_confirmations: None
-    //     })
-    //     .unwrap(),
-    //     4000000
-    // );
-    //
-    // assert_eq!(
-    //     get_utxos(GetUtxosRequest {
-    //         address: "1PgZsaGjvssNCqHHisshLoCFeUjxPhutTh".to_string(),
-    //         filter: None
-    //     })
-    //     .unwrap(),
-    //     GetUtxosResponse {
-    //         utxos: vec![Utxo {
-    //             outpoint: OutPoint {
-    //                 txid: Txid::from_str(
-    //                     "1a592a31c79f817ed787b6acbeef29b0f0324179820949d7da6215f0f4870c42",
-    //                 )
-    //                 .unwrap(),
-    //                 vout: 1,
-    //             },
-    //             value: 4000000,
-    //             height: 75361,
-    //         }],
-    //         // The tip should be the block hash at height 100,000
-    //         // https://bitcoinchain.com/block_explorer/block/100000/
-    //         tip_block_hash: BlockHash::from_str(
-    //             "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
-    //         )
-    //         .unwrap()
-    //         .to_vec(),
-    //         tip_height: 100_000,
-    //         next_page: None,
-    //     }
-    // );
-    //
-    // // https://blockexplorer.one/bitcoin/mainnet/address/12tGGuawKdkw5NeDEzS3UANhCRa1XggBbK
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "12tGGuawKdkw5NeDEzS3UANhCRa1XggBbK".to_string(),
-    //         min_confirmations: None
-    //     })
-    //     .unwrap(),
-    //     500000000
-    // );
-    //
-    // assert_eq!(
-    //     get_utxos(GetUtxosRequest {
-    //         address: "12tGGuawKdkw5NeDEzS3UANhCRa1XggBbK".to_string(),
-    //         filter: None
-    //     })
-    //     .unwrap(),
-    //     GetUtxosResponse {
-    //         utxos: vec![Utxo {
-    //             outpoint: OutPoint {
-    //                 txid: Txid::from_str(
-    //                     "3371b3978e7285d962fd54656aca6b3191135a1db838b5c689b8a44a7ede6a31",
-    //                 )
-    //                 .unwrap(),
-    //                 vout: 0,
-    //             },
-    //             value: 500000000,
-    //             height: 66184,
-    //         }],
-    //         // The tip should be the block hash at height 100,000
-    //         // https://bitcoinchain.com/block_explorer/block/100000/
-    //         tip_block_hash: BlockHash::from_str(
-    //             "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
-    //         )
-    //         .unwrap()
-    //         .to_vec(),
-    //         tip_height: 100_000,
-    //         next_page: None,
-    //     }
-    // );
-    //
-    // // This address spent its BTC at height 99,996. At 0 confirmations
-    // // (height 100,000) it should have no BTC.
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "1K791w8Y1CXwyG3zAf9EzpoZvpYH8Z2Rro".to_string(),
-    //         min_confirmations: None
-    //     })
-    //     .unwrap(),
-    //     0
-    // );
-    //
-    // // At 10 confirmations it should have its BTC.
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "1K791w8Y1CXwyG3zAf9EzpoZvpYH8Z2Rro".to_string(),
-    //         min_confirmations: Some(10)
-    //     })
-    //     .unwrap(),
-    //     48_0000_0000
-    // );
-    //
-    // // At 6 confirmations it should have its BTC.
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "1K791w8Y1CXwyG3zAf9EzpoZvpYH8Z2Rro".to_string(),
-    //         min_confirmations: Some(6)
-    //     })
-    //     .unwrap(),
-    //     48_0000_0000
-    // );
-    //
-    // assert_eq!(
-    //     get_utxos(GetUtxosRequest {
-    //         address: "1K791w8Y1CXwyG3zAf9EzpoZvpYH8Z2Rro".to_string(),
-    //         filter: Some(UtxosFilter::MinConfirmations(6))
-    //     })
-    //     .unwrap(),
-    //     GetUtxosResponse {
-    //         utxos: vec![Utxo {
-    //             outpoint: OutPoint {
-    //                 txid: Txid::from_str(
-    //                     "2bdd8506980479fb57d848ddbbb29831b4d468f9dc5d572ccdea69edec677ed6",
-    //                 )
-    //                 .unwrap(),
-    //                 vout: 1,
-    //             },
-    //             value: 48_0000_0000,
-    //             height: 96778,
-    //         }],
-    //         // The tip should be the block hash at height 99,995
-    //         // https://blockchair.com/bitcoin/block/99995
-    //         tip_block_hash: BlockHash::from_str(
-    //             "00000000000471d4db69f006cefc583aee6dec243d63c6a09cd5c02e0ef52523",
-    //         )
-    //         .unwrap()
-    //         .to_vec(),
-    //         tip_height: 99_995,
-    //         next_page: None,
-    //     }
-    // );
-    //
-    // // At 5 confirmations the BTC is spent.
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "1K791w8Y1CXwyG3zAf9EzpoZvpYH8Z2Rro".to_string(),
-    //         min_confirmations: Some(5)
-    //     })
-    //     .unwrap(),
-    //     0
-    // );
-    //
-    // // The BTC is spent to the following two addresses.
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "1NhzJ8bsdmGK39vSJtdQw3R2HyNtUmGxcr".to_string(),
-    //         min_confirmations: Some(5),
-    //     })
-    //     .unwrap(),
-    //     3_4500_0000
-    // );
-    //
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "13U77vKQcTjpZ7gww4K8Nreq2ffGBQKxmr".to_string(),
-    //         min_confirmations: Some(5)
-    //     })
-    //     .unwrap(),
-    //     44_5500_0000
-    // );
-    //
-    // // And these addresses should have a balance of zero before that height.
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "1NhzJ8bsdmGK39vSJtdQw3R2HyNtUmGxcr".to_string(),
-    //         min_confirmations: Some(6),
-    //     })
-    //     .unwrap(),
-    //     0
-    // );
-    //
-    // assert_eq!(
-    //     get_balance(GetBalanceRequest {
-    //         address: "13U77vKQcTjpZ7gww4K8Nreq2ffGBQKxmr".to_string(),
-    //         min_confirmations: Some(6),
-    //     })
-    //     .unwrap(),
-    //     0
-    // );
+    // https://blockchair.com/dogecoin/address/DHE6HfE8Ckv9e4AhUcJV8JTgxAw4mCmYVH
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DHE6HfE8Ckv9e4AhUcJV8JTgxAw4mCmYVH".to_string(),
+            min_confirmations: None
+        })
+        .unwrap(),
+        0
+    );
+
+    assert_eq!(
+        get_utxos(GetUtxosRequest {
+            address: "DAF6JysvEGKFMFT7DTdJjjRZZ84FocGiJ3".to_string(),
+            filter: None
+        })
+        .unwrap(),
+        GetUtxosResponse {
+            utxos: vec![Utxo {
+                outpoint: OutPoint {
+                    txid: Txid::from_str(
+                        "c2c168e1ca472776449ca6d3e3d1be6237bec5b533d6cb0ac52931afb427ec29",
+                    )
+                    .unwrap(),
+                    vout: 0,
+                },
+                value: 5862238267983,
+                height: 14_000,
+            }],
+            // The tip should be the block hash at height 14,000
+            // https://blockchair.com/dogecoin/block/14000
+            tip_block_hash: BlockHash::from_str(
+                "65194ad19c4657339b40759b80679e41f1328729e202812beb227260604ca5e8"
+            )
+            .unwrap()
+            .to_vec(),
+            tip_height: 14_000,
+            next_page: None,
+        }
+    );
+
+    // https://blockchair.com/dogecoin/address/DRAWftFJLhUS1YWtCHJJgwWKj7dnH1MPv4
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DRAWftFJLhUS1YWtCHJJgwWKj7dnH1MPv4".to_string(),
+            min_confirmations: None
+        })
+        .unwrap(),
+        45336054896700
+    );
+
+    assert_eq!(
+        get_utxos(GetUtxosRequest {
+            address: "DHzDHPMLcqUiQhuLVzh5k6vgBXgf5pmkcU".to_string(),
+            filter: None
+        })
+        .unwrap(),
+        GetUtxosResponse {
+            utxos: vec![Utxo {
+                outpoint: OutPoint {
+                    txid: Txid::from_str(
+                        "d8bbfae68a299d9bd1b3308ef26061e0aedf8200c3dac44253278fdbea3f519f",
+                    )
+                    .unwrap(),
+                    vout: 0,
+                },
+                value: 8_690_929_966_050,
+                height: 14_000,
+            }],
+            // The tip should be the block hash at height 14,000
+            // https://blockchair.com/dogecoin/block/14000
+            tip_block_hash: BlockHash::from_str(
+                "65194ad19c4657339b40759b80679e41f1328729e202812beb227260604ca5e8"
+            )
+            .unwrap()
+            .to_vec(),
+            tip_height: 14_000,
+            next_page: None,
+        }
+    );
+
+    // This address spent its DOGE at height 13,996. At 0 confirmations
+    // (height 14,000) it should have no DOGE.
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DJZZqSj7SRuQ1xguELc7iei9ECuD34ysaB".to_string(),
+            min_confirmations: None
+        })
+        .unwrap(),
+        0
+    );
+
+    // At 7 confirmations it should have its DOGE.
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DJZZqSj7SRuQ1xguELc7iei9ECuD34ysaB".to_string(),
+            min_confirmations: Some(7)
+        })
+        .unwrap(),
+        9_765_874_508_790
+    );
+
+    // At 6 confirmations it should have its DOGE.
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DJZZqSj7SRuQ1xguELc7iei9ECuD34ysaB".to_string(),
+            min_confirmations: Some(6)
+        })
+        .unwrap(),
+        9_765_874_508_790
+    );
+
+    assert_eq!(
+        get_utxos(GetUtxosRequest {
+            address: "DJZZqSj7SRuQ1xguELc7iei9ECuD34ysaB".to_string(),
+            filter: Some(UtxosFilter::MinConfirmations(6))
+        })
+        .unwrap(),
+        GetUtxosResponse {
+            utxos: vec![Utxo {
+                outpoint: OutPoint {
+                    txid: Txid::from_str(
+                        "99330c49e64f32d6f4a43a3a8f9c347b974140e2b5caa22a87a632bbac6647d5",
+                    )
+                    .unwrap(),
+                    vout: 0,
+                },
+                value: 9_765_874_508_790,
+                height: 13_994,
+            }],
+            // The tip should be the block hash at height 13,994
+            // https://blockchair.com/dogecoin/block/13995
+            tip_block_hash: BlockHash::from_str(
+                "e473f2362795b762785460ab25a25d5fd225d0edea98bdaf776f97c6ab68f86b",
+            )
+            .unwrap()
+            .to_vec(),
+            tip_height: 13_995,
+            next_page: None,
+        }
+    );
+
+    // At 5 confirmations the DOGE is spent.
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DJZZqSj7SRuQ1xguELc7iei9ECuD34ysaB".to_string(),
+            min_confirmations: Some(5)
+        })
+        .unwrap(),
+        0
+    );
+
+    // The DOGE is spent to the following two addresses.
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DJubGSD1LGbih5nLDoMaQydNycyawHCxfH".to_string(),
+            min_confirmations: Some(5),
+        })
+        .unwrap(),
+        9_548_597_846_038
+    );
+
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DHHYggc34d4a16bxzbeANirKFcCePBLDVr".to_string(),
+            min_confirmations: Some(5)
+        })
+        .unwrap(),
+        242_276_662_752
+    );
+
+    // The first address should have a balance of zero before that height.
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DJubGSD1LGbih5nLDoMaQydNycyawHCxfH".to_string(),
+            min_confirmations: Some(6),
+        })
+        .unwrap(),
+        0
+    );
+
+    // The second address should have a balance of 250 DOGE before that height.
+    assert_eq!(
+        get_balance(GetBalanceRequest {
+            address: "DHHYggc34d4a16bxzbeANirKFcCePBLDVr".to_string(),
+            min_confirmations: Some(6),
+        })
+        .unwrap(),
+        25_000_000_000
+    );
 
     // Check the block headers/heights of a few random blocks.
     crate::with_state(|state| {
@@ -399,9 +381,8 @@ async fn mainnet_5k_blocks() {
     });
 }
 
-// TODO XC-419: use 100k blocks instead of 5k
 #[async_std::test]
-async fn testnet_5k_blocks() {
+async fn testnet_200k_blocks() {
     crate::init(crate::InitConfig {
         stability_threshold: Some(2),
         network: Some(Network::Testnet),
@@ -411,18 +392,15 @@ async fn testnet_5k_blocks() {
     // Set a reasonable performance counter step to trigger time-slicing.
     runtime::set_performance_counter_step(100_000);
 
-    process_chain(Network::Testnet, "test-data/testnet_5k_blocks.dat", 5_000).await;
+    process_chain(
+        Network::Testnet,
+        "test-data/testnet_200k_blocks.dat",
+        200_000,
+    )
+    .await; // Blocks from height 158100 have AuxPow enabled
 
     // Validate we've ingested all the blocks.
-    assert_eq!(with_state(main_chain_height), 5_000);
-
-    // Verify the total supply
-    // Dogecoin: initially, the block reward was random so this is irrelevant
-
-    // crate::with_state(|state| {
-    //     let total_supply = state.utxos.get_total_supply();
-    //     assert_eq!(state.utxos.next_height() as u64 * 5000000000, total_supply);
-    // });
+    assert_eq!(with_state(main_chain_height), 200_000);
 
     // Check the block headers/heights of a few random blocks.
     crate::with_state(|state| {
@@ -450,6 +428,12 @@ async fn testnet_5k_blocks() {
             4997,
             "6c3cbd14fb7cacb18b6aa6e3f386ebecdaae040e4f41653183ad1f3bf9868b5b",
         );
+        // https://blockexplorer.one/dogecoin/testnet/blockId/193200
+        verify_block_header(
+            state,
+            193_200,
+            "4f9788b495ae3e50a7348d84648460594ce4c3884c0e40b78ad39e242c990b83",
+        )
     });
 }
 
