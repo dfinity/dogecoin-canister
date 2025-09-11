@@ -15,7 +15,7 @@ dfx deploy --no-wallet e2e-scenario-3
 # Deploy the dogecoin canister, setting the blocks_source to be the source above.
 dfx deploy --no-wallet dogecoin --argument "(record {
   stability_threshold = opt 2;
-  network = opt variant { regtest };
+  network = opt variant { dogecoin_regtest };
   blocks_source = opt principal \"$(dfx canister id e2e-scenario-3)\";
 })"
 

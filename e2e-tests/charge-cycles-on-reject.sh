@@ -16,7 +16,7 @@ dfx deploy e2e-scenario-1
 # Deploy the dogecoin canister.
 dfx deploy dogecoin --argument "(record {
   stability_threshold = opt 2;
-  network = opt variant { regtest };
+  network = opt variant { dogecoin_regtest };
   blocks_source = opt principal \"$(dfx canister id e2e-scenario-1)\";
   syncing = opt variant { enabled };
   fees = opt record {

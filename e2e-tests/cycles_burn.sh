@@ -17,7 +17,7 @@ INITIAL_BALANCE=100000000000
 
 # Deploy the dogecoin canister.
 dfx deploy --no-wallet --with-cycles "$INITIAL_BALANCE" dogecoin --argument "(record {
-  network = opt variant { regtest };
+  network = opt variant { dogecoin_regtest };
   burn_cycles = opt variant { enabled };
 })"
 
