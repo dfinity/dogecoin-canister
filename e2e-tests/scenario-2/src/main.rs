@@ -17,11 +17,11 @@ const ADDRESS: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
 
 #[derive(CandidType, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 enum Network {
-    #[serde(rename = "mainnet")]
+    #[serde(rename = "dogecoin_mainnet")]
     Mainnet,
-    #[serde(rename = "testnet")]
+    #[serde(rename = "dogecoin_testnet")]
     Testnet,
-    #[serde(rename = "regtest")]
+    #[serde(rename = "dogecoin_regtest")]
     Regtest,
 }
 
