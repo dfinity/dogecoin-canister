@@ -1,6 +1,12 @@
 type network = variant {
+  dogecoin_mainnet;
+  dogecoin_testnet;  // Bitcoin testnet4.
+  dogecoin_regtest;
+};
+
+type network_in_request = variant {
   mainnet;
-  testnet;  // Bitcoin testnet4.
+  testnet;
   regtest;
 };
 
@@ -72,13 +78,13 @@ type fees = record {
 };
 
 type get_balance_request = record {
-  network : network;
+  network : network_in_request;
   address : address;
   min_confirmations : opt nat32;
 };
 
 type get_utxos_request = record {
-  network : network;
+  network : network_in_request;
   address : address;
   filter : opt variant {
     min_confirmations : nat32;
@@ -94,11 +100,11 @@ type get_utxos_response = record {
 };
 
 type get_current_fee_percentiles_request = record {
-  network : network;
+  network : network_in_request;
 };
 
 type send_transaction_request = record {
-  network : network;
+  network : network_in_request;
   transaction : blob;
 };
 
@@ -118,7 +124,7 @@ type set_config_request = record {
 type get_block_headers_request = record {
   start_height : block_height;
   end_height : opt block_height;
-  network : network;
+  network : network_in_request;
 };
 
 type get_block_headers_response = record {

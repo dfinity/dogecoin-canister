@@ -22,16 +22,16 @@ const DEFAULT_STABILITY_THRESHOLD: u128 = 144; // ~24 hours at 10 min per block
 
 #[derive(CandidType, Clone, Copy, Deserialize, Debug, Eq, PartialEq, Serialize, Hash, DataSize)]
 pub enum Network {
-    /// Bitcoin Mainnet.
-    #[serde(rename = "mainnet")]
+    /// Dogecoin Mainnet.
+    #[serde(rename = "dogecoin_mainnet")]
     Mainnet,
 
-    /// Bitcoin Testnet4.
-    #[serde(rename = "testnet")]
+    /// Dogecoin Testnet.
+    #[serde(rename = "dogecoin_testnet")]
     Testnet,
 
-    /// Bitcoin Regtest.
-    #[serde(rename = "regtest")]
+    /// Dogecoin Regtest.
+    #[serde(rename = "dogecoin_regtest")]
     Regtest,
 }
 
@@ -86,21 +86,21 @@ impl From<NetworkInRequest> for Network {
 /// while not breaking current dapps that are using uppercase variants.
 #[derive(CandidType, Clone, Copy, Deserialize, Debug, Eq, PartialEq, Serialize, Hash)]
 pub enum NetworkInRequest {
-    /// Bitcoin Mainnet.
+    /// Dogecoin Mainnet.
     Mainnet,
-    /// Bitcoin Mainnet.
+    /// Dogecoin Mainnet.
     #[allow(non_camel_case_types)]
     mainnet,
 
-    /// Bitcoin Testnet4.
+    /// Dogecoin Testnet.
     Testnet,
-    /// Bitcoin Testnet4.
+    /// Dogecoin Testnet.
     #[allow(non_camel_case_types)]
     testnet,
 
-    /// Bitcoin Regtest.
+    /// Dogecoin Regtest.
     Regtest,
-    /// Bitcoin Regtest.
+    /// Dogecoin Regtest.
     #[allow(non_camel_case_types)]
     regtest,
 }
@@ -241,7 +241,7 @@ impl fmt::Display for TxidFromStrError {
             Self::InvalidChar(c) => write!(f, "char {c} is not a valid hex"),
             Self::InvalidLength { expected, actual } => write!(
                 f,
-                "Bitcoin transaction id must be precisely {expected} characters, got {actual}"
+                "Dogecoin transaction id must be precisely {expected} characters, got {actual}"
             ),
         }
     }
@@ -538,14 +538,14 @@ pub struct SetConfigRequest {
     /// The fees to charge for the various endpoints.
     pub fees: Option<Fees>,
 
-    /// Whether or not to enable/disable the bitcoin apis.
+    /// Whether or not to enable/disable the Dogecoin apis.
     pub api_access: Option<Flag>,
 
-    /// Whether or not to enable/disable the bitcoin apis if not fully synced.
+    /// Whether or not to enable/disable the Dogecoin apis if not fully synced.
     pub disable_api_if_not_fully_synced: Option<Flag>,
 
     /// The principal of the watchdog canister.
-    /// The watchdog canister has the authority to disable the Bitcoin canister's API
+    /// The watchdog canister has the authority to disable the Dogecoin canister's API
     /// if it suspects that there is a problem.
     pub watchdog_canister: Option<Option<Principal>>,
 
@@ -606,7 +606,7 @@ pub struct Config {
     pub disable_api_if_not_fully_synced: Flag,
 
     /// The principal of the watchdog canister.
-    /// The watchdog canister has the authority to disable the Bitcoin canister's API
+    /// The watchdog canister has the authority to disable the Dogecoin canister's API
     /// if it suspects that there is a problem.
     pub watchdog_canister: Option<Principal>,
 
