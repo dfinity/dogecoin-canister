@@ -9,11 +9,11 @@ type BlockHash = Vec<u8>;
 
 #[derive(CandidType, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 enum Network {
-    #[serde(rename = "dogecoin_mainnet")]
+    #[serde(rename = "mainnet")]
     Mainnet,
-    #[serde(rename = "dogecoin_testnet")]
+    #[serde(rename = "testnet")]
     Testnet,
-    #[serde(rename = "dogecoin_regtest")]
+    #[serde(rename = "regtest")]
     Regtest,
 }
 

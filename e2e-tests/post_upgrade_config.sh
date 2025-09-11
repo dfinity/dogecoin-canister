@@ -10,7 +10,7 @@ dfx start --background --clean
 # Deploy the dogecoin canister.
 dfx deploy --no-wallet dogecoin --argument "(record {
   stability_threshold = opt 0;
-  network = opt variant { dogecoin_regtest };
+  network = opt variant { regtest };
 })"
 
 # The stability threshold is zero

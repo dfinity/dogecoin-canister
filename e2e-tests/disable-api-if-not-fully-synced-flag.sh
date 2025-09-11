@@ -18,7 +18,7 @@ dfx deploy --no-wallet e2e-disable-api-if-not-fully-synced-flag
 # And enabling 'disable_api_if_not_fully_synced'. 
 dfx deploy --no-wallet dogecoin --argument "(record {
   stability_threshold = opt 1;
-  network = opt variant { dogecoin_regtest };
+  network = opt variant { regtest };
   blocks_source = opt principal \"$(dfx canister id e2e-disable-api-if-not-fully-synced-flag)\";
   disable_api_if_not_fully_synced = opt variant { enabled };
 })"
@@ -117,7 +117,7 @@ dfx deploy --no-wallet e2e-disable-api-if-not-fully-synced-flag
 # influence behaviour of the canister. 
 dfx deploy --no-wallet dogecoin --argument "(record {
   stability_threshold = opt 1;
-  network = opt variant { dogecoin_regtest };
+  network = opt variant { regtest };
   blocks_source = opt principal \"$(dfx canister id e2e-disable-api-if-not-fully-synced-flag)\";
   disable_api_if_not_fully_synced = opt variant { disabled };
 })"

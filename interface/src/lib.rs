@@ -21,7 +21,7 @@ pub type BlockHeader = Vec<u8>;
 const DEFAULT_STABILITY_THRESHOLD: u128 = 1_440; // ~24 hours at 1 min per block
 
 #[derive(CandidType, Clone, Copy, Deserialize, Debug, Eq, PartialEq, Serialize, Hash, DataSize)]
-pub enum Network {
+pub enum NetworkAdapter {
     /// Dogecoin Mainnet.
     #[serde(rename = "dogecoin_mainnet")]
     Mainnet,
@@ -32,6 +32,44 @@ pub enum Network {
 
     /// Dogecoin Regtest.
     #[serde(rename = "dogecoin_regtest")]
+    Regtest,
+}
+
+impl From<NetworkInRequest> for NetworkAdapter {
+    fn from(network: NetworkInRequest) -> Self {
+        match network {
+            NetworkInRequest::Mainnet => Self::Mainnet,
+            NetworkInRequest::mainnet => Self::Mainnet,
+            NetworkInRequest::Testnet => Self::Testnet,
+            NetworkInRequest::testnet => Self::Testnet,
+            NetworkInRequest::Regtest => Self::Regtest,
+            NetworkInRequest::regtest => Self::Regtest,
+        }
+    }
+}
+
+impl From<Network> for NetworkAdapter {
+    fn from(network: Network) -> Self {
+        match network {
+            Network::Mainnet => Self::Mainnet,
+            Network::Testnet => Self::Testnet,
+            Network::Regtest => Self::Regtest,
+        }
+    }
+}
+
+#[derive(CandidType, Clone, Copy, Deserialize, Debug, Eq, PartialEq, Serialize, Hash, DataSize)]
+pub enum Network {
+    /// Dogecoin Mainnet.
+    #[serde(rename = "mainnet")]
+    Mainnet,
+
+    /// Dogecoin Testnet.
+    #[serde(rename = "testnet")]
+    Testnet,
+
+    /// Dogecoin Regtest.
+    #[serde(rename = "regtest")]
     Regtest,
 }
 
@@ -54,16 +92,6 @@ impl FromStr for Network {
             "testnet" => Ok(Network::Testnet),
             "regtest" => Ok(Network::Regtest),
             _ => Err("Bad network".to_string()),
-        }
-    }
-}
-
-impl From<Network> for NetworkInRequest {
-    fn from(network: Network) -> Self {
-        match network {
-            Network::Mainnet => Self::Mainnet,
-            Network::Testnet => Self::Testnet,
-            Network::Regtest => Self::Regtest,
         }
     }
 }
