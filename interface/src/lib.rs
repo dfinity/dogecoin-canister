@@ -96,6 +96,16 @@ impl FromStr for Network {
     }
 }
 
+impl From<Network> for NetworkInRequest {
+    fn from(network: Network) -> Self {
+        match network {
+            Network::Mainnet => Self::Mainnet,
+            Network::Testnet => Self::Testnet,
+            Network::Regtest => Self::Regtest,
+        }
+    }
+}
+
 impl From<NetworkInRequest> for Network {
     fn from(network: NetworkInRequest) -> Self {
         match network {
