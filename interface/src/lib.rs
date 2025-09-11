@@ -15,10 +15,10 @@ pub type Height = u32;
 pub type Page = ByteBuf;
 pub type BlockHeader = Vec<u8>;
 
-/// Default stability threshold for the Bitcoin canister.
+/// Default stability threshold for the Dogecoin canister.
 /// Must not be zero — a value of 0 can make the canister follow wrong branches,
 /// get stuck, and require a manual reset.
-const DEFAULT_STABILITY_THRESHOLD: u128 = 144; // ~24 hours at 10 min per block
+const DEFAULT_STABILITY_THRESHOLD: u128 = 1_440; // ~24 hours at 1 min per block
 
 #[derive(CandidType, Clone, Copy, Deserialize, Debug, Eq, PartialEq, Serialize, Hash, DataSize)]
 pub enum Network {
