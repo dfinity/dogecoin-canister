@@ -1,6 +1,6 @@
 type network = variant {
   dogecoin_mainnet;
-  dogecoin_testnet;  // Bitcoin testnet4.
+  dogecoin_testnet;
   dogecoin_regtest;
 };
 
