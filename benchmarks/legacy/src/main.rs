@@ -17,7 +17,7 @@ fn init() {
     // Load the testnet blocks.
     TESTNET_BLOCKS.with(|blocks| {
         blocks.replace(
-            include_str!("testnet_blocks.txt")
+            include_str!("../testnet_blocks_5k.txt")
                 .trim()
                 .split('\n')
                 .map(|block_hex| {
@@ -36,7 +36,7 @@ fn init() {
     ic_doge_canister::runtime::mock_time::set_mock_time_secs(june_2025);
 }
 
-// Benchmarks inserting the first 300 blocks of the Dogecoin testnet.
+// Insert the first 300 blocks of the Dogecoin testnet.
 #[bench(raw)]
 fn insert_300_blocks() -> BenchResult {
     ic_doge_canister::init(InitConfig {
@@ -58,7 +58,7 @@ fn insert_300_blocks() -> BenchResult {
     })
 }
 
-// Benchmarks gettings the metrics when there are many unstable blocks..
+// Get the metrics when there are many unstable blocks.
 #[bench(raw)]
 fn get_metrics() -> BenchResult {
     ic_doge_canister::init(InitConfig {
@@ -82,7 +82,7 @@ fn get_metrics() -> BenchResult {
     })
 }
 
-// Benchmarks inserting 100 block headers into a tree containing 800 blocks
+// Insert 100 block headers into a tree containing 800 blocks.
 #[bench(raw)]
 fn insert_block_headers() -> BenchResult {
     let blocks_to_insert = 800;
@@ -140,7 +140,7 @@ fn insert_block_headers() -> BenchResult {
     bench_result
 }
 
-// Inserts the same block headers multiple times.
+// Insert the same block headers multiple times.
 #[bench(raw)]
 fn insert_block_headers_multiple_times() -> BenchResult {
     let block_headers_to_insert = 900;
@@ -208,6 +208,116 @@ fn pre_upgrade_with_many_unstable_blocks() -> BenchResult {
     bench_fn(|| {
         ic_doge_canister::pre_upgrade();
     })
+}
+
+// Insert 250 block headers without AuxPow information in Regtest.
+#[bench(raw)]
+fn insert_block_headers_regtest_without_auxpow() -> BenchResult {
+    let blocks_to_insert = 50;
+    let block_headers_to_insert = 250;
+    let num_transactions_per_block = 10;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some(144),
+        ..Default::default()
+    });
+
+    let chain = build_regtest_chain(
+        blocks_to_insert + block_headers_to_insert,
+        num_transactions_per_block,
+        false,
+    );
+
+    // Insert the blocks.
+    with_state_mut(|s| {
+        for block in chain.iter().take(blocks_to_insert as usize).skip(1) {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    // Compute the next block headers.
+    let mut next_block_headers = vec![];
+    for block in chain.iter().skip(blocks_to_insert as usize) {
+        let mut block_header_blob = vec![];
+        bitcoin::dogecoin::Header::consensus_encode(block.auxpow_header(), &mut block_header_blob)
+            .unwrap();
+        next_block_headers.push(BlockHeaderBlob::from(block_header_blob));
+    }
+
+    // Benchmark inserting the block headers.
+    let bench_result = bench_fn(|| {
+        with_state_mut(|s| {
+            ic_doge_canister::state::insert_next_block_headers(s, next_block_headers.as_slice());
+        });
+    });
+
+    with_state(|s| {
+        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
+            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
+        );
+        assert_eq!(
+            max_height,
+            blocks_to_insert + block_headers_to_insert - 1,
+            "Expected all headers to be inserted. Max height should be {}, got {}.",
+            blocks_to_insert + block_headers_to_insert - 1,
+            max_height
+        );
+    });
+
+    bench_result
+}
+
+// Insert the same 250 block headers without AuxPow multiple times in Regtest.
+#[bench(raw)]
+fn insert_block_headers_multiple_times_regtest_without_auxpow() -> BenchResult {
+    let block_headers_to_insert = 250;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        ..Default::default()
+    });
+
+    // Compute the next block headers.
+    let chain = build_regtest_chain(block_headers_to_insert, 10, false);
+
+    let mut next_block_headers = vec![];
+    for i in 1..block_headers_to_insert {
+        let mut block_header_blob = vec![];
+        bitcoin::dogecoin::Header::consensus_encode(
+            chain[i as usize].auxpow_header(),
+            &mut block_header_blob,
+        )
+        .unwrap();
+        next_block_headers.push(BlockHeaderBlob::from(block_header_blob));
+    }
+
+    // Benchmark inserting the block headers.
+    let bench_result = bench_fn(|| {
+        with_state_mut(|s| {
+            for _ in 0..10 {
+                ic_doge_canister::state::insert_next_block_headers(
+                    s,
+                    next_block_headers.as_slice(),
+                );
+            }
+        });
+    });
+
+    with_state(|s| {
+        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
+            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
+        );
+        assert_eq!(
+            max_height,
+            block_headers_to_insert - 1,
+            "Expected all headers to be inserted. Max height should be {}, got {}.",
+            block_headers_to_insert - 1,
+            max_height
+        );
+    });
+
+    bench_result
 }
 
 fn main() {}
