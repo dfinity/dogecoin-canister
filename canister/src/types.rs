@@ -6,8 +6,8 @@ use candid::CandidType;
 use datasize::DataSize;
 use ic_doge_interface::{
     Address as AddressStr, GetBalanceRequest as PublicGetBalanceRequest,
-    GetUtxosRequest as PublicGetUtxosRequest, Height, Network, Satoshi, UtxosFilter,
-    UtxosFilterInRequest,
+    GetUtxosRequest as PublicGetUtxosRequest, Height, Network, NetworkAdapter, Satoshi,
+    UtxosFilter, UtxosFilterInRequest,
 };
 use ic_doge_types::{BlockHash, OutPoint, Txid};
 use ic_stable_structures::{
@@ -344,7 +344,7 @@ type PageNumber = u8;
 
 #[derive(CandidType, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SendTransactionInternalRequest {
-    pub network: Network,
+    pub network: NetworkAdapter,
     #[serde(with = "serde_bytes")]
     pub transaction: Vec<u8>,
 }
@@ -363,7 +363,7 @@ pub enum GetSuccessorsRequest {
 
 #[derive(CandidType, Clone, PartialEq, Eq, Serialize, Deserialize, DataSize)]
 pub struct GetSuccessorsRequestInitial {
-    pub network: Network,
+    pub network: NetworkAdapter,
     pub anchor: BlockHash,
     pub processed_block_hashes: Vec<BlockHash>,
 }

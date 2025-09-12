@@ -288,7 +288,7 @@ fn maybe_get_successors_request() -> Option<GetSuccessorsRequest> {
             let anchor = processed_block_hashes.remove(0);
 
             Some(GetSuccessorsRequest::Initial(GetSuccessorsRequestInitial {
-                network: state.network(),
+                network: state.network().into(),
                 anchor,
                 processed_block_hashes,
             }))

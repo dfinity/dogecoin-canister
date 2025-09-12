@@ -16,12 +16,12 @@ type BlockHash = Vec<u8>;
 const ADDRESS: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
 
 #[derive(CandidType, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-enum Network {
-    #[serde(rename = "mainnet")]
+enum NetworkAdapter {
+    #[serde(rename = "dogecoin_mainnet")]
     Mainnet,
-    #[serde(rename = "testnet")]
+    #[serde(rename = "dogecoin_testnet")]
     Testnet,
-    #[serde(rename = "regtest")]
+    #[serde(rename = "dogecoin_regtest")]
     Regtest,
 }
 
@@ -35,7 +35,7 @@ enum GetSuccessorsRequest {
 
 #[derive(CandidType, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct GetSuccessorsRequestInitial {
-    pub network: Network,
+    pub network: NetworkAdapter,
     pub processed_block_hashes: Vec<BlockHash>,
 }
 
@@ -105,7 +105,7 @@ fn bitcoin_get_successors(request: GetSuccessorsRequest) -> GetSuccessorsRespons
     if let GetSuccessorsRequest::Initial(GetSuccessorsRequestInitial { network, .. }) = &request {
         assert_eq!(
             *network,
-            Network::Regtest,
+            NetworkAdapter::Regtest,
             "request must be set to the regtest network"
         );
     }

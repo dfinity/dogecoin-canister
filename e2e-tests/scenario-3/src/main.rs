@@ -8,18 +8,18 @@ type BlockHeaderBlob = Vec<u8>;
 type BlockHash = Vec<u8>;
 
 #[derive(CandidType, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-enum Network {
-    #[serde(rename = "mainnet")]
+enum NetworkAdapter {
+    #[serde(rename = "dogecoin_mainnet")]
     Mainnet,
-    #[serde(rename = "testnet")]
+    #[serde(rename = "dogecoin_testnet")]
     Testnet,
-    #[serde(rename = "regtest")]
+    #[serde(rename = "dogecoin_regtest")]
     Regtest,
 }
 
 #[derive(CandidType, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SendTransactionInternalRequest {
-    network: Network,
+    network: NetworkAdapter,
     transaction: Vec<u8>,
 }
 
@@ -33,7 +33,7 @@ enum GetSuccessorsRequest {
 
 #[derive(CandidType, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct GetSuccessorsRequestInitial {
-    pub network: Network,
+    pub network: NetworkAdapter,
     pub processed_block_hashes: Vec<BlockHash>,
 }
 
