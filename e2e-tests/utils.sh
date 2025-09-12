@@ -29,7 +29,7 @@ wait_until_stable_height () {
   DOGECOIN_CANISTER_ID=$(dfx canister id dogecoin)
 
   while
-    METRICS=$(curl "http://127.0.0.1:8000/metrics?canisterId=DOGECOIN_CANISTER_ID")
+    METRICS=$(curl "http://127.0.0.1:8000/metrics?canisterId=$DOGECOIN_CANISTER_ID")
     ! [[ "$METRICS" == *"stable_height $HEIGHT"* ]]; do
       ((ATTEMPTS-=1))
 
