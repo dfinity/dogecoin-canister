@@ -185,7 +185,7 @@ fn init() {
 }
 
 #[update]
-fn bitcoin_get_successors(request: GetSuccessorsRequest) -> GetSuccessorsResponse {
+fn dogecoin_get_successors(request: GetSuccessorsRequest) -> GetSuccessorsResponse {
     if let GetSuccessorsRequest::Initial(GetSuccessorsRequestInitial { network, .. }) = &request {
         assert_eq!(
             *network,

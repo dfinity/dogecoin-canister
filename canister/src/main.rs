@@ -38,7 +38,7 @@ async fn heartbeat() {
 }
 
 #[update(manual_reply = true)]
-pub fn bitcoin_get_balance(request: GetBalanceRequest) -> ManualReply<Satoshi> {
+pub fn dogecoin_get_balance(request: GetBalanceRequest) -> ManualReply<Satoshi> {
     match ic_doge_canister::get_balance(request) {
         Ok(response) => ManualReply::one(response),
         Err(e) => ManualReply::reject(format!("get_balance failed: {:?}", e).as_str()),
@@ -46,7 +46,7 @@ pub fn bitcoin_get_balance(request: GetBalanceRequest) -> ManualReply<Satoshi> {
 }
 
 #[query(manual_reply = true)]
-pub fn bitcoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Satoshi> {
+pub fn dogecoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Satoshi> {
     if ic_cdk::api::data_certificate().is_none() {
         return ManualReply::reject("get_balance_query cannot be called in replicated mode");
     }
@@ -57,7 +57,7 @@ pub fn bitcoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Sato
 }
 
 #[update(manual_reply = true)]
-pub fn bitcoin_get_utxos(request: GetUtxosRequest) -> ManualReply<GetUtxosResponse> {
+pub fn dogecoin_get_utxos(request: GetUtxosRequest) -> ManualReply<GetUtxosResponse> {
     match ic_doge_canister::get_utxos(request) {
         Ok(response) => ManualReply::one(response),
         Err(e) => ManualReply::reject(format!("get_utxos failed: {:?}", e).as_str()),
@@ -65,7 +65,7 @@ pub fn bitcoin_get_utxos(request: GetUtxosRequest) -> ManualReply<GetUtxosRespon
 }
 
 #[query(manual_reply = true)]
-pub fn bitcoin_get_utxos_query(request: GetUtxosRequest) -> ManualReply<GetUtxosResponse> {
+pub fn dogecoin_get_utxos_query(request: GetUtxosRequest) -> ManualReply<GetUtxosResponse> {
     if ic_cdk::api::data_certificate().is_none() {
         return ManualReply::reject("get_utxos_query cannot be called in replicated mode");
     }
@@ -76,7 +76,7 @@ pub fn bitcoin_get_utxos_query(request: GetUtxosRequest) -> ManualReply<GetUtxos
 }
 
 #[update(manual_reply = true)]
-pub fn bitcoin_get_block_headers(
+pub fn dogecoin_get_block_headers(
     request: GetBlockHeadersRequest,
 ) -> ManualReply<GetBlockHeadersResponse> {
     match ic_doge_canister::get_block_headers(request) {
@@ -86,7 +86,7 @@ pub fn bitcoin_get_block_headers(
 }
 
 #[update(manual_reply = true)]
-async fn bitcoin_send_transaction(request: SendTransactionRequest) -> ManualReply<()> {
+async fn dogecoin_send_transaction(request: SendTransactionRequest) -> ManualReply<()> {
     match ic_doge_canister::send_transaction(request).await {
         Ok(_) => ManualReply::all(()),
         Err(e) => ManualReply::reject(format!("send_transaction failed: {:?}", e).as_str()),
@@ -94,7 +94,7 @@ async fn bitcoin_send_transaction(request: SendTransactionRequest) -> ManualRepl
 }
 
 #[update]
-pub fn bitcoin_get_current_fee_percentiles(
+pub fn dogecoin_get_current_fee_percentiles(
     request: GetCurrentFeePercentilesRequest,
 ) -> Vec<MillisatoshiPerByte> {
     ic_doge_canister::get_current_fee_percentiles(request)
