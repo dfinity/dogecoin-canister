@@ -19,6 +19,6 @@ type get_successors_response = variant {
 };
 
 service : {
-  dogecoin_get_successors: (get_successors_request) -> (get_successors_response);
+  bitcoin_get_successors: (get_successors_request) -> (get_successors_response);
 }
 

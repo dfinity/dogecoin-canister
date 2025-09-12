@@ -16,7 +16,7 @@ type get_successors_response = variant {
 };
 
 service : {
-  dogecoin_send_transaction_internal: (send_transaction_request) -> ();
+  bitcoin_send_transaction_internal: (send_transaction_request) -> ();
   get_last_transaction: () -> (blob) query;
 }
 

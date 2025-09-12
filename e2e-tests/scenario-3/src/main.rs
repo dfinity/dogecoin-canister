@@ -65,7 +65,7 @@ thread_local! {
 }
 
 #[update]
-fn dogecoin_send_transaction_internal(request: SendTransactionInternalRequest) {
+fn bitcoin_send_transaction_internal(request: SendTransactionInternalRequest) {
     LAST_TRANSACTION.with(|c| c.replace(request.transaction));
 }
 
@@ -75,7 +75,7 @@ fn get_last_transaction() -> Vec<u8> {
 }
 
 #[update]
-fn dogecoin_get_successors(_request: GetSuccessorsRequest) -> GetSuccessorsResponse {
+fn bitcoin_get_successors(_request: GetSuccessorsRequest) -> GetSuccessorsResponse {
     // Empty response
     GetSuccessorsResponse::Complete(GetSuccessorsCompleteResponse {
         blocks: vec![],
