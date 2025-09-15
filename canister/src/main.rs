@@ -119,8 +119,8 @@ pub fn http_request(request: HttpRequest) -> HttpResponse {
 fn inspect_message() {
     // Reject calls to the query endpoints as they are not supported in replicated mode.
     let inspected_method_name = ic_cdk::api::call::method_name();
-    if inspected_method_name.as_str() != "bitcoin_get_balance_query"
-        && inspected_method_name.as_str() != "bitcoin_get_utxos_query"
+    if inspected_method_name.as_str() != "dogecoin_get_balance_query"
+        && inspected_method_name.as_str() != "dogecoin_get_utxos_query"
     {
         ic_cdk::api::call::accept_message();
     }

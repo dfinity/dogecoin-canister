@@ -115,7 +115,7 @@ GET_UTXOS_QUERY_REPLICATED_CALL=$(dfx canister call --update dogecoin dogecoin_g
 })' 2>&1)
 set -e
 
-if [[ $GET_UTXOS_QUERY_REPLICATED_CALL != *"CanisterReject"* ]]; then
+if [[ $GET_UTXOS_QUERY_REPLICATED_CALL != *"Canister rejected the message, error code Some(\"IC0406\")"* ]]; then
   echo "FAIL"
   exit 1
 fi
@@ -138,7 +138,7 @@ GET_BALANCE_QUERY_REPLICATED_CALL=$(dfx canister call --update dogecoin dogecoin
 })' 2>&1)
 set -e
 
-if [[ $GET_BALANCE_QUERY_REPLICATED_CALL != *"CanisterReject"* ]]; then
+if [[ $GET_BALANCE_QUERY_REPLICATED_CALL != *"Canister rejected the message, error code Some(\"IC0406\")"* ]]; then
   echo "FAIL"
   exit 1
 fi
