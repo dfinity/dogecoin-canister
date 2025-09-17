@@ -1,37 +1,37 @@
 #!/usr/bin/env bash
 #
-# Script for dumping Bitcoin block headers into a file.
+# Script for dumping Dogecoin block headers into a file.
 set -euo pipefail
 
 source "./utils.sh"
 
-BITCOIN_D="$1/bin/bitcoind"
-BITCOIN_CLI="$1/bin/bitcoin-cli"
+DOGECOIN_D="$1/bin/dogecoind"
+DOGECOIN_CLI="$1/bin/dogecoin-cli"
 NETWORK="$2"
 HEIGHT="$3"
 STABLE_HEIGHT=$((HEIGHT - 12))
 
-validate_file_exists "$BITCOIN_D"
-validate_file_exists "$BITCOIN_CLI"
+validate_file_exists "$DOGECOIN_D"
+validate_file_exists "$DOGECOIN_CLI"
 validate_network "$NETWORK"
 
 # Kill all background processes on exit.
 trap "kill 0" EXIT
 
-# Create a temporary bitcoin.conf file with the required settings.
+# Create a temporary dogecoin.conf file with the required settings.
 CONF_FILE=$(mktemp)
 generate_config "$NETWORK" "$CONF_FILE" "networkactive=0"
 
 # Remove any previously computed block headers file.
 rm -f "$BLOCK_HEADERS_FILE"
 
-# Start bitcoind in the background with no network access.
-echo "Starting bitcoind for $NETWORK..."
-"$BITCOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" > /dev/null &
-BITCOIND_PID=$!
+# Start dogecoind in the background with no network access.
+echo "Starting dogecoind for $NETWORK..."
+"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" > /dev/null &
+DOGECOIND_PID=$!
 
-# Wait for bitcoind to initialize.
-echo "Waiting for bitcoind to load..."
+# Wait for dogecoind to initialize.
+echo "Waiting for dogecoind to load..."
 sleep 30
 
 # Function to format seconds as xxh xxm xxs.
@@ -46,11 +46,11 @@ format_time() {
 # Start timer for ETA calculation.
 START_TIME=$(date +%s)
 
-# Retrieve block hashes and headers via bitcoin-cli with progress logging.
+# Retrieve block hashes and headers via dogecoin-cli with progress logging.
 echo "Fetching block headers up to height $STABLE_HEIGHT..."
 for ((height = 0; height <= STABLE_HEIGHT; height++)); do
-    BLOCK_HASH=$("$BITCOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash "$height")
-    BLOCK_HEADER=$("$BITCOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockheader "$BLOCK_HASH" false)
+    BLOCK_HASH=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash "$height")
+    BLOCK_HEADER=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockheader "$BLOCK_HASH" false)
 
     # Append the block hash and header to the file.
     echo "$BLOCK_HASH,$BLOCK_HEADER" >> "$BLOCK_HEADERS_FILE"
@@ -74,6 +74,6 @@ echo "Computing checksum of $BLOCK_HEADERS_FILE..."
 sha256sum "$BLOCK_HEADERS_FILE"
 
 # Clean up.
-kill "$BITCOIND_PID"
-wait "$BITCOIND_PID" || true
+kill "$DOGECOIND_PID"
+wait "$DOGECOIND_PID" || true
 echo "Done."

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Utility functions for Bitcoin scripts.
+# Utility functions for Dogecoin scripts.
 set -euo pipefail
 
 # Directories.
@@ -28,7 +28,7 @@ validate_file_exists() {
 # Validate the network input.
 validate_network() {
     local network=$1
-    # "testnet" refers to testnet4.
+    # "testnet" refers to testnet3.
     local valid_networks=("mainnet" "testnet")
 
     for valid_network in "${valid_networks[@]}"; do
@@ -42,7 +42,7 @@ validate_network() {
     exit 1
 }
 
-# Generate the Bitcoin configuration file with optional parameters.
+# Generate the Dogecoin configuration file with optional parameters.
 generate_config() {
     local network=$1
     local conf_file=$2
@@ -56,9 +56,10 @@ prune=5000
 
 # Disable XOR-ing blocksdir *.dat files.
 # See "Blockstorage" section at https://bitcoincore.org/en/releases/28.0/
-blocksxor=0
+# Dogecoin: this is not available, so commented out.
+# blocksxor=0
 
-# Dummy credentials required by bitcoin-cli.
+# Dummy credentials required by dogecoin-cli.
 rpcuser=ic-doge-integration
 rpcpassword=QPQiNaph19FqUsCrBRN0FII7lyM26B51fAMeBQzCb-E=
 rpcauth=ic-doge-integration:cdf2741387f3a12438f69092f0fdad8e\$62081498c98bee09a0dce2b30671123fa561932992ce377585e8e08bb0c11dfa
@@ -67,7 +68,7 @@ EOF
     # Add network-specific settings.
     case "$network" in
         "mainnet") echo "# Mainnet settings" >> "$conf_file" ;;
-        "testnet") echo "chain=testnet4" >> "$conf_file" ;;
+        "testnet") echo "chain=testnet" >> "$conf_file" ;;
     esac
 
     # Add additional parameters.
