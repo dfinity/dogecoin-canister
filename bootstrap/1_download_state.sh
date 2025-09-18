@@ -32,7 +32,7 @@ echo "Downloading Dogecoin blocks up to height $HEIGHT. Logs can be found in: $L
 echo "This may take several hours. Please wait..."
 
 # Start the Dogecoin daemon.
-"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" > "$LOG_FILE" 2>&1
+"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" -printtoconsole > "$LOG_FILE" 2>&1
 echo "Download complete."
 
 # Create a backup of the downloaded data.

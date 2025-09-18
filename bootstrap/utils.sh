@@ -56,7 +56,7 @@ prune=5000
 
 # Disable XOR-ing blocksdir *.dat files.
 # See "Blockstorage" section at https://bitcoincore.org/en/releases/28.0/
-# Dogecoin: this is not available, so commented out.
+# Dogecoin: XOR-ing is not available, so commented out.
 # blocksxor=0
 
 # Dummy credentials required by dogecoin-cli.
