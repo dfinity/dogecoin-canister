@@ -6,6 +6,7 @@ set -euo pipefail
 source "./utils.sh"
 
 DOGECOIN_D="$1/bin/dogecoind"
+DOGECOIN_CLI="$1/bin/dogecoin-cli"
 NETWORK="$2"
 HEIGHT="$3"
 
@@ -34,7 +35,6 @@ echo "This may take several hours. Please wait..."
 
 # Start the Dogecoin daemon.
 "$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" -printtoconsole > "$LOG_FILE" 2>&1 & DOGECOIN_PID=$!
-echo "Download complete."
 
 # Wait for the RPC interface to become ready
 echo "Waiting for dogecoind to start..."
