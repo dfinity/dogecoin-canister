@@ -4560,6 +4560,7 @@ dependencies = [
  "clap",
  "csv",
  "hex",
+ "libc",
  "rusty-leveldb 3.0.3",
  "secp256k1",
  "signal-hook",
