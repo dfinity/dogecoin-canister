@@ -10,7 +10,7 @@ trap "dfx stop" EXIT SIGINT
 dfx start --background --clean
 
 # Deploy the canister that will be used as an internal endpoint to send the transaction 
-# to the Bitcoin network when calling bitcoin_send_transaction.
+# to the Bitcoin network when calling dogecoin_send_transaction.
 dfx deploy e2e-scenario-1
 
 # Deploy the dogecoin canister.
@@ -70,16 +70,16 @@ check_charging()
 
 wait_until_main_chain_height 1 60
 
-#test bitcoin_send_transaction
+#test dogecoin_send_transaction
 TX_BYTES="blob \"12341234789789\""
-METHOD="bitcoin_send_transaction"
+METHOD="dogecoin_send_transaction"
 RECORD="(record { network = variant { regtest }; transaction = ${TX_BYTES}})"
 EXPECTED="MalformedTransaction"
 # Expected fee is 15 = 1 * send_transaction_base + 14 * send_transaction_per_byte
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 15
 
-#test bitcoin_get_balance
-METHOD="bitcoin_get_balance"
+#test dogecoin_get_balance
+METHOD="dogecoin_get_balance"
 RECORD="(record { address = \"Bad address\"; network = variant { regtest } })"
 EXPECTED="MalformedAddress"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
@@ -88,8 +88,8 @@ RECORD="(record { address = \"mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM\"; network = va
 EXPECTED="MinConfirmationsTooLarge"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
-#test bitcoin_get_utxos
-METHOD="bitcoin_get_utxos"
+#test dogecoin_get_utxos
+METHOD="dogecoin_get_utxos"
 RECORD="(record { address = \"Bad address\"; network = variant { regtest } })"
 EXPECTED="MalformedAddress"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
@@ -108,18 +108,18 @@ RECORD="(record { address = \"mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM\"; network = va
 EXPECTED="UnknownTipBlockHash"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
-#test bitcoin_get_block_headers
-METHOD="bitcoin_get_block_headers"
+#test dogecoin_get_block_headers
+METHOD="dogecoin_get_block_headers"
 RECORD="(record { start_height = 10; network = variant { regtest }})"
 EXPECTED="StartHeightDoesNotExist"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
-METHOD="bitcoin_get_block_headers"
+METHOD="dogecoin_get_block_headers"
 RECORD="(record { start_height = 0; end_height = opt 10; network = variant { regtest } })"
 EXPECTED="EndHeightDoesNotExist"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1
 
-METHOD="bitcoin_get_block_headers"
+METHOD="dogecoin_get_block_headers"
 RECORD="(record { start_height = 1; end_height = opt 0; network = variant { regtest } })"
 EXPECTED="StartHeightLargerThanEndHeight"
 check_charging "${METHOD}" "${RECORD}" "${EXPECTED}" 1

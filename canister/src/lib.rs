@@ -87,7 +87,7 @@ fn reset_syncing_state(state: &mut State) {
     state.syncing_state.response_to_process = None;
 }
 
-/// Initializes the state of the Bitcoin canister.
+/// Initializes the state of the Dogecoin canister.
 pub fn init(init_config: InitConfig) {
     print("Running init...");
 

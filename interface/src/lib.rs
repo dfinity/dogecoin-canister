@@ -545,7 +545,7 @@ pub struct SendTransactionRequest {
 pub enum SendTransactionError {
     /// Can't deserialize transaction.
     MalformedTransaction,
-    /// Enqueueing a request failed due to full queue to the Bitcoin adapter.
+    /// Enqueueing a request failed due to full queue to the Dogecoin adapter.
     QueueFull,
 }
 
