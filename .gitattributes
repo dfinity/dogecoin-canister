@@ -4,3 +4,4 @@ validation/tests/data/doge/headers_0_700000_mainnet_raw.csv filter=lfs diff=lfs 
 validation/tests/data/doge/headers_0_2000000_testnet_raw.csv filter=lfs diff=lfs merge=lfs -text
 canister/test-data/mainnet_14k_blocks.dat filter=lfs diff=lfs merge=lfs -text
 canister/test-data/testnet_200k_blocks.dat filter=lfs diff=lfs merge=lfs -text
+bootstrap/utxo-dump/tests/test-data/chainstate-btc-mainnet-250k.tar.gz filter=lfs diff=lfs merge=lfs -text
