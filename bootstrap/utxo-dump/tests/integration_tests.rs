@@ -121,7 +121,7 @@ use tar::Archive;
 // }
 
 #[test]
-fn test_bitcoin_mainnet_250k_chainstate() {
+fn test_bitcoin_mainnet_250k_chainstate_regression() {
     // Integration test using the fixed Bitcoin mainnet chainstate (250k blocks)
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let output_file = temp_dir.path().join("bitcoin_mainnet_250k_output.csv");
@@ -131,7 +131,7 @@ fn test_bitcoin_mainnet_250k_chainstate() {
 
     println!("Testing with Bitcoin mainnet chainstate (250k blocks)...");
 
-    // Run utxo-dump binary with Bitcoin blockchain setting
+    // Run utxo-dump binary with Bitcoin setting
     let output = Command::new("cargo")
         .args(&[
             "run",
@@ -146,7 +146,6 @@ fn test_bitcoin_mainnet_250k_chainstate() {
         .output()
         .expect("Failed to run utxo-dump");
 
-    // Check command succeeded
     if !output.status.success() {
         panic!(
             "utxo-dump failed with Bitcoin mainnet chainstate!\nExit code: {}\nstdout: {}\nstderr: {}", 
@@ -156,15 +155,11 @@ fn test_bitcoin_mainnet_250k_chainstate() {
         );
     }
 
-    // Verify output file was created and has content
     assert!(output_file.exists(), "Output file was not created");
-    
     let file_contents = fs::read(&output_file)
         .expect("Failed to read output file");
-    
     assert!(file_contents.len() > 0, "Output file is empty");
 
-    // Hash the output for consistency verification
     let mut hasher = Sha256::new();
     hasher.update(&file_contents);
     let result_hash = hasher.finalize();
@@ -172,24 +167,20 @@ fn test_bitcoin_mainnet_250k_chainstate() {
 
     let output_str = String::from_utf8_lossy(&file_contents);
     
-    // Validate CSV structure
-    assert!(output_str.contains("height,txid,vout"), 
+    assert!(output_str.contains("height,txid,vout"),
             "Output doesn't contain expected CSV header");
     
-    // Count lines (header + UTXOs)
     let line_count = output_str.lines().count();
     println!("=== BITCOIN MAINNET 250K TEST RESULTS ===");
     println!("Output file hash: {}", hash_hex);
     println!("Output file size: {} bytes", file_contents.len());
     println!("Total lines: {} (including header)", line_count);
     
-    // Show first few lines
     println!("First few lines of output:");
-    for (i, line) in output_str.lines().take(5).enumerate() {
+    for (i, line) in output_str.lines().take(10).enumerate() {
         println!("  {}: {}", i + 1, line);
     }
 
-    // Basic sanity checks for Bitcoin mainnet data
     assert!(line_count > 1, "Should have at least header + some UTXO entries");
     
     // TODO: Once you establish the expected hash, uncomment and set:
@@ -201,34 +192,29 @@ fn test_bitcoin_mainnet_250k_chainstate() {
     println!("EXPECTED_BITCOIN_MAINNET_250K_HASH = \"{}\"", hash_hex);
 }
 
-/// Extract chainstate data from a tar.gz file in the test-data directory
+/// Extract chainstate.tar.gz file in the test-data directory
 /// Returns path to the extracted chainstate directory
 fn extract_chainstate_data(temp_dir: &TempDir, filename: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    // Find the test data file
-    let test_data_path = find_test_data_path(filename)?;
+    let test_data_path = find_test_chainstate_path(filename)?;
     
-    // Open and decompress the tar.gz file
     let tar_gz_file = fs::File::open(&test_data_path)?;
     let tar_decoder = GzDecoder::new(tar_gz_file);
     let mut archive = Archive::new(tar_decoder);
     
-    // Extract to temporary directory
     let extract_dir = temp_dir.path().join("extracted");
     fs::create_dir_all(&extract_dir)?;
     
     archive.unpack(&extract_dir)?;
-    
-    // Find the chainstate directory in the extracted files
-    // It might be directly extracted or in a subdirectory
-    let chainstate_path = find_chainstate_directory(&extract_dir)?;
+
+    let chainstate_path = find_extracted_chainstate_directory(&extract_dir)?;
     
     println!("Extracted chainstate data to: {}", chainstate_path.display());
     
     Ok(chainstate_path)
 }
 
-/// Find the test data file in the tests/test-data directory
-fn find_test_data_path(filename: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
+/// Find the test chainstate.tar.gz file in the tests/test-data directory
+fn find_test_chainstate_path(filename: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
     // Try multiple possible locations for the test data
     let possible_paths = [
         PathBuf::from("tests/test-data").join(filename),
@@ -252,8 +238,8 @@ fn find_test_data_path(filename: &str) -> Result<PathBuf, Box<dyn std::error::Er
     ).into())
 }
 
-/// Find the chainstate directory in the extracted files
-fn find_chainstate_directory(extract_dir: &Path) -> Result<PathBuf, Box<dyn std::error::Error>> {
+/// Find the extracted chainstate directory
+fn find_extracted_chainstate_directory(extract_dir: &Path) -> Result<PathBuf, Box<dyn std::error::Error>> {
     // Look for chainstate directory
     let possible_paths = [
         extract_dir.join("chainstate"),
@@ -277,40 +263,6 @@ fn find_chainstate_directory(extract_dir: &Path) -> Result<PathBuf, Box<dyn std:
         "Could not find valid chainstate directory in extracted files at: {}",
         extract_dir.display()
     ).into())
-}
-
-#[test]
-fn test_chainstate_file_exists() {
-    // Verify the required Bitcoin mainnet chainstate file exists
-    let test_data_path = find_test_data_path("chainstate-btc-mainnet-250k.tar.gz")
-        .expect("chainstate-btc-mainnet-250k.tar.gz file should exist in tests/test-data/");
-    
-    println!("Found test data at: {}", test_data_path.display());
-    
-    // Verify it's a valid tar.gz file by trying to extract just the structure
-    let temp_dir = TempDir::new().expect("Failed to create temp dir");
-    let extracted_path = extract_chainstate_data(&temp_dir, "chainstate-btc-mainnet-250k.tar.gz")
-        .expect("Should be able to extract chainstate data");
-    
-    println!("Successfully extracted to: {}", extracted_path.display());
-    
-    // Verify it looks like a valid LevelDB chainstate
-    assert!(extracted_path.exists(), "Extracted chainstate directory should exist");
-    assert!(extracted_path.is_dir(), "Extracted chainstate should be a directory");
-    
-    // Check for typical LevelDB files
-    let has_current = extracted_path.join("CURRENT").exists();
-    let has_ldb_files = extracted_path.read_dir()
-        .expect("Should be able to read chainstate directory")
-        .any(|entry| {
-            entry.map(|e| e.file_name().to_string_lossy().ends_with(".ldb"))
-                .unwrap_or(false)
-        });
-    
-    assert!(has_current || has_ldb_files, 
-        "Chainstate directory should contain CURRENT file or .ldb files");
-        
-    println!("✅ Chainstate file validation passed");
 }
 
 #[test]

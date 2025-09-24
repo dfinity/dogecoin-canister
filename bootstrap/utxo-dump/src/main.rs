@@ -12,7 +12,7 @@ use std::io::{BufWriter, Cursor, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
+use std::time::Instant;
 use blockchain::Blockchain;
 
 use anyhow::{Context, Result};
@@ -175,7 +175,26 @@ fn main() -> Result<()> {
         );
     }
 
+    let (mut key, mut value) = (vec![], vec![]);
     db_iter.seek_to_first();
+
+    let start = Instant::now();
+
+    while db_iter.valid() {
+        db_iter.current(&mut key, &mut value);
+        db_iter.advance();
+    }
+
+    // while let Some((key, value)) = db_iter.next() {
+    // }
+
+    let duration = start.elapsed();
+    println!("DB iteration only: {:?}", duration);
+
+    db_iter.seek_to_first();
+
+    let start = Instant::now();
+
     while db_iter.valid() {
         if !running.load(Ordering::SeqCst) {
             if !args.quiet {
@@ -320,6 +339,8 @@ fn main() -> Result<()> {
             break; // TODO: keys are sorted, so we are guaranteed to process all utxos. TO BE VERIFIED.
         }
     }
+    let duration = start.elapsed();
+    println!("Time elapsed: {:?}", duration);
     writer.flush()?;
 
     if !args.quiet {
