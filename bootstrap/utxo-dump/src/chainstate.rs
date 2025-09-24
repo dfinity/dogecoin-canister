@@ -5,10 +5,10 @@ use crate::blockchain::Blockchain;
 use secp256k1::{PublicKey as Secp256k1Pk};
 use crate::serialization::{decompress_amount, read_varint};
 
-pub(crate) struct DBOutput {
-    pub coinbase: bool,
+pub(crate) struct DBUtxoValue {
+    pub coinbase: u8,
     pub height: u32,
-    pub vout: u32,
+    pub vout: Option<u32>,
     pub txout: TxOut,
 }
 
@@ -21,19 +21,19 @@ pub(crate) struct TxOut {
     pub address: String
 }
 
-fn decode_header_code(code: u64) -> (bool, bool, bool, u32) {
-    let coinbase = (code & 1) != 0;
+fn decode_header_code(code: u64) -> (u8, bool, bool, u32) {
+    let coinbase = (code & 1) as u8;
     let vout0_unspent = (code & 2) != 0;
     let vout1_unspent = (code & 4) != 0;
 
     // Number of non-zero bytes in unspentness (nMaskCode in Dogecoin Core)
     let mask_nonzero_bytes = if vout0_unspent || vout1_unspent {
-        (code / 8) as u32
+        code / 8
     } else {
-        ((code / 8) + 1) as u32
+        (code / 8) + 1
     };
 
-    (coinbase, vout0_unspent, vout1_unspent, mask_nonzero_bytes)
+    (coinbase, vout0_unspent, vout1_unspent, mask_nonzero_bytes as u32)
 }
 
 // TODO: this could be made more efficient by storing only the output with their associated index that are unspent
@@ -67,94 +67,8 @@ fn read_unspentness_mask<R: Read>(reader: &mut R, mask_nonzero_bytes: u32) -> an
     Ok(additional_unspent_outputs)
 }
 
-pub(crate) fn deserialize_db_utxo_legacy(blockchain: &Blockchain, value: Vec<u8>) -> anyhow::Result<Vec<DBOutput>> {
-    let mut cursor = Cursor::new(value);
-
-    // -----
-    // Value
-    // -----
-
-    // Ref: <https://en.bitcoin.it/wiki/Bitcoin_Core_0.11_(ch_2):_Data_Storage>
-    //      <https://github.com/dogecoin/dogecoin/blob/7dac1e5e9e887f5f6ff146e812a05bd3bf281eae/src/coins.h#L74>
-    //      <https://github.com/dogecoin/dogecoin/blob/7dac1e5e9e887f5f6ff146e812a05bd3bf281eae/src/coins.h#L156>
-
-    /**
-            * Pruned version of CTransaction: only retains metadata and unspent transaction outputs
-            *
-            * Serialized format:
-            * - VARINT(nVersion)
-            * - VARINT(nCode)
-            * - unspentness bitvector, for vout[2] and further; least significant byte first
-            * - the non-spent CTxOuts (via CTxOutCompressor)
-            * - VARINT(nHeight)
-            *
-            * The nCode value consists of:
-            * - bit 0: IsCoinBase()
-            * - bit 1: vout[0] is not spent
-            * - bit 2: vout[1] is not spent
-            * - The higher bits encode N, the number of non-zero bytes in the following bitvector.
-            *   - In case both bit 1 and bit 2 are unset, they encode N-1, as there must be at
-            *     least one non-spent output).
-**/
-    // Example: 0109044086ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4eebbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa486af3b <- deobfuscated value
-    //          <><><--><--------------------------------------------------><----------------------------------------------><---->
-    //         /   |    \                       |                                                  |                          |
-    //     varint varint \                    vout[4]                                            vout[14]                   varint
-    //       |     |   unspentness                                                                                            |
-    //    version code                                                                                                      height
-    //
-    // - version = 1
-    // - code = 9 (coinbase, neither vout[0] or vout[1] are unspent,
-    //             2 (1, +1 because both bit 1 and bit 2 are unset) non-zero bitvector bytes follow)
-    // - unspentness bitvector: bits 2 (0x04) and 14 (0x4000) are set, so vout[2+2] and vout[14+2] are unspent
-    // - height = 120891
-
-
-    // First varint (version)
-    let _version = read_varint(&mut cursor)?;
-
-    // Second varint (code)
-    let code = read_varint(&mut cursor)?;
-    let (coinbase, vout0_unspent, vout1_unspent, mask_nonzero_bytes) = decode_header_code(code);
-
-    let mut unspent_outputs = vec![vout0_unspent, vout1_unspent];
-
-    if mask_nonzero_bytes > 0 {
-        // Third varint (unspentness)
-        let additional_unspent_outputs = read_unspentness_mask(&mut cursor, mask_nonzero_bytes)?;
-        unspent_outputs.extend(additional_unspent_outputs);
-    }
-
-    let mut outputs = vec![None; unspent_outputs.len()];
-
-    for (i, &is_unspent) in unspent_outputs.iter().enumerate() {
-        if is_unspent {
-            let txout = deserialize_txout(&mut cursor, &blockchain)?;
-            outputs[i] = Some(txout);
-        }
-    }
-
-    let height = read_varint(&mut cursor)? as u32;
-
-    let mut db_outputs = vec![];
-
-    for (vout, out) in outputs.into_iter().enumerate() {
-        if let Some(txout) = out {
-            let db_output = DBOutput {
-                coinbase,
-                height,
-                vout: vout as u32,
-                txout
-            };
-            db_outputs.push(db_output);
-        }
-    }
-
-    Ok(db_outputs)
-}
-
 fn deserialize_txout<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyhow::Result<TxOut> {
-    // Example:
+    // Examples from Dogecoin Core:
 
     // 86ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4ee
     // <-------------------------------------------------->
@@ -192,7 +106,7 @@ fn deserialize_txout<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyhow
 
 fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyhow::Result<(ScriptBuf, String, usize, String)> {
     // nsize: byte to indicate the type or size of script
-    // nsize  -  compressed scriptPubKey - scriptPubKey
+    // nsize  -     compressed script    - script
     //   0    -        hash160 PK        - P2PKH
     //   1    -      hash160 script      - P2SH
     //   2    -      compressed PK       - P2PK 02publickey <- compressed PK, y:even - here and following P2PK: nsize makes up part of the compressed PK
@@ -225,60 +139,132 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
             reader.read_exact(&mut compressed_data)?;
         }
 
-        // Decompress script
         match nsize {
             0 => {
                 let pubkey_hash_bytes: [u8; 20] = compressed_data.try_into().expect("Must be 20 Bytes");
                 let pubkey_hash = PubkeyHash::from_byte_array(pubkey_hash_bytes);
                 address = blockchain.p2pkh_address(pubkey_hash);
-                script = ScriptBuf::new_p2pkh(&pubkey_hash);
+                script = ScriptBuf::from_bytes(pubkey_hash_bytes.to_vec()); // We write the PK hash but not the full P2PKH script
                 script_type = "p2pkh".to_string();
             },
             1 => {
                 let script_hash_bytes: [u8; 20] = compressed_data.try_into().expect("Must be 20 Bytes");
                 let script_hash = ScriptHash::from_byte_array(script_hash_bytes);
                 address = blockchain.p2sh_address(script_hash);
-                script = ScriptBuf::new_p2sh(&script_hash);
+                script = ScriptBuf::from_bytes(script_hash_bytes.to_vec()); // We write the script hash but not the full P2SH script
                 script_type = "p2sh".to_string();
             },
             2 | 3 => {
-                let pk = PublicKey::from_slice(&compressed_data)?;
-                script = ScriptBuf::new_p2pk(&pk);
+                script = ScriptBuf::from_bytes(compressed_data); // We write the compressed PK but not the full P2PK script
                 script_type = "p2pk".to_string();
             },
             4 | 5 => {
-                compressed_data[0] -= 2; // 4 indicates y:even (pk prefix = 0x02), 5 indicates y:odd (pk prefix = 0x03)
+                compressed_data[0] -= 2; // 4 indicates y:even -> PK prefix must be 0x02, 5 indicates y:odd -> PK prefix must be 0x03
                 let pk = Secp256k1Pk::from_slice(&compressed_data)?;
 
                 let uncompressed = pk.serialize_uncompressed();
-                let pk = PublicKey::from_slice(&uncompressed)?;
-                script = ScriptBuf::new_p2pk(&pk);
+                script = ScriptBuf::from_bytes(uncompressed.to_vec()); // We write the uncompressed PK but not the full P2PK script
                 script_type = "p2pk".to_string();
             },
             _ => unreachable!(),
         }
     } else {
-        // Regular script: actual_size = nsize - 6
-        let actual_size = nsize - 6;
-        let mut compressed_data = vec![0u8; actual_size];
-        reader.read_exact(&mut compressed_data)?;
-        if actual_size >= 36 && compressed_data.last() == Some(&174) { // 174 = 0xae = OP_CHECKMULTISIG
+        // Regular script: actual script size = nsize - 6
+        let script_size = nsize - 6;
+        let mut script_bytes = vec![0u8; script_size];
+        reader.read_exact(&mut script_bytes)?;
+        if script_size >= 36 && script_bytes.last() == Some(&174) { // 174 = 0xae = OP_CHECKMULTISIG
             script_type = "p2ms".to_string();
         } else {
             script_type = "non-standard".to_string();
         }
-        script = ScriptBuf::from_bytes(compressed_data);
+        script = ScriptBuf::from_bytes(script_bytes);
     };
 
     Ok((script, script_type, nsize, address))
 }
 
-pub(crate) fn deserialize_db_utxo(blockchain: &Blockchain, value: Vec<u8>) -> anyhow::Result<Vec<DBOutput>> {
+pub(crate) fn deserialize_db_utxo_legacy(blockchain: &Blockchain, value: Vec<u8>) -> anyhow::Result<Vec<DBUtxoValue>> {
     let mut cursor = Cursor::new(value);
 
-    // -----
-    // Value
-    // -----
+    // -------------------
+    // UTXO Value (legacy)
+    // -------------------
+
+    // Ref: <https://en.bitcoin.it/wiki/Bitcoin_Core_0.11_(ch_2):_Data_Storage>
+    //      <https://github.com/dogecoin/dogecoin/blob/7dac1e5e9e887f5f6ff146e812a05bd3bf281eae/src/coins.h#L74>
+    //      <https://github.com/dogecoin/dogecoin/blob/7dac1e5e9e887f5f6ff146e812a05bd3bf281eae/src/coins.h#L156>
+
+    // Example: 0109044086ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4eebbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa486af3b <- deobfuscated value
+    //          <><><--><--------------------------------------------------><----------------------------------------------><---->
+    //         /   |    \                       |                                                  |                          |
+    //     varint varint bitvector            vout[4]                                            vout[14]                   varint
+    //       |     |       \                                                                                                  |
+    //    version code     unspentness                                                                                      height
+    //
+    // - version = 1
+    // - code = 9 (coinbase, neither vout[0] or vout[1] are unspent,
+    //             2 (1, +1 because both bit 1 and bit 2 are unset) non-zero bitvector bytes follow)
+    // - unspentness bitvector: bits 2 (0x04) and 14 (0x4000) are set, so vout[2+2] and vout[14+2] are unspent
+    // - height = 120891
+
+    // The code value consists of:
+    //    - bit 0: IsCoinBase()
+    //    - bit 1: vout[0] is not spent
+    //    - bit 2: vout[1] is not spent
+    //    - The higher bits encode N, the number of non-zero bytes in the following bitvector.
+    //    - In case both bit 1 and bit 2 are unset, they encode N-1, as there must be at
+    //      least one non-spent output.
+
+    // First varint (version)
+    let _version = read_varint(&mut cursor)?;
+
+    // Second varint (code)
+    let code = read_varint(&mut cursor)?;
+    let (coinbase, vout0_unspent, vout1_unspent, mask_nonzero_bytes) = decode_header_code(code);
+
+    let mut unspent_outputs = vec![vout0_unspent, vout1_unspent];
+
+    if mask_nonzero_bytes > 0 {
+        // Bitvector (unspentness)
+        let additional_unspent_outputs = read_unspentness_mask(&mut cursor, mask_nonzero_bytes)?;
+        unspent_outputs.extend(additional_unspent_outputs);
+    }
+
+    let mut outputs = vec![None; unspent_outputs.len()];
+
+    for (i, &is_unspent) in unspent_outputs.iter().enumerate() {
+        if is_unspent {
+            let txout = deserialize_txout(&mut cursor, &blockchain)?;
+            outputs[i] = Some(txout);
+        }
+    }
+
+    let height = read_varint(&mut cursor)? as u32;
+
+    let mut db_outputs = vec![];
+
+    for (vout, out) in outputs.into_iter().enumerate() {
+        if let Some(txout) = out {
+            let db_output = DBUtxoValue {
+                coinbase,
+                height,
+                vout: Some(vout as u32),
+                txout
+            };
+            db_outputs.push(db_output);
+        }
+    }
+
+    Ok(db_outputs)
+}
+
+pub(crate) fn deserialize_db_utxo_modern(blockchain: &Blockchain, value: Vec<u8>) -> anyhow::Result<Vec<DBUtxoValue>> {
+    let mut cursor = Cursor::new(value);
+
+    // -------------------
+    // UTXO Value (modern)
+    // -------------------
 
     //          c0842680ed5900a38f35518de4487c108e3810e6794fb68b189d8b <- deobfuscated value
     //          <----><----><><-------------------------------------->
@@ -288,7 +274,6 @@ pub(crate) fn deserialize_db_utxo(blockchain: &Blockchain, value: Vec<u8>) -> an
     //         |        |
     //         |     amount (compressed)
     //         |
-    //         |
     //  100000100001010100110
     //  <------------------> \
     //         height         coinbase
@@ -297,7 +282,7 @@ pub(crate) fn deserialize_db_utxo(blockchain: &Blockchain, value: Vec<u8>) -> an
     let height_coinbase = read_varint(&mut cursor)?;
 
     let height = (height_coinbase >> 1) as u32;
-    let coinbase = height_coinbase & 1 != 0;
+    let coinbase = (height_coinbase & 1) as u8;
 
     // Second varint (amount compressed)
     let compressed_amount = read_varint(&mut cursor)?;
@@ -313,10 +298,10 @@ pub(crate) fn deserialize_db_utxo(blockchain: &Blockchain, value: Vec<u8>) -> an
         address
     };
 
-    Ok(vec![DBOutput {
+    Ok(vec![DBUtxoValue {
         coinbase,
         height,
-        vout: 0,
+        vout: None, // Encoded in the key, not in the value
         txout,
     }])
 }
@@ -328,13 +313,13 @@ mod tests {
     #[test]
     fn test_header_code_decoding() {
         let (coinbase, vout0, vout1, mask_bytes) = decode_header_code(4);
-        assert_eq!(coinbase, false);
+        assert_eq!(coinbase, 0);
         assert_eq!(vout0, false);
         assert_eq!(vout1, true);
         assert_eq!(mask_bytes, 0);
 
         let (coinbase, vout0, vout1, mask_bytes) = decode_header_code(9);
-        assert_eq!(coinbase, true);
+        assert_eq!(coinbase, 1);
         assert_eq!(vout0, false);
         assert_eq!(vout1, false);
         assert_eq!(mask_bytes, 2);

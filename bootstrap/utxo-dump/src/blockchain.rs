@@ -1,5 +1,5 @@
 use bitcoin::{PubkeyHash, ScriptHash};
-use crate::utxo::{deserialize_db_utxo_legacy, deserialize_db_utxo, DBOutput};
+use crate::chainstate::{deserialize_db_utxo_legacy, deserialize_db_utxo_modern, DBUtxoValue};
 use bitcoin::{Address as BtcAddress, dogecoin::Address as DogeAddress, Network as BtcNetwork, dogecoin::Network as DogeNetwork};
 
 const DB_KEYS_UTXOS: char = 'C'; // 0x43 = 67
@@ -48,10 +48,10 @@ impl Blockchain {
         }
     }
 
-    pub(crate) fn deserialize_db_value(&self, value: Vec<u8>) -> anyhow::Result<Vec<DBOutput>> {
+    pub(crate) fn deserialize_db_utxo(&self, value: Vec<u8>) -> anyhow::Result<Vec<DBUtxoValue>> {
         match self {
             Blockchain::Bitcoin(_) => {
-                Ok(deserialize_db_utxo(self, value)?)
+                Ok(deserialize_db_utxo_modern(self, value)?)
             }
             Blockchain::Dogecoin(_) => {
                 Ok(deserialize_db_utxo_legacy(self, value)?)

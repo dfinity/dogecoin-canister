@@ -1,6 +1,6 @@
 mod serialization;
 mod blockchain;
-mod utxo;
+mod chainstate;
 mod utils;
 
 use bitcoin::{Network as BtcNetwork, dogecoin::Network as DogeNetwork};
@@ -8,11 +8,10 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufWriter, Cursor, Write};
 
-
+use std::iter;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
 use blockchain::Blockchain;
 
 use anyhow::{Context, Result};
@@ -44,10 +43,10 @@ struct Args {
     chainstate: String,
 
     /// Name of file to dump utxo list to
-    #[arg(short = 'o', long = "output", default_value = "utxodump.csv")]
+    #[arg(short = 'o', long = "output", default_value = "chainstate_utxos.csv")]
     output_file: String,
 
-    /// Fields to include in output
+    /// Fields to include in the output
     #[arg(
         short = 'f',
         long = "fields",
@@ -101,7 +100,6 @@ impl Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    // Check if OS is macOS and set rlimit
     #[cfg(target_os = "macos")]
     set_macos_rlimit(&args)?;
 
@@ -174,26 +172,10 @@ fn main() -> Result<()> {
              Cannot process UTXO values without the obfuscation key."
         );
     }
-
-    let (mut key, mut value) = (vec![], vec![]);
-    db_iter.seek_to_first();
-
-    let start = Instant::now();
-
-    while db_iter.valid() {
-        db_iter.current(&mut key, &mut value);
-        db_iter.advance();
-    }
-
-    // while let Some((key, value)) = db_iter.next() {
-    // }
-
-    let duration = start.elapsed();
-    println!("DB iteration only: {:?}", duration);
+    // Ignore first byte (size of the obfuscate key)
+    obfuscate_key.remove(0);
 
     db_iter.seek_to_first();
-
-    let start = Instant::now();
 
     while db_iter.valid() {
         if !running.load(Ordering::SeqCst) {
@@ -206,18 +188,18 @@ fn main() -> Result<()> {
         if let Some((key, value)) = db_iter.next() {
             let prefix = key[0];
             if prefix == blockchain.utxo_key_prefix() {
-                // --------------------
-                // Key for Bitcoin UTXO
-                // --------------------
+                // -----------------------
+                // DB Key for Bitcoin UTXO
+                // -----------------------
 
                 //      430000155b9869d56c66d9e86e3c01de38e3892a42b99949fe109ac034fff6583900
                 //      <><--------------------------------------------------------------><>
                 //      /                               |                                  \
                 //  prefix                      txid (little-endian)                 vout (varint)
 
-                // ---------------------
-                // Key for Dogecoin UTXO
-                // ---------------------
+                // ------------------------
+                // DB Key for Dogecoin UTXO
+                // ------------------------
 
                 // Ref: <https://en.bitcoin.it/wiki/Bitcoin_Core_0.11_(ch_2):_Data_Storage>
 
@@ -226,44 +208,33 @@ fn main() -> Result<()> {
                 //      /                               |
                 //  prefix                      txid (little-endian)
 
-                // Ignore first byte (size of the obfuscate key)
-                let mut obfuscate_key_extended = obfuscate_key[1..].to_vec(); // TODO: 1) remove size when reading key, 2) put size value in variable, 3) try to simplify code for extending key.
-
                 // Extend obfuscate key to match value length
                 // Example
                 //   [8 175 184 95 99 240 37 253 115 1 161 4 33 81 167 111 145 131 0 233 37 232 118 180 123 120 78]    <- value (len = 27)
-                //   [8 177 45 206 253 143 135 37 54]                                                                  <- obfuscate_key[1..] (len = 9)
+                //   [8 177 45 206 253 143 135 37 54]                                                                  <- obfuscate_key (len = 9)
                 //   [8 177 45 206 253 143 135 37 54 8 177 45 206 253 143 135 37 54 8 177 45 206 253 143 135 37 54]    <- obfuscate_key_extended (len = 27)
-                while obfuscate_key_extended.len() < value.len() {
-                    let key_len = obfuscate_key[1..].len();
-                    for i in 0..key_len {
-                        if obfuscate_key_extended.len() >= value.len() {
-                            break;
-                        }
-                        obfuscate_key_extended.push(obfuscate_key[1 + i]);
-                    }
-                }
+                let obfuscate_key_extended: Vec<u8> = iter::repeat(obfuscate_key.clone())
+                    .flatten()
+                    .take(value.len())
+                    .collect();
 
                 // XOR deobfuscate the value
-                let mut deobfuscated_value = Vec::new();
-                for i in 0..value.len() {
-                    deobfuscated_value.push(value[i] ^ obfuscate_key_extended[i]);
-                }
+                let deobfuscated_value: Vec<u8> = value
+                    .iter()
+                    .zip(obfuscate_key_extended.iter())
+                    .map(|(v, k)| v ^ k)
+                    .collect();
 
                 let mut csv_output = HashMap::new();
 
-                let outputs = blockchain.deserialize_db_value(deobfuscated_value)?;
+                // Deserialize UTXO value
+                let outputs = blockchain.deserialize_db_utxo(deobfuscated_value)?;
 
                 for output in outputs {
                     // txid
                     if *fields_selected.get("txid").unwrap_or(&false) {
-                        let txid_le = &key[1..33];
-
-                        // Reverse byte order (little-endian to big-endian)
-                        let mut txid = Vec::new();
-                        for i in (0..txid_le.len()).rev() {
-                            txid.push(txid_le[i]);
-                        }
+                        let mut txid = key[1..33].to_vec();
+                        txid.reverse(); // Reverse byte order (little-endian to big-endian)
                         csv_output.insert("txid", hex::encode(txid));
                     }
 
@@ -275,7 +246,8 @@ fn main() -> Result<()> {
                             let vout = read_varint(&mut cursor)?;
                             csv_output.insert("vout", vout.to_string());
                         } else if key.len() == 33 { // Legacy: vout is encoded in the value
-                            csv_output.insert("vout", output.vout.to_string());
+                            let vout = output.vout.expect("vout is missing");
+                            csv_output.insert("vout", vout.to_string());
                         } else {
                             anyhow::bail!("Invalid key length: {}", key.len());
                         }
@@ -299,12 +271,11 @@ fn main() -> Result<()> {
                         csv_output.insert("nsize", output.txout.nsize.to_string());
                     }
 
-                    // Address and script type processing
+                    // address and script type processing
                     if *fields_selected.get("address").unwrap_or(&false)
                         || *fields_selected.get("type").unwrap_or(&false)
                     {
                         let script_type = output.txout.script_type;
-                        // Update script type statistics
                         if let Some(count) = script_type_count.get_mut(script_type.as_str()) {
                             *count += 1;
                         }
@@ -339,8 +310,6 @@ fn main() -> Result<()> {
             break; // TODO: keys are sorted, so we are guaranteed to process all utxos. TO BE VERIFIED.
         }
     }
-    let duration = start.elapsed();
-    println!("Time elapsed: {:?}", duration);
     writer.flush()?;
 
     if !args.quiet {
@@ -393,7 +362,7 @@ fn validate_and_parse_fields(fields_str: &str) -> Result<HashMap<String, bool>> 
 mod tests {
     use std::str::FromStr;
     use bitcoin::PubkeyHash;
-    use crate::utxo::deserialize_db_utxo_legacy;
+    use crate::chainstate::deserialize_db_utxo_legacy;
     use super::*;
 
     #[test]
@@ -421,7 +390,7 @@ mod tests {
         let outputs = deserialize_db_utxo_legacy(&blockchain, hex::decode(hex_data).unwrap()).unwrap();
         assert_eq!(outputs.len(), 1);
         assert_eq!(outputs[0].vout, 1);
-        assert_eq!(outputs[0].coinbase, false);
+        assert_eq!(outputs[0].coinbase, 0);
         assert_eq!(outputs[0].txout.amount, 60000000000);
         assert_eq!(outputs[0].txout.script_type, "p2pkh");
         let pubkey_hash = PubkeyHash::from_str("816115944e077fe7c803cfa57f29b36bf87c1d35").unwrap();
@@ -457,7 +426,7 @@ mod tests {
         let outputs = deserialize_db_utxo_legacy(&blockchain, hex::decode(hex_data).unwrap()).unwrap();
         assert_eq!(outputs.len(), 2);
         assert_eq!(outputs[0].vout, 4);
-        assert_eq!(outputs[0].coinbase, true);
+        assert_eq!(outputs[0].coinbase, 1);
         assert_eq!(outputs[0].txout.amount, 234925952);
         assert_eq!(outputs[0].txout.script_type, "p2pkh");
         let pubkey_hash_0 = PubkeyHash::from_str("61b01caab50f1b8e9c50a5057eb43c2d9563a4ee").unwrap();
@@ -465,7 +434,7 @@ mod tests {
         assert_eq!(outputs[0].txout.nsize, 0);
         assert_eq!(outputs[0].height, 120891);
         assert_eq!(outputs[1].vout, 16);
-        assert_eq!(outputs[1].coinbase, true);
+        assert_eq!(outputs[1].coinbase, 1);
         assert_eq!(outputs[1].txout.amount, 110397);
         assert_eq!(outputs[1].txout.script_type, "p2pkh");
         let pubkey_hash_1 = PubkeyHash::from_str("8c988f1a4a4de2161e0f50aac7f17e7f9555caa4").unwrap();

@@ -1,6 +1,7 @@
 use std::io::{Error, ErrorKind, Read};
 
 /// Decompress amount value (Bitcoin Core compression)
+/// Ref: <https://github.com/bitcoin/bitcoin/blob/aa87e0b44600a32b32a4b123d4f90d097f1f106f/src/compressor.cpp#L168>
 pub(crate) fn decompress_amount(compressed: u64) -> Result<u64, Error> {
     if compressed == 0 {
         return Ok(0);
@@ -13,7 +14,7 @@ pub(crate) fn decompress_amount(compressed: u64) -> Result<u64, Error> {
 
     // If the remainder is less than 9
     let n = if e < 9 {
-        let d = x % 9 + 1;
+        let d = (x % 9) + 1;
         x = x / 9;
         x * 10 + d
     } else {
