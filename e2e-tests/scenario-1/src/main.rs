@@ -13,6 +13,7 @@ type BlockBlob = Vec<u8>;
 type BlockHeaderBlob = Vec<u8>;
 type BlockHash = Vec<u8>;
 
+const MINER_ADDRESS: &str = "mwSSBD3NCriNXNMgd6dr2N2rxX9M9zXqrp";
 const ADDRESS_1: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
 const ADDRESS_2: &str = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
 const ADDRESS_3: &str = "mvTiuZm1LtzMLzr7QcF2JHo37oQwsGWG8Z";
@@ -78,6 +79,23 @@ fn init() {
     let network = DogecoinNetwork::Regtest;
 
     // Block 1: A single transaction that gives ADDRESS_1 50 DOGE split over 10k inputs.
+    let [coinbase_1, coinbase_2, coinbase_3, coinbase_4, coinbase_5] = {
+        let mut txs = Vec::with_capacity(5);
+        for i in 0..5 {
+            txs.push(
+                TransactionBuilder::coinbase()
+                    .with_output(
+                        &Address::from_str(MINER_ADDRESS).unwrap().assume_checked(),
+                        5_000_000_000,
+                    )
+                    .with_lock_time(i)
+                    .build(),
+            )
+        }
+        txs.try_into().unwrap()
+    };
+
+    // Block 1: A single transaction that gives ADDRESS_1 50 BTC split over 10k inputs.
     let mut tx_1 = TransactionBuilder::new();
     for _ in 0..10_000 {
         tx_1 = tx_1.with_output(
@@ -91,6 +109,7 @@ fn init() {
     let block_1 = BlockBuilder::default()
         .with_prev_header(*genesis_block(network).header)
         .with_version(1)
+        .with_transaction(coinbase_1)
         .with_transaction(tx_1)
         .build();
     append_block(&block_1);
@@ -117,6 +136,7 @@ fn init() {
 
     let mut block_2 = BlockBuilder::default()
         .with_prev_header(*block_1.header)
+        .with_transaction(coinbase_2)
         .with_version(1);
     for tx in block_2_txs.iter() {
         block_2 = block_2.with_transaction(tx.clone());
@@ -129,6 +149,7 @@ fn init() {
     let block_3 = BlockBuilder::default()
         .with_prev_header(*block_2.header)
         .with_version(1)
+        .with_transaction(coinbase_3)
         .with_transaction(
             TransactionBuilder::new()
                 .with_output(
@@ -143,6 +164,7 @@ fn init() {
     let block_4 = BlockBuilder::default()
         .with_prev_header(*block_3.header)
         .with_version(1)
+        .with_transaction(coinbase_4)
         .with_transaction(
             TransactionBuilder::new()
                 .with_output(
@@ -176,6 +198,7 @@ fn init() {
 
     let mut block_5 = BlockBuilder::default()
         .with_prev_header(*block_4.header)
+        .with_transaction(coinbase_5)
         .with_version(1);
     for tx in block_5_txs.into_iter() {
         block_5 = block_5.with_transaction(tx);

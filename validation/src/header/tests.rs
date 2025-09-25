@@ -21,6 +21,7 @@ use std::str::FromStr;
 use utils::{
     deserialize_header, get_headers, next_block_header, SimpleHeaderStore, MOCK_CURRENT_TIME,
 };
+use crate::fixtures::SimpleHeaderStore;
 
 fn verify_consecutive_headers<T: HeaderValidator>(
     validator: &T,

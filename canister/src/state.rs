@@ -2,7 +2,7 @@ use crate::{
     address_utxoset::AddressUtxoSet,
     block_header_store::BlockHeaderStore,
     metrics::Metrics,
-    runtime::{inc_performance_counter, performance_counter, print, time_secs},
+    runtime::{duration_since_epoch, inc_performance_counter, performance_counter, print},
     types::{
         into_dogecoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
         GetSuccessorsPartialResponse, Slicing,
@@ -16,8 +16,7 @@ use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillikoinuPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{
-    AuxPowHeaderValidator, DogecoinHeaderValidator, ValidateHeaderError as InsertBlockError,
-    ValidateHeaderError,
+    BlockValidator, HeaderValidator, ValidateBlockError as InsertBlockError, ValidateHeaderError,
 };
 use serde::{Deserialize, Serialize};
 
@@ -128,13 +127,12 @@ impl State {
 /// Returns an error if the block doesn't extend any known block in the state.
 pub fn insert_block(state: &mut State, block: Block) -> Result<(), InsertBlockError> {
     let start = performance_counter();
-    let header_validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
-    header_validator.validate_auxpow_header(
-        &ValidationContext::new(state, block.header())
+    let validator = BlockValidator::new(
+        ValidationContext::new(state, block.header())
             .map_err(|_| ValidateHeaderError::PrevHeaderNotFound)?,
-        block.auxpow_header(),
-        time_secs(),
-    )?;
+        into_dogecoin_network(state.network()),
+    );
+    validator.validate_block(block.internal_bitcoin_block(), duration_since_epoch())?;
 
     unstable_blocks::push(&mut state.unstable_blocks, &state.utxos, block)
         .expect("Inserting a block with a validated header must succeed.");
@@ -209,7 +207,6 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
     // Note that the actual limit available on system subnets is 50B. The threshold is set
     // lower to be conservative.
     const MAX_INSTRUCTIONS_THRESHOLD: u64 = 30_000_000_000;
-    let validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
 
     for block_header_blob in next_block_headers.iter() {
         if inc_performance_counter() > MAX_INSTRUCTIONS_THRESHOLD {
@@ -237,7 +234,11 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
             match ValidationContext::new_with_next_block_headers(state, &block_header)
                 .map_err(|_| ValidateHeaderError::PrevHeaderNotFound)
             {
-                Ok(store) => validator.validate_auxpow_header(&store, &block_header, time_secs()),
+                Ok(store) => {
+                    let validator =
+                        HeaderValidator::new(store, into_dogecoin_network(state.network()));
+                    validator.validate_header(&block_header, duration_since_epoch())
+                }
                 Err(err) => Err(err),
             };
 
