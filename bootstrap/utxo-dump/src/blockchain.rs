@@ -58,4 +58,11 @@ impl Blockchain {
             }
         }
     }
+
+    pub(crate) fn write_full_script(&self) -> bool {
+        match self {
+            Blockchain::Bitcoin(_) => false,
+            Blockchain::Dogecoin(_) => true
+        }
+    }
 }

@@ -144,26 +144,44 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
                 let pubkey_hash_bytes: [u8; 20] = compressed_data.try_into().expect("Must be 20 Bytes");
                 let pubkey_hash = PubkeyHash::from_byte_array(pubkey_hash_bytes);
                 address = blockchain.p2pkh_address(pubkey_hash);
-                script = ScriptBuf::from_bytes(pubkey_hash_bytes.to_vec()); // We write the PK hash but not the full P2PKH script
+                if blockchain.write_full_script() {
+                    script = ScriptBuf::new_p2pkh(&pubkey_hash); // Write the full P2PKH script
+                } else {
+                    script = ScriptBuf::from_bytes(pubkey_hash_bytes.to_vec()); // Write the PK hash only
+                }
                 script_type = "p2pkh".to_string();
             },
             1 => {
                 let script_hash_bytes: [u8; 20] = compressed_data.try_into().expect("Must be 20 Bytes");
                 let script_hash = ScriptHash::from_byte_array(script_hash_bytes);
                 address = blockchain.p2sh_address(script_hash);
-                script = ScriptBuf::from_bytes(script_hash_bytes.to_vec()); // We write the script hash but not the full P2SH script
+                if blockchain.write_full_script() {
+                    script = ScriptBuf::new_p2sh(&script_hash); // Write the full P2SH script
+                } else {
+                    script = ScriptBuf::from_bytes(script_hash_bytes.to_vec()); // Write the script hash only
+                }
                 script_type = "p2sh".to_string();
             },
             2 | 3 => {
-                script = ScriptBuf::from_bytes(compressed_data); // We write the compressed PK but not the full P2PK script
+                if blockchain.write_full_script() {
+                    let pk = PublicKey::from_slice(&compressed_data)?;
+                    script = ScriptBuf::new_p2pk(&pk); // Write the full P2PK with compressed PK
+                } else {
+                    script = ScriptBuf::from_bytes(compressed_data); // Write the compressed PK only
+                }
                 script_type = "p2pk".to_string();
             },
             4 | 5 => {
                 compressed_data[0] -= 2; // 4 indicates y:even -> PK prefix must be 0x02, 5 indicates y:odd -> PK prefix must be 0x03
-                let pk = Secp256k1Pk::from_slice(&compressed_data)?;
+                let compressed_pk = Secp256k1Pk::from_slice(&compressed_data)?;
+                let uncompressed = compressed_pk.serialize_uncompressed();
+                let pk = PublicKey::from_slice(&uncompressed)?;
 
-                let uncompressed = pk.serialize_uncompressed();
-                script = ScriptBuf::from_bytes(uncompressed.to_vec()); // We write the uncompressed PK but not the full P2PK script
+                if blockchain.write_full_script() {
+                    script = ScriptBuf::new_p2pk(&pk); // Write the full P2PK script with uncompressed PK
+                } else {
+                    script = ScriptBuf::from_bytes(uncompressed.to_vec()); // Write the uncompressed PK only
+                }
                 script_type = "p2pk".to_string();
             },
             _ => unreachable!(),

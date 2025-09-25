@@ -32,7 +32,7 @@ use tar::Archive;
 // Note: the result is the same as with running the bitcoin-utxo-dump tool from: <https://github.com/in3rsha/bitcoin-utxo-dump/tree/9b1c015308f779ac529083ed7922cc551b8ddb53>
 const SHA256_OUTPUT_BTC_MAINNET_250K: &str = "126a344114be2924db8ba757b9ca8bc83b0ed6161f5b866befd30a282a1fb82f";
 
-/// Runs utxo-dump against test chainstate data and verifies the output hash matches expected value
+/// Runs utxo-dump against test chainstate data and verifies the output hash matches the expected value
 #[test]
 fn test_bitcoin_mainnet_250k_chainstate_regression() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
