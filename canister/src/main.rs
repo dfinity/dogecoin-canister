@@ -8,7 +8,7 @@ use ic_doge_interface::{
 };
 
 /// Use Nat to represent an arbitrary amount of Koinus because the total amount of DOGE 
-/// will exceed the limit u64 by around year 2030.
+/// will exceed the bound of u64 by around year 2030.
 type Amount = candid::Nat;
 
 #[cfg(target_arch = "wasm32")]
