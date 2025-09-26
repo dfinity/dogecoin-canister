@@ -55,7 +55,7 @@ struct Args {
     fields: String,
 
     /// Blockchain (bitcoin, dogecoin)
-    #[arg(short = 'b', long = "blockchain", default_value = "dogecoin")]
+    #[arg(short = 'b', long = "blockchain")]
     blockchain: BlockchainKind,
 
     /// Is the chainstate leveldb for testnet?
@@ -110,6 +110,9 @@ fn main() -> Result<()> {
     let blockchain = args.to_blockchain();
 
     let fields_selected = validate_and_parse_fields(&args.fields)?;
+
+    // Helper closure to check if a field is selected
+    let is_selected = |field: &str| *fields_selected.get(field).unwrap_or(&false);
 
     let options = Options::default();
     let mut database = DB::open(&args.chainstate, options).context("Couldn't open LevelDB")?;
@@ -232,14 +235,14 @@ fn main() -> Result<()> {
 
                 for output in outputs {
                     // txid
-                    if *fields_selected.get("txid").unwrap_or(&false) {
+                    if is_selected("txid") {
                         let mut txid = key[1..33].to_vec();
                         txid.reverse(); // Reverse byte order (little-endian to big-endian)
                         csv_output.insert("txid", hex::encode(txid));
                     }
 
                     // vout
-                    if *fields_selected.get("vout").unwrap_or(&false) {
+                    if is_selected("vout") {
                         if key.len() >= 34 { // Modern: vout is encoded in the key
                             let vout_bytes = &key[33..];
                             let mut cursor = Cursor::new(vout_bytes);
@@ -254,26 +257,25 @@ fn main() -> Result<()> {
                     }
 
                     // coinbase
-                    if *fields_selected.get("coinbase").unwrap_or(&false) || *fields_selected.get("height").unwrap_or(&false) {
+                    if is_selected("coinbase") || is_selected("height") {
                         csv_output.insert("coinbase", output.coinbase.to_string());
                         csv_output.insert("height", output.height.to_string());
                     }
 
                     // amount
-                    if *fields_selected.get("amount").unwrap_or(&false) {
+                    if is_selected("amount") {
                         let amount = output.txout.amount;
                         csv_output.insert("amount", amount.to_string());
                         total_amount += amount;
                     }
 
                     // nsize
-                    if *fields_selected.get("nsize").unwrap_or(&false) {
+                    if is_selected("nsize") {
                         csv_output.insert("nsize", output.txout.nsize.to_string());
                     }
 
                     // address and script type processing
-                    if *fields_selected.get("address").unwrap_or(&false)
-                        || *fields_selected.get("type").unwrap_or(&false)
+                    if is_selected("address") || is_selected("type")
                     {
                         let script_type = output.txout.script_type;
                         if let Some(count) = script_type_count.get_mut(script_type.as_str()) {
@@ -283,7 +285,7 @@ fn main() -> Result<()> {
                         csv_output.insert("type", script_type);
                     }
 
-                    if *fields_selected.get("script").unwrap_or(&false) {
+                    if is_selected("script") {
                         csv_output.insert("script", hex::encode(output.txout.script));
                     }
 
@@ -305,9 +307,9 @@ fn main() -> Result<()> {
                         }
                     }
                 }
-            }
+            } // TODO: keys are sorted, so we are guaranteed to process all utxos and could break out of the loop. TO BE VERIFIED.
         } else {
-            break; // TODO: keys are sorted, so we are guaranteed to process all utxos. TO BE VERIFIED.
+            break;
         }
     }
     writer.flush()?;
@@ -316,11 +318,11 @@ fn main() -> Result<()> {
         println!();
         println!("Total UTXOs: {}", utxo_count);
 
-        if *fields_selected.get("amount").unwrap_or(&false) {
+        if is_selected("amount") {
             println!("Total {}:   {:.8}", blockchain.ticker(), total_amount as f64 / 100_000_000.0);
         }
 
-        if *fields_selected.get("type").unwrap_or(&false) {
+        if is_selected("type") {
             println!("Script Types:");
             for (script_type, count) in script_type_count {
                 println!(" {:<12} {}", script_type, count);
