@@ -28,7 +28,7 @@ BALANCE=$(dfx canister call dogecoin dogecoin_get_balance '(record {
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
-if ! [[ $BALANCE = "(0 : nat64)" ]]; then
+if ! [[ $BALANCE = "(0 : nat)" ]]; then
   echo "FAIL"
   exit 1
 fi
@@ -38,7 +38,7 @@ BALANCE=$(dfx canister call --query dogecoin dogecoin_get_balance_query '(record
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
-if ! [[ $BALANCE = "(0 : nat64)" ]]; then
+if ! [[ $BALANCE = "(0 : nat)" ]]; then
   echo "FAIL"
   exit 1
 fi
@@ -51,7 +51,7 @@ BALANCE=$(dfx canister call dogecoin dogecoin_get_balance '(record {
 })')
 
 # Verify that the balance is 50 DOGE.
-if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
+if ! [[ $BALANCE = "(5_000_000_000 : nat)" ]]; then
   echo "FAIL"
   exit 1
 fi
@@ -125,7 +125,7 @@ BALANCE=$(dfx canister call --query dogecoin dogecoin_get_balance_query '(record
   address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 })')
 
-if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
+if ! [[ $BALANCE = "(5_000_000_000 : nat)" ]]; then
   echo "FAIL"
   exit 1
 fi
@@ -148,7 +148,7 @@ BALANCE=$(dfx canister call dogecoin dogecoin_get_balance '(record {
   address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 })')
 
-if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
+if ! [[ $BALANCE = "(5_000_000_000 : nat)" ]]; then
   echo "FAIL"
   exit 1
 fi
@@ -158,7 +158,7 @@ BALANCE=$(dfx canister call --query dogecoin dogecoin_get_balance_query '(record
   address = "mjCLh7tvtg92WfVgqBbqFd2DoJ86Jr6dFW";
 })')
 
-if ! [[ $BALANCE = "(5_000_000_000 : nat64)" ]]; then
+if ! [[ $BALANCE = "(5_000_000_000 : nat)" ]]; then
   echo "FAIL"
   exit 1
 fi
