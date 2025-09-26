@@ -7,8 +7,8 @@ use ic_doge_interface::{
     MillikoinuPerByte, SendTransactionRequest, SetConfigRequest,
 };
 
-/// Use Nat to represent amount of Koinus because the total amount of DOGE will exceed the
-/// limit u64 by around year 2030.
+/// Use Nat to represent an arbitrary amount of Koinus because the total amount of DOGE 
+/// will exceed the limit u64 by around year 2030.
 type Amount = candid::Nat;
 
 #[cfg(target_arch = "wasm32")]
