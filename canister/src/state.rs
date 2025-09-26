@@ -13,7 +13,7 @@ use crate::{
 };
 use bitcoin::{consensus::Decodable, dogecoin::Header};
 use candid::Principal;
-use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
+use ic_doge_interface::{Fees, Flag, Height, MillikoinuPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{
     AuxPowHeaderValidator, DogecoinHeaderValidator, ValidateHeaderError as InsertBlockError,
@@ -283,7 +283,7 @@ const TX_OUT_SCRIPT_MAX_SIZE_SMALL: u32 = 25;
 // The maximum size in bytes of a bitcoin script for it to be considered "medium".
 const TX_OUT_SCRIPT_MAX_SIZE_MEDIUM: u32 = 201;
 
-// A transaction output's value in satoshis is a `u64`, which is 8 bytes.
+// A transaction output's value in koinus is a `u64`, which is 8 bytes.
 const TX_OUT_VALUE_SIZE: u32 = 8;
 
 const TX_OUT_MAX_SIZE_SMALL: u32 = TX_OUT_SCRIPT_MAX_SIZE_SMALL + TX_OUT_VALUE_SIZE;
@@ -445,7 +445,7 @@ impl SuccessorsResponseStats {
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FeePercentilesCache {
     pub tip_block_hash: BlockHash,
-    pub fee_percentiles: Vec<MillisatoshiPerByte>,
+    pub fee_percentiles: Vec<MillikoinuPerByte>,
 }
 
 #[cfg(test)]

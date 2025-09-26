@@ -3,8 +3,8 @@ use ic_cdk_macros::{heartbeat, init, inspect_message, post_upgrade, pre_upgrade,
 use ic_doge_canister::types::{HttpRequest, HttpResponse};
 use ic_doge_interface::{
     Config, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
-    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig,
-    MillisatoshiPerByte, Satoshi, SendTransactionRequest, SetConfigRequest,
+    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig, Koinu,
+    MillikoinuPerByte, SendTransactionRequest, SetConfigRequest,
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -38,7 +38,7 @@ async fn heartbeat() {
 }
 
 #[update(manual_reply = true)]
-pub fn dogecoin_get_balance(request: GetBalanceRequest) -> ManualReply<Satoshi> {
+pub fn dogecoin_get_balance(request: GetBalanceRequest) -> ManualReply<Koinu> {
     match ic_doge_canister::get_balance(request) {
         Ok(response) => ManualReply::one(response),
         Err(e) => ManualReply::reject(format!("get_balance failed: {:?}", e).as_str()),
@@ -46,7 +46,7 @@ pub fn dogecoin_get_balance(request: GetBalanceRequest) -> ManualReply<Satoshi> 
 }
 
 #[query(manual_reply = true)]
-pub fn dogecoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Satoshi> {
+pub fn dogecoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Koinu> {
     if ic_cdk::api::data_certificate().is_none() {
         return ManualReply::reject("get_balance_query cannot be called in replicated mode");
     }
@@ -96,7 +96,7 @@ async fn dogecoin_send_transaction(request: SendTransactionRequest) -> ManualRep
 #[update]
 pub fn dogecoin_get_current_fee_percentiles(
     request: GetCurrentFeePercentilesRequest,
-) -> Vec<MillisatoshiPerByte> {
+) -> Vec<MillikoinuPerByte> {
     ic_doge_canister::get_current_fee_percentiles(request)
 }
 

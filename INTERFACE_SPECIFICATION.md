@@ -18,7 +18,9 @@ type network = variant {
   regtest;
 };
 
-type satoshi = nat64;
+type amount = nat;
+
+type koinu = nat64;
 
 type address = text;
 
@@ -33,7 +35,7 @@ type outpoint = record {
 
 type utxo = record {
   outpoint : outpoint;
-  value : satoshi;
+  value : koinu;
   height : block_height;
 };
 
@@ -91,7 +93,7 @@ The recommended workflow is to issue a request with the desired number of confir
 ### `dogecoin_get_utxos_query`
 
 ```
-dogecoin_get_balance_query : (get_balance_request) -> (satoshi) query;
+dogecoin_get_balance_query : (get_balance_request) -> (amount) query;
 ```
 
 
@@ -107,12 +109,12 @@ type get_balance_request = record {
   min_confirmations : opt nat32;
 };
 
-dogecoin_get_balance : (get_balance_request) -> (satoshi);
+dogecoin_get_balance : (get_balance_request) -> (amount);
 ```
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a `get_balance_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet` or `testnet`), the function returns the current balance of this address in `Satoshi` (10^8 Satoshi = 1 Dogecoin) in the specified Dogecoin network. The same address formats as for `dogecoin_get_utxos` are supported.
+Given a `get_balance_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet` or `testnet`), the function returns the current balance of this address in `Koinu` (10^8 Koinu = 1 Dogecoin) in the specified Dogecoin network. The same address formats as for `dogecoin_get_utxos` are supported.
 
 If the address is malformed, the call is rejected.
 
@@ -123,7 +125,7 @@ Given an address and the optional `min_confirmations` parameter, `dogecoin_get_b
 ### `dogecoin_get_balance_query`
 
 ```
-dogecoin_get_balance_query : (get_balance_request) -> (satoshi) query;
+dogecoin_get_balance_query : (get_balance_request) -> (amount) query;
 ```
 
 This endpoint is identical to `dogecoin_get_balance` but can _only_ be invoked in a query call.
@@ -136,16 +138,16 @@ type get_current_fee_percentiles_request = record {
   network : network;
 };
 
-type millisatoshi_per_byte = nat64;
+type millikoinu_per_byte = nat64;
 
-dogecoin_get_current_fee_percentiles : (get_current_fee_percentiles_request) -> (vec millisatoshi_per_byte);
+dogecoin_get_current_fee_percentiles : (get_current_fee_percentiles_request) -> (vec millikoinu_per_byte);
 ```
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
 The transaction fees in the Dogecoin network change dynamically based on the number of pending transactions. It must be possible for a canister to determine an adequate fee when creating a Dogecoin transaction.
 
-This function returns fee percentiles, measured in millisatoshi/vbyte (1000 millisatoshi = 1 satoshi), over the last 10,000 transactions in the specified network, i.e., over the transactions in the last approximately 4-10 blocks.
+This function returns fee percentiles, measured in millikoinu/vbyte (1000 millikoinu = 1 koinu), over the last 10,000 transactions in the specified network, i.e., over the transactions in the last approximately 4-10 blocks.
 
 The [standard nearest-rank estimation method](https://en.wikipedia.org/wiki/Percentile#The_nearest-rank_method), inclusive, with the addition of a 0th percentile is used. Concretely, for any i from 1 to 100, the ith percentile is the fee with rank `⌈i * 100⌉`. The 0th percentile is defined as the smallest fee (excluding coinbase transactions).
 

@@ -134,7 +134,7 @@ mod test {
 
         let utxo_set = UtxoSet::new(network);
 
-        // Create a genesis block where 1000 satoshis are given to address 1.
+        // Create a genesis block where 1000 koinus are given to address 1.
         let coinbase_tx = TransactionBuilder::coinbase()
             .with_output(&address_1, 1000)
             .build();
@@ -173,7 +173,7 @@ mod test {
 
         let utxo_set = UtxoSet::new(network);
 
-        // Create a genesis block where 1000 satoshis are given to address 1.
+        // Create a genesis block where 1000 koinus are given to address 1.
         let coinbase_tx = TransactionBuilder::coinbase()
             .with_output(&address_1, 1000)
             .build();
@@ -181,7 +181,7 @@ mod test {
             .with_transaction(coinbase_tx.clone())
             .build();
 
-        // Extend block 0 with block 1 that spends the 1000 satoshis and gives them to address 2.
+        // Extend block 0 with block 1 that spends the 1000 koinus and gives them to address 2.
         let tx = TransactionBuilder::new()
             .with_input(OutPoint::new(coinbase_tx.txid(), 0))
             .with_output(&address_2, 1000)
@@ -225,7 +225,7 @@ mod test {
         let address_1 = random_p2pkh_address(doge_network).into();
         let address_2 = random_p2pkh_address(doge_network).into();
 
-        // Create a genesis block where 2000 satoshis are given to address 1
+        // Create a genesis block where 2000 koinus are given to address 1
         // in two different outputs.
         let coinbase_tx = TransactionBuilder::coinbase()
             .with_output(&address_1, 1000)
@@ -273,7 +273,7 @@ mod test {
             }]
         );
 
-        // Address 2 should receive 1500 Satoshi
+        // Address 2 should receive 1500 koinu
         assert_eq!(
             address_2_utxo_set.into_iter(None).collect::<Vec<_>>(),
             vec![Utxo {

@@ -5,7 +5,7 @@ use crate::{
     types::{Address, AddressUtxo, AddressUtxoRange, Slicing, TxOut, Utxo},
 };
 use bitcoin::{Script, TxOut as BitcoinTxOut};
-use ic_doge_interface::{Height, Network, Satoshi};
+use ic_doge_interface::{Height, Koinu, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint, Transaction, Txid};
 use ic_stable_structures::{storable::Blob, StableBTreeMap, Storable as _};
 use serde::{Deserialize, Serialize};
@@ -155,7 +155,7 @@ impl UtxoSet {
     }
 
     /// Returns the balance of the given address.
-    pub fn get_balance(&self, address: &Address) -> Satoshi {
+    pub fn get_balance(&self, address: &Address) -> Koinu {
         let mut balance = self.balances.get(address).unwrap_or(0);
 
         // Revert any changes to the balance that were done by the ingesting block.
@@ -437,7 +437,7 @@ impl UtxoSet {
     }
 
     #[cfg(test)]
-    pub fn get_total_supply(&self) -> Satoshi {
+    pub fn get_total_supply(&self) -> Koinu {
         self.utxos.iter().map(|(_, (v, _))| v.value).sum()
     }
 }
@@ -971,7 +971,7 @@ mod test {
 
             let mut utxo_set = UtxoSet::new(network);
 
-            // Transaction 0: A coinbase tx with `tx_cardinality` inputs, each giving 1 Satoshi to
+            // Transaction 0: A coinbase tx with `tx_cardinality` inputs, each giving 1 Koinu to
             // address 1.
             let mut tx_0 = TransactionBuilder::coinbase();
             for i in 0..tx_cardinality {
