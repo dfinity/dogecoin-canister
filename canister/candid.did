@@ -4,12 +4,12 @@ type network = variant {
   regtest;
 };
 
-// Under current issurance rate, the total market cap of DOGE is going to exceed 
-// the bound if nat64 by around year 2030. So it is safer to use nat to represent
-// the amount of DOGE in koinus (the smallest unit of DOGE).
+// The total amount of DOGE is going to exceed the bound of nat64 by around year 2030.
+// So it is safer to use nat to represent an arbitrary amount of DOGE in koinus.
 type amount = nat;
 
-// Since Utxo value cannot exceed 10B DOGE, nat64 can be used.
+// The smallest unit of DOGE: 10^8 koinu = 1 DOGE. The value of an UTXO can be safely
+// represented as a nat64 value because it cannot exceed 10B DOGE according to the protocol.
 type koinu = nat64;
 
 type address = text;
@@ -108,7 +108,7 @@ type send_transaction_request = record {
   transaction : blob;
 };
 
-// Transaction fee cannot exceed 10B DOGE, it is safe to use nat64 here.
+// Transaction fee cannot exceed 10B DOGE, which can be safely represented by nat64.
 type millikoinu_per_byte = nat64;
 
 type set_config_request = record {
