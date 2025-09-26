@@ -3,9 +3,13 @@ use ic_cdk_macros::{heartbeat, init, inspect_message, post_upgrade, pre_upgrade,
 use ic_doge_canister::types::{HttpRequest, HttpResponse};
 use ic_doge_interface::{
     Config, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
-    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig, Koinu,
+    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig,
     MillikoinuPerByte, SendTransactionRequest, SetConfigRequest,
 };
+
+/// Use Nat to represent amount of Koinus because the total amount of DOGE will exceed the
+/// limit u64 by around year 2030.
+type Amount = candid::Nat;
 
 #[cfg(target_arch = "wasm32")]
 mod printer;
@@ -38,20 +42,20 @@ async fn heartbeat() {
 }
 
 #[update(manual_reply = true)]
-pub fn dogecoin_get_balance(request: GetBalanceRequest) -> ManualReply<Koinu> {
+pub fn dogecoin_get_balance(request: GetBalanceRequest) -> ManualReply<Amount> {
     match ic_doge_canister::get_balance(request) {
-        Ok(response) => ManualReply::one(response),
+        Ok(response) => ManualReply::one(Amount::from(response)),
         Err(e) => ManualReply::reject(format!("get_balance failed: {:?}", e).as_str()),
     }
 }
 
 #[query(manual_reply = true)]
-pub fn dogecoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Koinu> {
+pub fn dogecoin_get_balance_query(request: GetBalanceRequest) -> ManualReply<Amount> {
     if ic_cdk::api::data_certificate().is_none() {
         return ManualReply::reject("get_balance_query cannot be called in replicated mode");
     }
     match ic_doge_canister::get_balance_query(request) {
-        Ok(response) => ManualReply::one(response),
+        Ok(response) => ManualReply::one(Amount::from(response)),
         Err(e) => ManualReply::reject(format!("get_balance_query failed: {:?}", e).as_str()),
     }
 }

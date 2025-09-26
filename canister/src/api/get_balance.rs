@@ -4,7 +4,7 @@ use crate::{
     types::{Address, GetBalanceRequest},
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut,
 };
-use ic_doge_interface::{GetBalanceError, Koinu};
+use ic_doge_interface::GetBalanceError;
 use std::str::FromStr;
 
 // Various profiling stats for tracking the performance of `get_balance`.
@@ -18,7 +18,7 @@ struct Stats {
 }
 
 /// Retrieves the balance of the given Dogecoin address.
-pub fn get_balance(request: GetBalanceRequest) -> Result<Koinu, GetBalanceError> {
+pub fn get_balance(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     verify_has_enough_cycles(with_state(|s| s.fees.get_balance_maximum));
     charge_cycles(with_state(|s| s.fees.get_balance));
 
@@ -27,11 +27,11 @@ pub fn get_balance(request: GetBalanceRequest) -> Result<Koinu, GetBalanceError>
 
 /// Retrieves the balance of the given Dogecoin address,
 /// while not charging for the execution, used only for queries.
-pub fn get_balance_query(request: GetBalanceRequest) -> Result<Koinu, GetBalanceError> {
+pub fn get_balance_query(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     get_balance_private(request)
 }
 
-fn get_balance_private(request: GetBalanceRequest) -> Result<Koinu, GetBalanceError> {
+fn get_balance_private(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     let min_confirmations = request.min_confirmations.unwrap_or(0);
     let address =
         Address::from_str(&request.address).map_err(|_| GetBalanceError::MalformedAddress)?;
@@ -69,7 +69,7 @@ fn get_balance_private(request: GetBalanceRequest) -> Result<Koinu, GetBalanceEr
                 .get_added_outpoints(&block.block_hash(), &address)
             {
                 let (txout, _) = state.unstable_blocks.get_tx_out(outpoint).unwrap();
-                balance += txout.value;
+                balance += txout.value as u128;
             }
 
             for outpoint in state
@@ -77,7 +77,7 @@ fn get_balance_private(request: GetBalanceRequest) -> Result<Koinu, GetBalanceEr
                 .get_removed_outpoints(&block.block_hash(), &address)
             {
                 let (txout, _) = state.unstable_blocks.get_tx_out(outpoint).unwrap();
-                balance -= txout.value;
+                balance -= txout.value as u128;
             }
         }
 

@@ -31,7 +31,7 @@ pub use heartbeat::heartbeat;
 use ic_doge_interface::{
     Config, Flag, GetBalanceError, GetBalanceRequest, GetBlockHeadersError, GetBlockHeadersRequest,
     GetBlockHeadersResponse, GetCurrentFeePercentilesRequest, GetUtxosError, GetUtxosRequest,
-    GetUtxosResponse, InitConfig, Koinu, MillikoinuPerByte, Network, SetConfigRequest,
+    GetUtxosResponse, InitConfig, MillikoinuPerByte, Network, SetConfigRequest,
 };
 use ic_doge_types::Block;
 use ic_stable_structures::Memory;
@@ -120,14 +120,14 @@ pub fn get_current_fee_percentiles(
     api::get_current_fee_percentiles()
 }
 
-pub fn get_balance(request: GetBalanceRequest) -> Result<Koinu, GetBalanceError> {
+pub fn get_balance(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     verify_api_access();
     verify_network(request.network.into());
     verify_synced();
     api::get_balance(request.into())
 }
 
-pub fn get_balance_query(request: GetBalanceRequest) -> Result<Koinu, GetBalanceError> {
+pub fn get_balance_query(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     verify_api_access();
     verify_network(request.network.into());
     verify_synced();

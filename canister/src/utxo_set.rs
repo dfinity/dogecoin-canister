@@ -5,7 +5,7 @@ use crate::{
     types::{Address, AddressUtxo, AddressUtxoRange, Slicing, TxOut, Utxo},
 };
 use bitcoin::{Script, TxOut as BitcoinTxOut};
-use ic_doge_interface::{Height, Koinu, Network};
+use ic_doge_interface::{Height, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint, Transaction, Txid};
 use ic_stable_structures::{storable::Blob, StableBTreeMap, Storable as _};
 use serde::{Deserialize, Serialize};
@@ -37,7 +37,7 @@ pub struct UtxoSet {
     // A map of an address and its current balance.
     // NOTE: Stable structures don't need to be serialized.
     #[serde(skip, default = "init_balances")]
-    balances: StableBTreeMap<Address, u64, Memory>,
+    balances: StableBTreeMap<Address, u128, Memory>,
 
     // The height of the block that will be ingested next.
     // NOTE: The `next_height` is stored, rather than the current height, because:
@@ -155,7 +155,7 @@ impl UtxoSet {
     }
 
     /// Returns the balance of the given address.
-    pub fn get_balance(&self, address: &Address) -> Koinu {
+    pub fn get_balance(&self, address: &Address) -> u128 {
         let mut balance = self.balances.get(address).unwrap_or(0);
 
         // Revert any changes to the balance that were done by the ingesting block.
@@ -165,13 +165,17 @@ impl UtxoSet {
             // Add any removed outpoints back to the balance.
             for outpoint in utxos_delta.get_removed_outpoints(address) {
                 let (tx_out, _) = utxos_delta.get_utxo(outpoint).expect("UTXO must exist");
-                balance = balance.checked_add(tx_out.value).expect("Cannot overflow");
+                balance = balance
+                    .checked_add(tx_out.value as u128)
+                    .expect("Cannot overflow");
             }
 
             // Remove any added outpoints from the balance.
             for outpoint in utxos_delta.get_added_outpoints(address) {
                 let (tx_out, _) = utxos_delta.get_utxo(outpoint).expect("UTXO must exist");
-                balance = balance.checked_sub(tx_out.value).expect("Cannot underflow");
+                balance = balance
+                    .checked_sub(tx_out.value as u128)
+                    .expect("Cannot underflow");
             }
         }
 
@@ -332,7 +336,7 @@ impl UtxoSet {
                                     panic!("Address {} must exist in the balances map (trying to remove outpoint {:?})", address, input.previous_output);
                                 });
 
-                            match address_balance - txout.value {
+                            match address_balance - txout.value as u128 {
                                 // Remove the address from the map if balance is zero.
                                 0 => self.balances.remove(&address),
                                 // Update the balance in the map.
@@ -411,8 +415,10 @@ impl UtxoSet {
 
             // Update the balance of the address.
             let address_balance = self.balances.get(&address).unwrap_or(0);
-            self.balances
-                .insert(address.clone(), address_balance + output.value.to_sat());
+            self.balances.insert(
+                address.clone(),
+                address_balance + output.value.to_sat() as u128,
+            );
 
             utxos_delta.insert(address, outpoint.clone(), tx_out.clone(), self.next_height);
         }
@@ -437,8 +443,8 @@ impl UtxoSet {
     }
 
     #[cfg(test)]
-    pub fn get_total_supply(&self) -> Koinu {
-        self.utxos.iter().map(|(_, (v, _))| v.value).sum()
+    pub fn get_total_supply(&self) -> u128 {
+        self.utxos.iter().map(|(_, (v, _))| v.value as u128).sum()
     }
 }
 
@@ -447,7 +453,7 @@ fn init_address_utxos(
     StableBTreeMap::init(crate::memory::get_address_utxos_memory())
 }
 
-fn init_balances() -> StableBTreeMap<Address, u64, Memory> {
+fn init_balances() -> StableBTreeMap<Address, u128, Memory> {
     StableBTreeMap::init(crate::memory::get_balances_memory())
 }
 
@@ -1046,7 +1052,7 @@ mod test {
                     // Block 1 ingestion is paused. Assert that the state is exactly
                     // what we expect if only block 0 is ingested.
 
-                    assert_eq!(utxo_set.get_balance(&address_1), tx_cardinality);
+                    assert_eq!(utxo_set.get_balance(&address_1), tx_cardinality as u128);
                     assert_eq!(utxo_set.get_balance(&address_2), 0);
                     assert_eq!(utxo_set.get_balance(&address_3), 0);
 
@@ -1111,7 +1117,7 @@ mod test {
             // UTXOs are updated accordingly.
             assert_eq!(utxo_set.get_balance(&address_1), 0);
             assert_eq!(utxo_set.get_balance(&address_2), 0);
-            assert_eq!(utxo_set.get_balance(&address_3), tx_cardinality);
+            assert_eq!(utxo_set.get_balance(&address_3), tx_cardinality as u128);
             assert_eq!(
                 num_rounds,
                 ((tx_cardinality * 4) as f32 / ingestion_rate as f32).ceil() as u32

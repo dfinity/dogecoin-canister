@@ -643,7 +643,7 @@ mod test {
                     min_confirmations: None
                 })
                 .unwrap(),
-                tx_cardinality as u64 * 1000
+                tx_cardinality as u128 * 1000
             );
         }
 
@@ -674,7 +674,7 @@ mod test {
                 min_confirmations: None
             })
             .unwrap(),
-            tx_cardinality as u64 * 1000
+            tx_cardinality as u128 * 1000
         );
     }
 
