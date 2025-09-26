@@ -27,7 +27,7 @@ type outpoint = record {
 
 type utxo = record {
   outpoint : outpoint;
-  value : utxo_koinu;
+  value : koinu;
   height : block_height;
 };
 
