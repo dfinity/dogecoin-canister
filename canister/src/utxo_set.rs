@@ -175,7 +175,7 @@ impl UtxoSet {
             }
         }
 
-        balance
+        Satoshi::from(balance)
     }
 
     /// Returns the UTXO of the given outpoint.
@@ -438,7 +438,7 @@ impl UtxoSet {
 
     #[cfg(test)]
     pub fn get_total_supply(&self) -> Satoshi {
-        self.utxos.iter().map(|(_, (v, _))| v.value).sum()
+        Satoshi::from(self.utxos.iter().map(|(_, (v, _))| v.value).sum::<u64>())
     }
 }
 
@@ -686,7 +686,7 @@ mod test {
                 txid: coinbase_tx.txid(),
                 vout: 0,
             },
-            value: 1000,
+            value: Satoshi::from(1000u32),
             height: 0,
         }];
 
@@ -734,7 +734,7 @@ mod test {
                     txid: tx.txid(),
                     vout: 0
                 },
-                value: 1000,
+                value: Satoshi::from(1000u32),
                 height: 1
             }]
         );
@@ -900,8 +900,8 @@ mod test {
                 }
             ))
         );
-        assert_eq!(utxo_set.get_balance(&address_1), 0);
-        assert_eq!(utxo_set.get_balance(&address_2), 1_000);
+        assert_eq!(utxo_set.get_balance(&address_1), Satoshi::from(0u32));
+        assert_eq!(utxo_set.get_balance(&address_2), Satoshi::from(1_000u32));
     }
 
     #[test]
@@ -1047,8 +1047,8 @@ mod test {
                     // what we expect if only block 0 is ingested.
 
                     assert_eq!(utxo_set.get_balance(&address_1), tx_cardinality);
-                    assert_eq!(utxo_set.get_balance(&address_2), 0);
-                    assert_eq!(utxo_set.get_balance(&address_3), 0);
+                    assert_eq!(utxo_set.get_balance(&address_2), Satoshi::from(0u32));
+                    assert_eq!(utxo_set.get_balance(&address_3), Satoshi::from(0u32));
 
                     assert_eq!(
                         utxo_set
@@ -1109,8 +1109,8 @@ mod test {
 
             // Finished ingesting block 1. Assert that the balances, addresses outpoints, and
             // UTXOs are updated accordingly.
-            assert_eq!(utxo_set.get_balance(&address_1), 0);
-            assert_eq!(utxo_set.get_balance(&address_2), 0);
+            assert_eq!(utxo_set.get_balance(&address_1), Satoshi::from(0u32));
+            assert_eq!(utxo_set.get_balance(&address_2), Satoshi::from(0u32));
             assert_eq!(utxo_set.get_balance(&address_3), tx_cardinality);
             assert_eq!(
                 num_rounds,

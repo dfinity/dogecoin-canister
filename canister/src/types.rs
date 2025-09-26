@@ -581,7 +581,7 @@ fn test_utxo_ordering() {
             txid: Txid::from(vec![]),
             vout: 0,
         },
-        value: 123,
+        value: Satoshi::from(123u32),
     };
 
     let b = Utxo {
@@ -590,7 +590,7 @@ fn test_utxo_ordering() {
             txid: Txid::from(vec![1]),
             vout: 0,
         },
-        value: 123,
+        value: Satoshi::from(123u32),
     };
 
     let c = Utxo {
@@ -599,7 +599,7 @@ fn test_utxo_ordering() {
             txid: Txid::from(vec![1]),
             vout: 0,
         },
-        value: 123,
+        value: Satoshi::from(123u32),
     };
 
     let d = Utxo {
@@ -608,7 +608,7 @@ fn test_utxo_ordering() {
             txid: Txid::from(vec![1]),
             vout: 0,
         },
-        value: 124,
+        value: Satoshi::from(124u32),
     };
 
     // a < b == c < d

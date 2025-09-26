@@ -4,8 +4,10 @@ use ic_doge_canister::types::{HttpRequest, HttpResponse};
 use ic_doge_interface::{
     Config, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
     GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig,
-    MillisatoshiPerByte, Satoshi, SendTransactionRequest, SetConfigRequest,
+    MillisatoshiPerByte, SendTransactionRequest, SetConfigRequest,
 };
+
+type Satoshi = candid::Nat;
 
 #[cfg(target_arch = "wasm32")]
 mod printer;

@@ -4,7 +4,7 @@ type network = variant {
   regtest;
 };
 
-type satoshi = nat64;
+type satoshi = nat;
 
 type address = text;
 
@@ -102,7 +102,7 @@ type send_transaction_request = record {
   transaction : blob;
 };
 
-type millisatoshi_per_byte = nat64;
+type millisatoshi_per_byte = nat;
 
 type set_config_request = record {
   stability_threshold : opt nat;

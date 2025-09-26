@@ -1,6 +1,6 @@
 //! Types used in the interface of the Dogecoin Canister.
 
-use candid::{CandidType, Deserialize, Principal};
+use candid::{CandidType, Deserialize, Nat, Principal};
 use datasize::DataSize;
 use serde::Serialize;
 use serde_bytes::ByteBuf;
@@ -8,8 +8,8 @@ use std::fmt;
 use std::str::FromStr;
 
 pub type Address = String;
-pub type Satoshi = u64;
-pub type MillisatoshiPerByte = u64;
+pub type Satoshi = Nat;
+pub type MillisatoshiPerByte = Nat;
 pub type BlockHash = Vec<u8>;
 pub type Height = u32;
 pub type Page = ByteBuf;

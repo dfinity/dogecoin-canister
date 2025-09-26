@@ -5,7 +5,9 @@ use crate::{
     types::{Address, GetUtxosRequest, Page, Utxo},
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut, State,
 };
-use ic_doge_interface::{GetUtxosError, GetUtxosResponse, Utxo as PublicUtxo, UtxosFilter};
+use ic_doge_interface::{
+    GetUtxosError, GetUtxosResponse, Satoshi, Utxo as PublicUtxo, UtxosFilter,
+};
 use ic_doge_types::{Block, BlockHash, OutPoint, Txid};
 use serde_bytes::ByteBuf;
 use std::str::FromStr;
@@ -149,7 +151,7 @@ fn get_utxos_internal(
                 Some(Utxo {
                     height,
                     outpoint,
-                    value: 0,
+                    value: Satoshi::from(0u32),
                 }),
                 utxo_limit,
             )
@@ -391,7 +393,7 @@ mod test {
                         txid: coinbase_tx.txid().into(),
                         vout: 0
                     },
-                    value: 1000,
+                    value: Satoshi::from(1000u32),
                     height: 1,
                 }],
                 tip_block_hash: block.block_hash().to_vec(),
@@ -459,7 +461,7 @@ mod test {
                     txid: transactions[i as usize].txid().into(),
                     vout: 0,
                 },
-                value: i + 1,
+                value: Satoshi::from(i + 1),
                 height: (i + 1) as u32,
             };
             if i % 2 == 0 {
@@ -551,7 +553,7 @@ mod test {
                             txid: tx.txid().into(),
                             vout: 0,
                         },
-                        value: 1000,
+                        value: Satoshi::from(1000u32),
                         height: 2,
                     }],
                     tip_block_hash: block_1.block_hash().to_vec(),
@@ -602,7 +604,7 @@ mod test {
                         txid: coinbase_tx.txid().into(),
                         vout: 0,
                     },
-                    value: 1000,
+                    value: Satoshi::from(1000u32),
                     height: 1,
                 }],
                 tip_block_hash: block_0.block_hash().to_vec(),
@@ -688,7 +690,7 @@ mod test {
                     txid: coinbase_tx.txid().into(),
                     vout: 0,
                 },
-                value: 1000,
+                value: Satoshi::from(1000u32),
                 height: 1,
             }],
             tip_block_hash: block_0.block_hash().to_vec(),
@@ -732,7 +734,7 @@ mod test {
                         txid: tx.txid().into(),
                         vout: 0,
                     },
-                    value: 1000,
+                    value: Satoshi::from(1000u32),
                     height: 2,
                 }],
                 tip_block_hash: block_1.block_hash().to_vec(),
@@ -873,7 +875,7 @@ mod test {
                         txid: tx.txid().into(),
                         vout: 0,
                     },
-                    value: 1000,
+                    value: Satoshi::from(1000u32),
                     height: 3,
                 }],
                 tip_block_hash: block_2_prime.block_hash().to_vec(),
@@ -921,7 +923,7 @@ mod test {
                         txid: tx.txid().into(),
                         vout: 0
                     },
-                    value: 1000,
+                    value: Satoshi::from(1000u32),
                     height: 1,
                 }],
                 tip_block_hash: block_0.block_hash().to_vec(),

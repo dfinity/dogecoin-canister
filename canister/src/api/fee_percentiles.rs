@@ -132,7 +132,9 @@ fn get_tx_fee_per_byte(
 
     if tx.vsize() > 0 {
         // Don't use floating point division to avoid non-determinism.
-        Some(((1000 * satoshi) / tx.vsize() as u64) as MillisatoshiPerByte)
+        Some(MillisatoshiPerByte::from(
+            (1000 * satoshi) / tx.vsize() as u64,
+        ))
     } else {
         // Calculating fee is not possible for a zero-size invalid transaction.
         None
@@ -144,7 +146,7 @@ fn get_tx_fee_per_byte(
 /// Returns 101 bucket to cover the percentiles range `[0, 100]`.
 /// Uses standard nearest-rank estimation method, inclusive, with the extension of a 0th percentile.
 /// See https://en.wikipedia.org/wiki/Percentile#The_nearest-rank_method.
-fn percentiles(mut values: Vec<u64>) -> Vec<u64> {
+fn percentiles(mut values: Vec<MillisatoshiPerByte>) -> Vec<MillisatoshiPerByte> {
     if values.is_empty() {
         return vec![];
     }
@@ -156,7 +158,7 @@ fn percentiles(mut values: Vec<u64>) -> Vec<u64> {
             // `ordinal_rank = ceil(p/100 * n)`.
             let ordinal_rank = ceil_div(p * values.len() as u32, MAX_PERCENTILE);
             let index = std::cmp::max(0, ordinal_rank as i32 - 1);
-            values[index as usize]
+            values[index as usize].clone()
         })
         .collect()
 }
@@ -172,13 +174,18 @@ mod test {
     };
     use async_std::task::block_on;
     use bitcoin::Witness;
-    use ic_doge_interface::{Fees, InitConfig, Network, Satoshi};
+    use candid::Nat;
+    use ic_doge_interface::{Fees, InitConfig, Network};
     use ic_doge_test_utils::random_p2pkh_address;
     use ic_doge_types::OutPoint;
     use std::iter::FromIterator;
 
     /// Covers an inclusive range of `[0, 100]` percentiles.
     const PERCENTILE_BUCKETS: usize = 101;
+
+    fn to_nats(values: &[u64]) -> Vec<Nat> {
+        values.iter().map(|&x| Nat::from(x)).collect()
+    }
 
     #[test]
     fn percentiles_empty_input() {
@@ -187,24 +194,24 @@ mod test {
 
     #[test]
     fn percentiles_nearest_rank_method_simple_example() {
-        let percentiles = percentiles(vec![15, 20, 35, 40, 50]);
+        let percentiles = percentiles(to_nats(&[15, 20, 35, 40, 50]));
         assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-        assert_eq!(percentiles[0..21], [15; 21]);
-        assert_eq!(percentiles[21..41], [20; 20]);
-        assert_eq!(percentiles[41..61], [35; 20]);
-        assert_eq!(percentiles[61..81], [40; 20]);
-        assert_eq!(percentiles[81..101], [50; 20]);
+        assert_eq!(percentiles[0..21], to_nats(&[15; 21]));
+        assert_eq!(percentiles[21..41], to_nats(&[20; 20]));
+        assert_eq!(percentiles[41..61], to_nats(&[35; 20]));
+        assert_eq!(percentiles[61..81], to_nats(&[40; 20]));
+        assert_eq!(percentiles[81..101], to_nats(&[50; 20]));
     }
 
     #[test]
     fn percentiles_small_input() {
-        let percentiles = percentiles(vec![5, 4, 3, 2, 1]);
+        let percentiles = percentiles(to_nats(&[5, 4, 3, 2, 1]));
         assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-        assert_eq!(percentiles[0..21], [1; 21]);
-        assert_eq!(percentiles[21..41], [2; 20]);
-        assert_eq!(percentiles[41..61], [3; 20]);
-        assert_eq!(percentiles[61..81], [4; 20]);
-        assert_eq!(percentiles[81..101], [5; 20]);
+        assert_eq!(percentiles[0..21], to_nats(&[1; 21]));
+        assert_eq!(percentiles[21..41], to_nats(&[2; 20]));
+        assert_eq!(percentiles[41..61], to_nats(&[3; 20]));
+        assert_eq!(percentiles[61..81], to_nats(&[4; 20]));
+        assert_eq!(percentiles[81..101], to_nats(&[5; 20]));
     }
 
     #[test]
@@ -215,13 +222,13 @@ mod test {
         input.extend(vec![3; 1000]);
         input.extend(vec![2; 1000]);
         input.extend(vec![1; 1000]);
-        let percentiles = percentiles(input);
+        let percentiles = percentiles(to_nats(&input));
         assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-        assert_eq!(percentiles[0..21], [1; 21]);
-        assert_eq!(percentiles[21..41], [2; 20]);
-        assert_eq!(percentiles[41..61], [3; 20]);
-        assert_eq!(percentiles[61..81], [4; 20]);
-        assert_eq!(percentiles[81..101], [5; 20]);
+        assert_eq!(percentiles[0..21], to_nats(&[1; 21]));
+        assert_eq!(percentiles[21..41], to_nats(&[2; 20]));
+        assert_eq!(percentiles[41..61], to_nats(&[3; 20]));
+        assert_eq!(percentiles[61..81], to_nats(&[4; 20]));
+        assert_eq!(percentiles[81..101], to_nats(&[5; 20]));
     }
 
     #[test]
@@ -229,29 +236,29 @@ mod test {
     /// are [10, 20, ..., 1000].
     fn percentiles_sequential_numbers() {
         let input = Vec::from_iter(1..1_001);
-        let percentiles = percentiles(input);
+        let percentiles = percentiles(to_nats(&input));
         assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-        assert_eq!(percentiles[0], 1);
-        assert_eq!(percentiles[1], 10);
-        assert_eq!(percentiles[25], 250);
-        assert_eq!(percentiles[50], 500);
-        assert_eq!(percentiles[75], 750);
-        assert_eq!(percentiles[100], 1_000);
+        assert_eq!(percentiles[0], Nat::from(1u32));
+        assert_eq!(percentiles[1], Nat::from(10u32));
+        assert_eq!(percentiles[25], Nat::from(250u32));
+        assert_eq!(percentiles[50], Nat::from(500u32));
+        assert_eq!(percentiles[75], Nat::from(750u32));
+        assert_eq!(percentiles[100], Nat::from(1_000u32));
         let mut expected = vec![1];
         expected.extend_from_slice(&Vec::from_iter((10..1_001).step_by(10)));
-        assert_eq!(percentiles, expected);
+        assert_eq!(percentiles, to_nats(&expected));
     }
 
     // Generates a chain of blocks:
     // - genesis block receives a coinbase transaction on address_1 with initial_balance
     // - follow-up blocks transfer payments from address_1 to address_2 with a specified fee
     // Fee is choosen to be a multiple of transaction size to have round values of fee.
-    fn generate_blocks(initial_balance: Satoshi, number_of_blocks: u32) -> Vec<Block> {
+    fn generate_blocks(initial_balance: u64, number_of_blocks: u32) -> Vec<Block> {
         let network = Network::Regtest;
         let doge_network = into_dogecoin_network(network);
         let mut blocks = Vec::new();
 
-        let pay: Satoshi = 1;
+        let pay = 1u64;
         let address_1 = random_p2pkh_address(doge_network).into();
         let address_2 = random_p2pkh_address(doge_network).into();
 
@@ -273,7 +280,7 @@ mod test {
             // I.e. a sequence of fees [0, 1, 2, 3] satoshi converts to [0, 8, 16, 25] milisatoshi per byte.
             // To estimate initial balance:
             // number_of_blocks * (number_of_blocks + 1) / 2
-            let fee = i as Satoshi;
+            let fee = i as u64;
             let change = match balance.checked_sub(pay + fee) {
                 Some(value) => value,
                 None => panic!(
@@ -339,16 +346,16 @@ mod test {
             // transfer into [0, 8, 16, 25, 33] millisatoshi per byte fees in chronological order.
             assert_eq!(fees.len(), number_of_blocks as usize);
             // Fees are in a reversed order, in millisatoshi per byte units.
-            assert_eq!(fees, vec![33, 25, 16, 8, 0]);
+            assert_eq!(fees, to_nats(&[33, 25, 16, 8, 0]));
         });
 
         let percentiles = get_current_fee_percentiles();
         assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-        assert_eq!(percentiles[0..21], [0; 21]);
-        assert_eq!(percentiles[21..41], [8; 20]);
-        assert_eq!(percentiles[41..61], [16; 20]);
-        assert_eq!(percentiles[61..81], [25; 20]);
-        assert_eq!(percentiles[81..101], [33; 20]);
+        assert_eq!(percentiles[0..21], to_nats(&[0; 21]));
+        assert_eq!(percentiles[21..41], to_nats(&[8; 20]));
+        assert_eq!(percentiles[41..61], to_nats(&[16; 20]));
+        assert_eq!(percentiles[61..81], to_nats(&[25; 20]));
+        assert_eq!(percentiles[81..101], to_nats(&[33; 20]));
     }
 
     #[test]
@@ -460,14 +467,14 @@ mod test {
             // Extracted fees contain only last 4 transaction fees in a reversed order.
             assert_eq!(fees.len(), number_of_transactions as usize);
             // Fees are in a reversed order, in millisatoshi per byte units.
-            assert_eq!(fees, vec![58, 50, 42, 33]);
+            assert_eq!(fees, to_nats(&[58, 50, 42, 33]));
 
             let percentiles = get_current_fee_percentiles_with_number_of_transactions(state, 4);
             assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-            assert_eq!(percentiles[0..26], [33; 26]);
-            assert_eq!(percentiles[26..51], [42; 25]);
-            assert_eq!(percentiles[51..76], [50; 25]);
-            assert_eq!(percentiles[76..101], [58; 25]);
+            assert_eq!(percentiles[0..26], to_nats(&[33; 26]));
+            assert_eq!(percentiles[26..51], to_nats(&[42; 25]));
+            assert_eq!(percentiles[51..76], to_nats(&[50; 25]));
+            assert_eq!(percentiles[76..101], to_nats(&[58; 25]));
         });
     }
 
@@ -496,14 +503,14 @@ mod test {
             // transfer into [0, 8, 16, 25, 33] millisatoshi per byte fees in chronological order.
             assert_eq!(fees.len(), number_of_blocks as usize);
             // Fees are in a reversed order, in millisatoshi per byte units.
-            assert_eq!(fees, vec![33, 25, 16, 8, 0]);
+            assert_eq!(fees, to_nats(&[33, 25, 16, 8, 0]));
 
             assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-            assert_eq!(percentiles[0..21], [0; 21]);
-            assert_eq!(percentiles[21..41], [8; 20]);
-            assert_eq!(percentiles[41..61], [16; 20]);
-            assert_eq!(percentiles[61..81], [25; 20]);
-            assert_eq!(percentiles[81..101], [33; 20]);
+            assert_eq!(percentiles[0..21], to_nats(&[0; 21]));
+            assert_eq!(percentiles[21..41], to_nats(&[8; 20]));
+            assert_eq!(percentiles[41..61], to_nats(&[16; 20]));
+            assert_eq!(percentiles[61..81], to_nats(&[25; 20]));
+            assert_eq!(percentiles[81..101], to_nats(&[33; 20]));
         });
     }
 
@@ -553,13 +560,13 @@ mod test {
             // about the sequence and input values, which does not allow to compute the fee.
             assert_eq!(fees.len(), 2);
             // Fees are in a reversed order, in millisatoshi per byte units.
-            assert_eq!(fees, vec![33, 25]);
+            assert_eq!(fees, to_nats(&[33, 25]));
         });
 
         let percentiles = get_current_fee_percentiles();
         assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-        assert_eq!(percentiles[0..51], [25; 51]);
-        assert_eq!(percentiles[51..101], [33; 50]);
+        assert_eq!(percentiles[0..51], to_nats(&[25; 51]));
+        assert_eq!(percentiles[51..101], to_nats(&[33; 50]));
     }
 
     #[test]
@@ -571,8 +578,8 @@ mod test {
 
         let percentiles = get_current_fee_percentiles();
         assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
-        assert_eq!(percentiles[0..51], [25; 51]);
-        assert_eq!(percentiles[51..101], [33; 50]);
+        assert_eq!(percentiles[0..51], to_nats(&[25; 51]));
+        assert_eq!(percentiles[51..101], to_nats(&[33; 50]));
 
         // Percentiles are cached.
         with_state(|state| {

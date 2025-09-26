@@ -67,7 +67,7 @@ impl<'a> AddressUtxoSet<'a> {
                 });
             self.added_utxos.insert(Utxo {
                 outpoint: outpoint.clone(),
-                value: txout.value,
+                value: txout.value.into(),
                 height,
             });
         }
@@ -96,7 +96,7 @@ impl<'a> AddressUtxoSet<'a> {
                 Utxo {
                     outpoint,
                     height,
-                    value: tx_out.value,
+                    value: tx_out.value.into(),
                 }
             });
 
@@ -121,7 +121,7 @@ mod test {
         types::into_dogecoin_network,
         unstable_blocks,
     };
-    use ic_doge_interface::Network;
+    use ic_doge_interface::{Network, Satoshi};
     use ic_doge_test_utils::random_p2pkh_address;
     use ic_doge_types::OutPoint;
 
@@ -157,7 +157,7 @@ mod test {
                     txid: coinbase_tx.txid(),
                     vout: 0
                 },
-                value: 1000,
+                value: Satoshi::from(1000u32),
                 height: 0
             }]
         );
@@ -210,7 +210,7 @@ mod test {
                     txid: tx.txid(),
                     vout: 0
                 },
-                value: 1000,
+                value: Satoshi::from(1000u32),
                 height: 1
             }]
         );
@@ -268,7 +268,7 @@ mod test {
                     txid: tx.txid(),
                     vout: 1
                 },
-                value: 400,
+                value: Satoshi::from(400u32),
                 height: 1
             }]
         );
@@ -281,7 +281,7 @@ mod test {
                     txid: tx.txid(),
                     vout: 0
                 },
-                value: 1500,
+                value: Satoshi::from(1500u32),
                 height: 1
             }]
         );

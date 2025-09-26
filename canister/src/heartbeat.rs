@@ -338,7 +338,7 @@ mod test {
         utxo_set::IngestingBlock,
     };
     use bitcoin::block::Header;
-    use ic_doge_interface::{InitConfig, Network};
+    use ic_doge_interface::{InitConfig, Network, Satoshi};
     use ic_doge_test_utils::random_p2pkh_address;
 
     fn build_block(prev_header: &Header, address: Address, num_transactions: u128) -> Block {
@@ -634,7 +634,7 @@ mod test {
                     min_confirmations: None
                 })
                 .unwrap(),
-                0
+                Satoshi::from(0u32)
             );
 
             assert_eq!(
@@ -665,7 +665,7 @@ mod test {
                 min_confirmations: None
             })
             .unwrap(),
-            0
+            Satoshi::from(0u32)
         );
 
         assert_eq!(
@@ -732,7 +732,7 @@ mod test {
                 min_confirmations: None
             })
             .unwrap(),
-            0
+            Satoshi::from(0u32)
         );
 
         // Process response.
@@ -745,7 +745,7 @@ mod test {
                 min_confirmations: None
             })
             .unwrap(),
-            1000
+            Satoshi::from(1000u32)
         );
     }
 

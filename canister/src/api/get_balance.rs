@@ -181,7 +181,7 @@ mod test {
                     address: address.to_string(),
                     min_confirmations: *min_confirmations
                 }),
-                Ok(1000)
+                Ok(Satoshi::from(1000u32))
             );
         }
 
@@ -192,7 +192,7 @@ mod test {
                 min_confirmations: Some(2)
             })
             .unwrap(),
-            0
+            Satoshi::from(0u32)
         );
     }
 
@@ -215,7 +215,7 @@ mod test {
                     min_confirmations
                 })
                 .unwrap(),
-                0
+                Satoshi::from(0u32)
             );
         }
 
@@ -278,7 +278,7 @@ mod test {
                     min_confirmations: *min_confirmations
                 })
                 .unwrap(),
-                1000
+                Satoshi::from(1000u32)
             );
 
             assert_eq!(
@@ -287,7 +287,7 @@ mod test {
                     min_confirmations: *min_confirmations
                 })
                 .unwrap(),
-                0
+                Satoshi::from(0u32)
             );
         }
 
@@ -299,7 +299,7 @@ mod test {
                 min_confirmations: Some(2)
             })
             .unwrap(),
-            0
+            Satoshi::from(0u32)
         );
         assert_eq!(
             get_balance(GetBalanceRequest {
@@ -307,7 +307,7 @@ mod test {
                 min_confirmations: Some(2)
             })
             .unwrap(),
-            1000
+            Satoshi::from(1000u32)
         );
     }
 

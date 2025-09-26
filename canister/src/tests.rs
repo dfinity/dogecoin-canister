@@ -21,7 +21,7 @@ use bitcoin::{
 use byteorder::{LittleEndian, ReadBytesExt};
 use ic_cdk::api::call::RejectionCode;
 use ic_doge_interface::{Flag, GetUtxosResponse, InitConfig, Network, Txid, UtxosFilter};
-use ic_doge_interface::{OutPoint, Utxo};
+use ic_doge_interface::{OutPoint, Satoshi, Utxo};
 use ic_doge_test_utils::random_p2pkh_address;
 use ic_doge_types::{Block, BlockHash};
 use std::str::FromStr;
@@ -176,7 +176,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: None
         })
         .unwrap(),
-        0
+        Satoshi::from(0u64)
     );
 
     assert_eq!(
@@ -194,7 +194,7 @@ async fn mainnet_14k_blocks() {
                     .unwrap(),
                     vout: 0,
                 },
-                value: 5862238267983,
+                value: Satoshi::from(5862238267983u64),
                 height: 14_000,
             }],
             // The tip should be the block hash at height 14,000
@@ -216,7 +216,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: None
         })
         .unwrap(),
-        45336054896700
+        Satoshi::from(45336054896700u64)
     );
 
     assert_eq!(
@@ -234,7 +234,7 @@ async fn mainnet_14k_blocks() {
                     .unwrap(),
                     vout: 0,
                 },
-                value: 8_690_929_966_050,
+                value: Satoshi::from(8_690_929_966_050u64),
                 height: 14_000,
             }],
             // The tip should be the block hash at height 14,000
@@ -257,7 +257,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: None
         })
         .unwrap(),
-        0
+        Satoshi::from(0u64)
     );
 
     // At 7 confirmations it should have its DOGE.
@@ -267,7 +267,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: Some(7)
         })
         .unwrap(),
-        9_765_874_508_790
+        Satoshi::from(9_765_874_508_790u64)
     );
 
     // At 6 confirmations it should have its DOGE.
@@ -277,7 +277,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: Some(6)
         })
         .unwrap(),
-        9_765_874_508_790
+        Satoshi::from(9_765_874_508_790u64)
     );
 
     assert_eq!(
@@ -295,7 +295,7 @@ async fn mainnet_14k_blocks() {
                     .unwrap(),
                     vout: 0,
                 },
-                value: 9_765_874_508_790,
+                value: Satoshi::from(9_765_874_508_790u64),
                 height: 13_994,
             }],
             // The tip should be the block hash at height 13,994
@@ -317,7 +317,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: Some(5)
         })
         .unwrap(),
-        0
+        Satoshi::from(0u64)
     );
 
     // The DOGE is spent to the following two addresses.
@@ -327,7 +327,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: Some(5),
         })
         .unwrap(),
-        9_548_597_846_038
+        Satoshi::from(9_548_597_846_038u64)
     );
 
     assert_eq!(
@@ -336,7 +336,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: Some(5)
         })
         .unwrap(),
-        242_276_662_752
+        Satoshi::from(242_276_662_752u64)
     );
 
     // The first address should have a balance of zero before that height.
@@ -346,7 +346,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: Some(6),
         })
         .unwrap(),
-        0
+        Satoshi::from(0u64)
     );
 
     // The second address should have a balance of 250 DOGE before that height.
@@ -356,7 +356,7 @@ async fn mainnet_14k_blocks() {
             min_confirmations: Some(6),
         })
         .unwrap(),
-        25_000_000_000
+        Satoshi::from(25_000_000_000u64)
     );
 
     // Check the block headers/heights of a few random blocks.
@@ -534,7 +534,7 @@ async fn time_slices_large_block_with_multiple_transactions() {
             min_confirmations: None
         })
         .unwrap(),
-        2000
+        Satoshi::from(2000u64)
     );
 
     assert_eq!(
@@ -543,7 +543,7 @@ async fn time_slices_large_block_with_multiple_transactions() {
             min_confirmations: None
         })
         .unwrap(),
-        2000
+        Satoshi::from(2000u64)
     );
 }
 
