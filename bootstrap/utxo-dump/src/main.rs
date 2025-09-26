@@ -1,6 +1,7 @@
 mod serialization;
 mod blockchain;
 mod chainstate;
+#[cfg(target_os = "macos")]
 mod utils;
 
 use bitcoin::{Network as BtcNetwork, dogecoin::Network as DogeNetwork};

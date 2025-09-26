@@ -1,5 +1,8 @@
-use crate::Args;
-use libc::{rlimit, setrlimit, RLIMIT_NOFILE};
+#[cfg(target_os = "macos")]
+use {
+    libc::{rlimit, setrlimit, RLIMIT_NOFILE},
+    crate::Args
+};
 
 #[cfg(target_os = "macos")]
 pub(crate) fn set_macos_rlimit(args: &Args) -> anyhow::Result<()> {
@@ -19,10 +22,5 @@ pub(crate) fn set_macos_rlimit(args: &Args) -> anyhow::Result<()> {
         println!("Successfully updated RLIMIT_NOFILE to 4096");
     }
 
-    Ok(())
-}
-
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn set_macos_rlimit(_args: &Args) -> anyhow::Result<()> {
     Ok(())
 }
