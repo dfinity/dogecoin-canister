@@ -20,7 +20,7 @@ The `canister_state.bin` file contains multiple memory regions:
 - **Memory ID 3**: Medium UTXOs (script size > 25 && ≤ 201 bytes)
 - **Memory ID 4**: Balances (not used by this tool)
 
-Large UTXOs (script size > 201 bytes) are stored in the main canister state, not in stable memory, so they are not extracted by this tool. Based on historical analysis, large UTXOs represent 0% of all UTXOs, so this limitation should not affect the completeness of the UTXO set.
+Large UTXOs (script size > 201 bytes) are stored as part of the main canister state (serialized with the rest of the state). The tool automatically reads all UTXO types from the canister state file.
 
 ## UTXO Structure
 
@@ -34,7 +34,7 @@ Each UTXO consists of:
 ### As a CLI Tool
 
 ```bash
-# Extract and hash all UTXOs from a canister state file (shows first 20 UTXOs)
+# Extract and hash ALL UTXOs (small, medium, and large) from canister state file
 cargo run --bin utxo-reader -- --input /path/to/canister_state.bin
 
 # Quiet mode - only output the hash
@@ -114,7 +114,11 @@ cargo test
 
 ## Limitations
 
-- Only processes small and medium UTXOs from stable memory
-- Large UTXOs (>201 byte scripts) are not included, but historically represent 0% of UTXOs
 - Requires the complete `canister_state.bin` file to be available locally
 - Note: Genesis block coinbase outputs are excluded from the UTXO set as they are unspendable by Bitcoin consensus
+
+## UTXO Coverage
+
+- **Small UTXOs (≤25 bytes)**: Read from stable memory region 2
+- **Medium UTXOs (26-201 bytes)**: Read from stable memory region 3  
+- **Large UTXOs (>201 bytes)**: Read from serialized canister state

@@ -4529,9 +4529,7 @@ dependencies = [
  "ic-doge-types",
  "ic-stable-structures",
  "separator",
- "serde",
  "sha2 0.10.9",
- "tempfile",
 ]
 
 [[package]]

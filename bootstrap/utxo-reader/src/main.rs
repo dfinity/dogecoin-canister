@@ -1,6 +1,6 @@
 use clap::Parser;
 use separator::Separatable;
-use std::path::PathBuf;
+use std::{fs::File, path::PathBuf};
 use utxo_reader::UtxoReader;
 
 /// Calculate percentile from a sorted vector
@@ -46,13 +46,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Reading canister state from: {}", args.input.display());
     }
 
+    // Set up access to the canister memory region from the state file
+    ic_doge_canister::memory::set_memory(ic_stable_structures::FileMemory::new(
+        File::open(&args.input)?
+    ));
+    
+    // Create a fresh empty state
+    ic_doge_canister::init(ic_doge_interface::InitConfig::default());
+    
+    // Deserialize the state from upgrade memory region 0 (including large UTXOs)
+    ic_doge_canister::post_upgrade(None);
+
     let reader = UtxoReader::new(&args.input)?;
 
     if !args.quiet {
-        println!("Extracting UTXOs from stable memory regions...");
+        println!("Extracting UTXOs from stable memory...");
     }
 
-    let utxos = reader.extract_utxos()?;
+    let mut utxos = reader.extract_utxos()?;
+    
+    utxos.extend(UtxoReader::extract_large_utxos_from_state()?);
+    
+    utxos.sort();
 
     if !args.quiet {
         println!("Found {} UTXOs", utxos.len().separated_string());
@@ -73,7 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 let value_doge = utxo.txout.value as f64 / 100_000_000.0;
 
-                println!("{:<8} {:<66} {:<5} {:<20.8} {:<15} {}",
+                println!("{:<8} {:<66} {:<5} {:<20} {:<15} {}",
                          i + 1,
                          txid_hex,
                          utxo.outpoint.vout,
@@ -106,12 +121,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  Height Range: {} - {}", min_height.separated_string(), max_height.separated_string());
 
             let script_sizes: Vec<usize> = utxos.iter().map(|u| u.txout.script_pubkey.len()).collect();
+            let small_count = script_sizes.iter().filter(|&&size| size <= 25).count();
+            let medium_count = script_sizes.iter().filter(|&&size| size > 25 && size <= 201).count();
+            let large_count = script_sizes.iter().filter(|&&size| size > 201).count();
+
             let avg_script_size = script_sizes.iter().sum::<usize>() as f64 / script_sizes.len() as f64;
             let min_script_size = *script_sizes.iter().min().unwrap();
             let max_script_size = *script_sizes.iter().max().unwrap();
 
             println!("  Script Size Range: {} - {} bytes (avg: {:.1})",
                      min_script_size, max_script_size, avg_script_size);
+            
+            println!("  Script Size Distribution:");
+            println!("    Small (≤25 bytes):     {} ({:.2}%)", small_count.separated_string(), 
+                     (small_count as f64 / utxos.len() as f64) * 100.0);
+            println!("    Medium (26-201 bytes): {} ({:.2}%)", medium_count.separated_string(), 
+                     (medium_count as f64 / utxos.len() as f64) * 100.0);
+            println!("    Large (>201 bytes):    {} ({:.2}%)", large_count.separated_string(), 
+                     (large_count as f64 / utxos.len() as f64) * 100.0);
 
             let mut values_doge: Vec<f64> = utxos.iter()
                 .map(|u| u.txout.value as f64 / 100_000_000.0)

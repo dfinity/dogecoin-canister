@@ -1,6 +1,7 @@
 use ic_doge_interface::Height;
 use ic_doge_types::OutPoint;
 use ic_doge_canister::types::{Storable, TxOut};
+use ic_doge_canister::state::{UTXO_KEY_SIZE, UTXO_VALUE_MAX_SIZE_SMALL, UTXO_VALUE_MAX_SIZE_MEDIUM};
 use ic_stable_structures::{
     memory_manager::{MemoryId, MemoryManager}, 
     storable::Blob,
@@ -12,18 +13,10 @@ use std::{
     path::Path,
 };
 
-// Constants matching the canister's memory layout
+// Matches Dogecoin canister memory constants in `canister/src/memory.rs`
 const SMALL_UTXOS_MEMORY_ID: MemoryId = MemoryId::new(2);
 const MEDIUM_UTXOS_MEMORY_ID: MemoryId = MemoryId::new(3);
 
-// UTXO size constants from the canister
-const UTXO_KEY_SIZE: usize = 36; // OutPoint size
-const UTXO_VALUE_MAX_SIZE_SMALL: usize = 37; // 25 + 8 + 4
-const UTXO_VALUE_MAX_SIZE_MEDIUM: usize = 213; // 201 + 8 + 4
-
-// Using TxOut from the canister crate instead of defining our own
-
-/// Represents a UTXO with its outpoint and associated data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Utxo {
     pub outpoint: OutPoint,
@@ -39,8 +32,9 @@ impl PartialOrd for Utxo {
 
 impl Ord for Utxo {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // Sort by outpoint value (for deterministic ordering)
-        self.outpoint.cmp(&other.outpoint)
+        self.height.cmp(&other.height)
+            .then(self.outpoint.txid.cmp(&other.outpoint.txid))
+            .then(self.outpoint.vout.cmp(&other.outpoint.vout))
     }
 }
 
@@ -69,8 +63,8 @@ impl UtxoReader {
         // Extract medium UTXOs from memory region 3
         utxos.extend(self.extract_medium_utxos()?);
         
-        // Sort UTXOs by outpoint for deterministic ordering
-        utxos.sort();
+        // Note: Large UTXOs are accessed separately via extract_large_utxos_from_state()
+        // after the canister state is properly initialized
         
         Ok(utxos)
     }
@@ -78,7 +72,7 @@ impl UtxoReader {
     /// Extract small UTXOs from stable memory
     fn extract_small_utxos(&self) -> Result<Vec<Utxo>, Box<dyn std::error::Error>> {
         let small_memory = self.memory_manager.get(SMALL_UTXOS_MEMORY_ID);
-        let small_utxos_map: StableBTreeMap<Blob<UTXO_KEY_SIZE>, Blob<UTXO_VALUE_MAX_SIZE_SMALL>, _> 
+        let small_utxos_map: StableBTreeMap<Blob<UTXO_KEY_SIZE>, Blob<UTXO_VALUE_MAX_SIZE_SMALL>, _>
             = StableBTreeMap::init(small_memory);
         
         let mut utxos = Vec::new();
@@ -119,18 +113,37 @@ impl UtxoReader {
         Ok(utxos)
     }
 
+    /// Extract large UTXOs from the already-loaded canister state
+    pub fn extract_large_utxos_from_state() -> Result<Vec<Utxo>, Box<dyn std::error::Error>> {
+        let large_utxos = ic_doge_canister::with_state(|state| {
+            state.utxos.utxos.large_utxos.clone()
+        });
+        
+        let large_count = large_utxos.len();
+        if large_count > 0 {
+            println!("Found {} large UTXOs from canister state", large_count);
+        }
+        
+        let mut utxos = Vec::new();
+        for (outpoint, (txout, height)) in large_utxos {
+            utxos.push(Utxo {
+                outpoint,
+                txout,
+                height,
+            });
+        }
+        
+        Ok(utxos)
+    }
+
     /// Compute SHA256 hash of sorted UTXOs
     pub fn compute_utxo_set_hash(utxos: &[Utxo]) -> String {
         let mut hasher = Sha256::new();
         
         for utxo in utxos {
-            // Hash the outpoint bytes
             hasher.update(&StableStorable::to_bytes(&utxo.outpoint));
-            // Hash the value
             hasher.update(&utxo.txout.value.to_le_bytes());
-            // Hash the script
             hasher.update(&utxo.txout.script_pubkey);
-            // Hash the height
             hasher.update(&utxo.height.to_le_bytes());
         }
         
