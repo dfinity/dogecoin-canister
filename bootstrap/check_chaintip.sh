@@ -15,12 +15,14 @@ validate_network "$NETWORK"
 trap "kill 0" EXIT
 
 # Create a temporary dogecoin.conf file with the required settings.
-CONF_FILE=$(mktemp)
-generate_config "$NETWORK" "$CONF_FILE" "networkactive=0"
+CONF_FILE=$(mktemp -u "dogecoin.conf.XXXXXX")
+CONF_FILE_PATH="$DATA_DIR/$CONF_FILE"
+
+generate_config "$NETWORK" "$CONF_FILE_PATH"
 
 # Start dogecoind in the background with no network access.
 echo "Starting dogecoind for $NETWORK..."
-"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" > /dev/null &
+"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" -connect=0 > /dev/null &
 DOGECOIND_PID=$!
 
 # Wait for dogecoind to initialize.

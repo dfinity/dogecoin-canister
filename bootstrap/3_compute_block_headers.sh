@@ -8,8 +8,7 @@ source "./utils.sh"
 DOGECOIN_D="$1/bin/dogecoind"
 DOGECOIN_CLI="$1/bin/dogecoin-cli"
 NETWORK="$2"
-HEIGHT="$3"
-STABLE_HEIGHT=$((HEIGHT - 12))
+STABLE_HEIGHT="$3"
 
 validate_file_exists "$DOGECOIN_D"
 validate_file_exists "$DOGECOIN_CLI"
@@ -19,15 +18,17 @@ validate_network "$NETWORK"
 trap "kill 0" EXIT
 
 # Create a temporary dogecoin.conf file with the required settings.
-CONF_FILE=$(mktemp)
-generate_config "$NETWORK" "$CONF_FILE" "networkactive=0"
+CONF_FILE=$(mktemp -u "dogecoin.conf.XXXXXX")
+CONF_FILE_PATH="$DATA_DIR/$CONF_FILE"
+
+generate_config "$NETWORK" "$CONF_FILE_PATH"
 
 # Remove any previously computed block headers file.
 rm -f "$BLOCK_HEADERS_FILE"
 
 # Start dogecoind in the background with no network access.
 echo "Starting dogecoind for $NETWORK..."
-"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" > /dev/null &
+"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" -connect=0 > /dev/null &
 DOGECOIND_PID=$!
 
 # Wait for dogecoind to initialize.

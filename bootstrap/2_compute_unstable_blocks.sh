@@ -19,27 +19,27 @@ validate_network "$NETWORK"
 trap "kill 0" EXIT
 
 # Create a temporary dogecoin.conf file with the required settings.
-CONF_FILE=$(mktemp)
-generate_config "$NETWORK" "$CONF_FILE" "networkactive=0"
+CONF_FILE=$(mktemp -u "dogecoin.conf.XXXXXX")
+CONF_FILE_PATH="$DATA_DIR/$CONF_FILE"
+
+generate_config "$NETWORK" "$CONF_FILE_PATH"
 
 echo "Preparing the unstable blocks..."
 # Start dogecoind in the background with no network access.
-"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" > /dev/null &
+"$DOGECOIN_D" -conf="$CONF_FILE" -datadir="$DATA_DIR" -connect=0 > /dev/null &
 DOGECOIND_PID=$!
 
 # Wait for dogecoind to initialize.
 echo "Waiting for dogecoind to load..."
 sleep 30
 
-STABLE_HEIGHT=$((HEIGHT - 12))
-
 # Fetch block hashes for unstable blocks.
-echo "Fetching block hash at height $((STABLE_HEIGHT + 1))..."
-BLOCK_HASH_1=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash $((STABLE_HEIGHT + 1)))
+echo "Fetching block hash at height $((HEIGHT + 1))..."
+BLOCK_HASH_1=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash $((HEIGHT + 1)))
 echo "Hash: $BLOCK_HASH_1"
 
-echo "Fetching block hash at height $((STABLE_HEIGHT + 2))..."
-BLOCK_HASH_2=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash $((STABLE_HEIGHT + 2)))
+echo "Fetching block hash at height $((HEIGHT + 2))..."
+BLOCK_HASH_2=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash $((HEIGHT + 2)))
 echo "Hash: $BLOCK_HASH_2"
 
 # Save the unstable blocks to a file.

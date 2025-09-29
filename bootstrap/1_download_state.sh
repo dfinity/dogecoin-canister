@@ -9,6 +9,8 @@ DOGECOIN_D="$1/bin/dogecoind"
 DOGECOIN_CLI="$1/bin/dogecoin-cli"
 NETWORK="$2"
 HEIGHT="$3"
+# Blocks from height $((HEIGHT+1)) to $HEIGHT_STOP_SYNC will be considered unstable
+HEIGHT_STOP_SYNC=$((HEIGHT + 12))
 
 validate_file_exists "$DOGECOIN_D"
 validate_network "$NETWORK"
@@ -22,9 +24,11 @@ fi
 mkdir -p "$DATA_DIR"
 
 # Generate a temporary dogecoin.conf file with required settings.
-CONF_FILE=$(mktemp)
-generate_config "$NETWORK" "$CONF_FILE"
-    # Dogecoin: there is no `stopatheight` option as of v1.14.9, need to poll instead.
+CONF_FILE=$(mktemp -u "dogecoin.conf.XXXXXX")
+CONF_FILE_PATH="$DATA_DIR/$CONF_FILE"
+
+generate_config "$NETWORK" "$CONF_FILE_PATH"
+    # Dogecoin: there is no `stopatheight` option as of v1.14.9.
     # "# Stop running after reaching the given height in the main chain." \
     # "stopatheight=$HEIGHT"
 
@@ -40,20 +44,36 @@ DOGECOIN_PID=$!
 # Wait for the RPC interface to become ready
 echo "Waiting for dogecoind to start..."
 until "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount >/dev/null 2>&1; do
-    sleep 10
+    sleep 5
 done
+
+echo "Starting synchronization..."
+
+last_printed=0
+PRINT_EVERY=5000
 
 # Poll until we reach the desired height
 while true; do
     COUNT=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount)
-    echo "Current block height: $COUNT"
-    if [[ "$COUNT" -ge "$HEIGHT" ]]; then
-        echo "Target height $HEIGHT reached. Stopping node..."
-        "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" stop
+    multiple=$(( COUNT / PRINT_EVERY * PRINT_EVERY ))
+    if (( multiple > last_printed )); then
+        echo "Current block height: $multiple"
+        last_printed=$multiple
+    fi
+    if [[ "$COUNT" -ge "$HEIGHT_STOP_SYNC" ]]; then
         break
     fi
-    sleep 30
+    sleep 1
 done
+
+# Invalidate blocks appearing after block at height $HEIGHT_STOP_SYNC
+BLOCK_HASH=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash "$((HEIGHT_STOP_SYNC + 1))")
+"$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" invalidateblock "$BLOCK_HASH"
+
+COUNT=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount)
+echo "Target height $HEIGHT reached. Stopping node..."
+
+"$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" stop
 
 # Wait for daemon to exit cleanly
 wait $DOGECOIN_PID
