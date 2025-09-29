@@ -1,0 +1,23 @@
+[package]
+name = "utxo-reader"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "utxo-reader"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true }
+ic-stable-structures = { workspace = true }
+ic-doge-types = { workspace = true, features = ["doge"] }
+ic-doge-interface = { workspace = true }
+ic-doge-canister = { workspace = true }
+serde = { workspace = true }
+sha2 = "0.10.8"
+hex = { workspace = true }
+separator = "0.4.1"
+tempfile = { workspace = true }
+
+[features]
+default = []
