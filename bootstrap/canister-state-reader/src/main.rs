@@ -1,7 +1,7 @@
 use clap::Parser;
 use separator::Separatable;
 use std::{fs::File, path::PathBuf};
-use utxo_reader::UtxoReader;
+use canister_state_reader::{Utxo, UtxoReader};
 
 /// Calculate percentile from a sorted vector
 fn percentile(sorted_values: &[f64], p: f64) -> f64 {
@@ -22,14 +22,14 @@ fn percentile(sorted_values: &[f64], p: f64) -> f64 {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "utxo-reader")]
-#[command(about = "A CLI tool to read and hash UTXOs from a Dogecoin canister state file")]
+#[command(name = "canister-state-reader")]
+#[command(about = "A CLI tool to read and analyze all data from a Dogecoin canister state file")]
 struct Args {
     /// Path to the canister_state.bin file
     #[arg(short, long, value_hint = clap::ValueHint::FilePath)]
     input: PathBuf,
 
-    /// Only output the hash (quiet mode)
+    /// Only output the UTXO hash (quiet mode)
     #[arg(short, long)]
     quiet: bool,
 }
@@ -63,15 +63,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Extracting UTXOs from stable memory...");
     }
 
-    let mut utxos = reader.extract_utxos()?;
-    
-    utxos.extend(UtxoReader::extract_large_utxos_from_state()?);
-    
+    let canister_data = reader.extract_state_data()?;
+
+    let mut utxos = canister_data.utxos.clone();
+
+    // Extract large UTXOs from the deserialized canister state
+    let large_utxos = ic_doge_canister::with_state(|state| {
+        state.utxos.utxos.large_utxos.clone()
+    });
+    for (outpoint, (txout, height)) in large_utxos {
+        utxos.push(Utxo {
+            outpoint,
+            txout,
+            height,
+        });
+    }
+
     utxos.sort();
 
     if !args.quiet {
-        println!("Found {} UTXOs", utxos.len().separated_string());
-
         // Show details of first 20 UTXOs
         if !utxos.is_empty() {
             println!("\nFirst {} UTXO Details:", std::cmp::min(20, utxos.len()));
@@ -103,15 +113,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let hash = UtxoReader::compute_utxo_set_hash(&utxos);
 
-    if args.quiet {
-        println!("{}", hash);
-    } else {
-        println!("UTXO Set Hash (SHA256): {}", hash);
-
+    if !args.quiet {
         let total_value: u64 = utxos.iter().map(|u| u.txout.value).sum();
         let total_value_doge = total_value as f64 / 100_000_000.0;
 
-        println!("\nStatistics:");
+        println!("\nUTXOs Statistics:");
         println!("  Total UTXOs: {}", utxos.len().separated_string());
         println!("  Total Value: {} DOGE ({} satoshis)", total_value_doge.separated_string(), total_value);
 
@@ -165,9 +171,55 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("    90th %:  {}", p90.separated_string());
             println!("    95th %:  {}", p95.separated_string());
             println!("    99th %:  {}", p99.separated_string());
-            println!("    Max:     {}", max_value.separated_string());
+            println!("    Max:     {}\n", max_value.separated_string());
         }
     }
+
+    println!("Address UTXOs Index: {} entries", canister_data.address_utxos.len().separated_string());
+    if !canister_data.address_utxos.is_empty() && canister_data.address_utxos.len() <= 10 {
+        println!("  Sample entries:");
+        for (i, addr_utxo) in canister_data.address_utxos.iter().take(5).enumerate() {
+            let txid_hex = {
+                let mut txid_bytes = addr_utxo.outpoint.txid.as_bytes().to_vec();
+                txid_bytes.reverse();
+                hex::encode(txid_bytes)
+            };
+            println!("    {}: {} -> {}:{} (height {})",
+                     i + 1, addr_utxo.address, txid_hex, addr_utxo.outpoint.vout, addr_utxo.height);
+        }
+    }
+
+    println!("\nBalances: {} addresses", canister_data.balances.len().separated_string());
+    if !canister_data.balances.is_empty() && canister_data.balances.len() <= 10 {
+        println!("  Sample balances:");
+        for (i, (address, balance)) in canister_data.balances.iter().take(5).enumerate() {
+            let balance_doge = *balance as f64 / 100_000_000.0;
+            println!("    {}: {} = {:.8} DOGE", i + 1, address, balance_doge);
+        }
+    }
+
+    println!("\nBlock Headers: {} entries", canister_data.block_headers.len().separated_string());
+    if !canister_data.block_headers.is_empty() && canister_data.block_headers.len() <= 10 {
+        println!("  Sample block headers:");
+        for (i, (block_hash, header_blob)) in canister_data.block_headers.iter().take(5).enumerate() {
+            println!("    {}: {} ({} bytes)", i + 1, block_hash, header_blob.as_slice().len());
+        }
+    }
+
+    println!("\nBlock Heights: {} entries", canister_data.block_heights.len().separated_string());
+    if !canister_data.block_heights.is_empty() && canister_data.block_heights.len() <= 10 {
+        println!("  Sample height mappings:");
+        for (i, (height, block_hash)) in canister_data.block_heights.iter().take(5).enumerate() {
+            println!("    {}: {} -> {}", i + 1, height.separated_string(), block_hash);
+        }
+    }
+
+    if !args.quiet {
+        println!("UTXO Set Hash (SHA256): {}", hash);
+        // TODO: add rest
+    }
+
+    // TODO: if args.quiet, only print the hash of all the information
 
     Ok(())
 }

@@ -1,15 +1,17 @@
-# UTXO Reader
+# Canister State Reader
 
-A Rust crate for reading and analyzing UTXOs from a Dogecoin canister `canister_state.bin` file.
+A Rust crate for reading and analyzing all data from a Dogecoin canister `canister_state.bin` file.
 
 ## Overview
 
 This crate provides functionality to:
 
-1. **Read a `canister_state.bin` file** - Parse the stable memory structure used by the Dogecoin canister
-2. **Extract all UTXOs** - Read both small and medium UTXOs from their respective memory regions  
-3. **Sort UTXOs deterministically** - Sort by outpoint value for consistent ordering
-4. **Compute a hash** - Generate a SHA256 hash of the sorted UTXO set for verification
+1. **Read a `canister_state.bin` file** - Parse the complete stable memory structure used by the Dogecoin canister
+2. **Extract all UTXOs** - Read small, medium, and large UTXOs from all storage locations
+3. **Extract address data** - Read address UTXO index and balance mappings
+4. **Extract blockchain data** - Read block headers and height mappings
+5. **Sort and analyze** - Sort UTXOs deterministically and provide comprehensive statistics
+6. **Compute hashes** - Generate SHA256 hash of the sorted UTXO set for verification
 
 ## Memory Structure
 
@@ -34,11 +36,11 @@ Each UTXO consists of:
 ### As a CLI Tool
 
 ```bash
-# Extract and hash ALL UTXOs (small, medium, and large) from canister state file
-cargo run --bin utxo-reader -- --input /path/to/canister_state.bin
+# Extract and analyze ALL canister data from canister state file
+cargo run --bin canister-state-reader -- --input /path/to/canister_state.bin
 
-# Quiet mode - only output the hash
-cargo run --bin utxo-reader -- --input /path/to/canister_state.bin --quiet
+# Quiet mode - only output the UTXO hash
+cargo run --bin canister-state-reader -- --input /path/to/canister_state.bin --quiet
 ```
 
 ### As a Library
@@ -93,7 +95,7 @@ Statistics:
 ## Building
 
 ```bash
-cd bootstrap/utxo-reader
+cd bootstrap/canister-state-reader
 cargo build --release
 ```
 

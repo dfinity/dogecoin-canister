@@ -715,6 +715,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "canister-state-reader"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "hex",
+ "ic-doge-canister",
+ "ic-doge-interface",
+ "ic-doge-types",
+ "ic-stable-structures",
+ "separator",
+ "sha2 0.10.9",
+]
+
+[[package]]
 name = "canister_backend"
 version = "0.1.0"
 dependencies = [
@@ -4517,20 +4531,6 @@ name = "utf8parse"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
-
-[[package]]
-name = "utxo-reader"
-version = "0.1.0"
-dependencies = [
- "clap",
- "hex",
- "ic-doge-canister",
- "ic-doge-interface",
- "ic-doge-types",
- "ic-stable-structures",
- "separator",
- "sha2 0.10.9",
-]
 
 [[package]]
 name = "valuable"

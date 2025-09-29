@@ -1,7 +1,7 @@
-use utxo_reader::UtxoReader;
+use canister_state_reader::UtxoReader;
 use std::env;
 
-/// Example showing basic usage of the UTXO reader crate
+/// Example showing basic usage of the canister state reader crate
 /// 
 /// Usage: cargo run --example basic_usage -- path/to/canister_state.bin
 fn main() -> Result<(), Box<dyn std::error::Error>> {
