@@ -5,12 +5,12 @@ mod chainstate;
 mod utils;
 
 use bitcoin::{Network as BtcNetwork, dogecoin::Network as DogeNetwork};
-use std::collections::HashMap;
-use std::fs::File;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{BufWriter, Cursor, Write};
 
 use std::iter;
-use std::path::Path;
+use std::fs::OpenOptions;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use blockchain::Blockchain;
@@ -24,6 +24,10 @@ use crate::serialization::read_varint;
 use crate::utils::set_macos_rlimit;
 
 const VERSION: &str = "1.0.0";
+const FIELDS_ALLOWED: Vec<&str> = vec![
+    "count", "txid", "vout", "height", "coinbase", "amount", "nsize", "script", "type",
+    "address",
+];
 
 const DB_KEYS_OBFUSCATE_KEY_PREFIX: [u8;2] = [0x0e, 0x00];
 const DB_KEYS_OBFUSCATE_KEY: &str = "obfuscate_key";
@@ -40,8 +44,8 @@ enum BlockchainKind {
 #[command(version = VERSION)]
 struct Args {
     /// Location of chainstate db
-    #[arg(short = 'd', long = "db")]
-    chainstate: String,
+    #[arg(short = 'd', long = "db", value_hint = clap::ValueHint::DirPath)]
+    chainstate: PathBuf,
 
     /// Name of file to dump utxo list to
     #[arg(short = 'o', long = "output", default_value = "chainstate_utxos.csv")]
@@ -81,14 +85,14 @@ impl Args {
     fn to_blockchain(&self) -> Blockchain {
         match self.blockchain {
             BlockchainKind::Bitcoin => {
-                if self.testnet || self.chainstate.contains("testnet") {
+                if self.testnet || self.chainstate.display().to_string().contains("testnet") {
                     Blockchain::Bitcoin(BtcNetwork::Testnet)
                 } else {
                     Blockchain::Bitcoin(BtcNetwork::Bitcoin)
                 }
             }
             BlockchainKind::Dogecoin => {
-                if self.testnet || self.chainstate.contains("testnet") {
+                if self.testnet || self.chainstate.display().to_string().contains("testnet") {
                     Blockchain::Dogecoin(DogeNetwork::Testnet)
                 } else {
                     Blockchain::Dogecoin(DogeNetwork::Dogecoin)
@@ -118,13 +122,18 @@ fn main() -> Result<()> {
     let options = Options::default();
     let mut database = DB::open(&args.chainstate, options).context("Couldn't open LevelDB")?;
 
-    let output_file = File::create(&args.output_file).context("Failed to create output file")?;
+    let output_file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&args.output_file)
+        .with_context(|| format!("Output file {} already exists or cannot be created", args.output_file))?;
+
     let mut writer = BufWriter::new(output_file);
 
     if !args.quiet {
         println!(
             "Processing {} and writing results to {}",
-            args.chainstate, args.output_file
+            args.chainstate.display(), args.output_file
         );
     }
 
@@ -137,7 +146,7 @@ fn main() -> Result<()> {
     // Initialize statistics
     let mut total_amount: u64 = 0;
     let mut utxo_count = 0;
-    let mut script_type_count: HashMap<&str, u32> = HashMap::new();
+    let mut script_type_count: BTreeMap<&str, u32> = BTreeMap::new();
     script_type_count.insert("p2pk", 0);
     script_type_count.insert("p2pkh", 0);
     script_type_count.insert("p2sh", 0);
@@ -164,7 +173,8 @@ fn main() -> Result<()> {
     let key_str= String::from_utf8(key.to_vec()).expect("valid UTF-8");
     let mut obfuscate_key: Vec<u8> = Vec::new();
     if prefix == DB_KEYS_OBFUSCATE_KEY_PREFIX && key_str == DB_KEYS_OBFUSCATE_KEY {
-        obfuscate_key = value;
+        // Ignore first byte (size of the obfuscate key)
+        obfuscate_key.copy_from_slice(&value[1..]);
         if !args.quiet {
             println!(">>> Obfuscation key: {}", hex::encode(&obfuscate_key));
         }
@@ -176,8 +186,6 @@ fn main() -> Result<()> {
              Cannot process UTXO values without the obfuscation key."
         );
     }
-    // Ignore first byte (size of the obfuscate key)
-    obfuscate_key.remove(0);
 
     db_iter.seek_to_first();
 
@@ -225,7 +233,7 @@ fn main() -> Result<()> {
                 // XOR deobfuscate the value
                 let deobfuscated_value: Vec<u8> = value
                     .iter()
-                    .zip(obfuscate_key_extended.iter())
+                    .zip(obfuscate_key_extended)
                     .map(|(v, k)| v ^ k)
                     .collect();
 
@@ -245,11 +253,13 @@ fn main() -> Result<()> {
                     // vout
                     if is_selected("vout") {
                         if key.len() >= 34 { // Modern: vout is encoded in the key
+                            // TODO: add assert that blockchain is Bitcoin
                             let vout_bytes = &key[33..];
                             let mut cursor = Cursor::new(vout_bytes);
                             let vout = read_varint(&mut cursor)?;
                             csv_output.insert("vout", vout.to_string());
                         } else if key.len() == 33 { // Legacy: vout is encoded in the value
+                            // TODO: add assert that blockchain is Dogecoin
                             let vout = output.vout.expect("vout is missing");
                             csv_output.insert("vout", vout.to_string());
                         } else {
@@ -258,8 +268,12 @@ fn main() -> Result<()> {
                     }
 
                     // coinbase
-                    if is_selected("coinbase") || is_selected("height") {
+                    if is_selected("coinbase") {
                         csv_output.insert("coinbase", output.coinbase.to_string());
+                    }
+
+                    // height
+                    if is_selected("height") {
                         csv_output.insert("height", output.height.to_string());
                     }
 
@@ -334,24 +348,20 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn validate_and_parse_fields(fields_str: &str) -> Result<HashMap<String, bool>> {
-    let fields_allowed = vec![
-        "count", "txid", "vout", "height", "coinbase", "amount", "nsize", "script", "type",
-        "address",
-    ];
+fn validate_and_parse_fields(fields_str: &str) -> Result<BTreeMap<String, bool>> {
 
-    let mut fields_selected = HashMap::new();
-    for field in &fields_allowed {
+    let mut fields_selected = BTreeMap::new();
+    for field in &FIELDS_ALLOWED {
         fields_selected.insert(field.to_string(), false);
     }
 
     for field in fields_str.split(',') {
         let field = field.trim();
-        if !fields_allowed.contains(&field) {
+        if !FIELDS_ALLOWED.contains(&field) {
             anyhow::bail!(
                 "'{}' is not a field you can use for the output.\nChoose from the following: {}",
                 field,
-                fields_allowed.join(",")
+                FIELDS_ALLOWED.join(",")
             );
         }
         fields_selected.insert(field.to_string(), true);
