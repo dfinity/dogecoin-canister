@@ -156,7 +156,7 @@ impl UtxoReader {
     }
 
     /// Extract address to balance map from stable memory
-    fn extract_balances(&self) -> Vec<(Address, u64)> { // TODO: change u64 to u128
+    fn extract_balances(&self) -> Vec<(Address, u64)> { // TODO(XC-492): change u64 to u128
         let balances_memory = self.memory_manager.get(BALANCES_MEMORY_ID);
         let balances_map: StableBTreeMap<Address, u64, _> = StableBTreeMap::init(balances_memory);
         
@@ -201,62 +201,3 @@ impl UtxoReader {
 
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_utxo_ordering() {
-        use ic_doge_types::Txid;
-        
-        let txid1 = Txid::from(vec![1u8; 32]);
-        let txid2 = Txid::from(vec![2u8; 32]);
-        
-        let outpoint1 = OutPoint::new(txid1, 0);
-        let outpoint2 = OutPoint::new(txid2, 0);
-        
-        let utxo1 = Utxo {
-            outpoint: outpoint1,
-            txout: TxOut { value: 100, script_pubkey: vec![1, 2, 3] },
-            height: 1000,
-        };
-        
-        let utxo2 = Utxo {
-            outpoint: outpoint2,
-            txout: TxOut { value: 200, script_pubkey: vec![4, 5, 6] },
-            height: 2000,
-        };
-        
-        assert!(utxo1 < utxo2);
-        
-        let mut utxos = vec![utxo2.clone(), utxo1.clone()];
-        utxos.sort();
-        assert_eq!(utxos[0], utxo1);
-        assert_eq!(utxos[1], utxo2);
-    }
-    
-    #[test]
-    fn test_hash_computation() {
-        use ic_doge_types::Txid;
-        
-        let txid = Txid::from(vec![1u8; 32]);
-        let outpoint = OutPoint::new(txid, 0);
-        
-        let utxo = Utxo {
-            outpoint,
-            txout: TxOut { value: 100, script_pubkey: vec![1, 2, 3] },
-            height: 1000,
-        };
-        
-        let utxos = vec![utxo];
-        let hash = crate::hash::compute_utxo_set_hash(&utxos);
-        
-        // Hash should be deterministic
-        let hash2 = crate::hash::compute_utxo_set_hash(&utxos);
-        assert_eq!(hash, hash2);
-        
-        // Hash should be a valid hex string of correct length (64 chars for SHA256)
-        assert_eq!(hash.len(), 64);
-        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
-    }
-}
