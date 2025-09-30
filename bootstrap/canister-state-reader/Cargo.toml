@@ -1,10 +1,10 @@
 [package]
-name = "canister-state-reader"
+name = "state-reader"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "canister-state-reader"
+name = "state-reader"
 path = "src/main.rs"
 
 [dependencies]

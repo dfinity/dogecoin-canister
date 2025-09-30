@@ -1,4 +1,4 @@
-# Canister State Reader
+# State Reader
 
 A Rust crate for reading, analyzing, and validating all data from a Dogecoin canister `canister_state.bin` stable memory file.
 
@@ -20,16 +20,16 @@ The `canister_state.bin` file contains multiple memory regions that this tool pa
 
 ```bash
 # Full analysis with comprehensive statistics
-cargo run --bin canister-state-reader -- --input /path/to/canister_state.bin
+cargo run --bin state-reader -- --input /path/to/canister_state.bin
 
 # Quiet mode - only output the combined hash
-cargo run --bin canister-state-reader -- --input /path/to/canister_state.bin --quiet
+cargo run --bin state-reader -- --input /path/to/canister_state.bin --quiet
 ```
 
 ### As a Library
 
 ```rust
-use canister_state_reader::{UtxoReader, hash};
+use state_reader::{UtxoReader, hash};
 
 // Create reader from canister state file  
 let reader = UtxoReader::new("canister_state.bin")?;

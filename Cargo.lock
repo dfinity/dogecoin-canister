@@ -715,20 +715,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "canister-state-reader"
-version = "0.1.0"
-dependencies = [
- "clap",
- "hex",
- "ic-doge-canister",
- "ic-doge-interface",
- "ic-doge-types",
- "ic-stable-structures",
- "separator",
- "sha2 0.10.9",
-]
-
-[[package]]
 name = "canister_backend"
 version = "0.1.0"
 dependencies = [
@@ -3955,6 +3941,20 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rusty-leveldb",
  "tempfile",
+]
+
+[[package]]
+name = "state-reader"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "hex",
+ "ic-doge-canister",
+ "ic-doge-interface",
+ "ic-doge-types",
+ "ic-stable-structures",
+ "separator",
+ "sha2 0.10.9",
 ]
 
 [[package]]

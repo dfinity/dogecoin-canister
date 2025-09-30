@@ -1,12 +1,11 @@
 use clap::Parser;
 use separator::Separatable;
 use std::{fs::File, path::PathBuf, collections::HashMap};
-use canister_state_reader::{CanisterData, Utxo, UtxoReader, hash};
+use state_reader::{CanisterData, Utxo, UtxoReader, hash};
 use ic_doge_types::BlockHash;
-use ic_stable_structures::Storable;
 
 #[derive(Parser, Debug)]
-#[command(name = "canister-state-reader")]
+#[command(name = "state-reader")]
 #[command(about = "A CLI tool to read and analyze all data from a Dogecoin canister state file")]
 struct Args {
     /// Path to the canister_state.bin file
