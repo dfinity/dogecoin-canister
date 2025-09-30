@@ -19,10 +19,10 @@ The `canister_state.bin` file contains multiple memory regions that this tool pa
 ### As a CLI Tool
 
 ```bash
-# Full analysis with comprehensive statistics
+# Full analysis
 cargo run --bin state-reader -- --input /path/to/canister_state.bin
 
-# Quiet mode - only output the combined hash
+# Quiet mode - only output the combined data hash
 cargo run --bin state-reader -- --input /path/to/canister_state.bin --quiet
 ```
 
