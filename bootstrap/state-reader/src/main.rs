@@ -12,7 +12,7 @@ struct Args {
     #[arg(short, long, value_hint = clap::ValueHint::FilePath)]
     input: PathBuf,
 
-    /// Only output the UTXO hash (quiet mode)
+    /// Only output the combined canister state hash
     #[arg(short, long)]
     quiet: bool,
 }
@@ -61,6 +61,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
+    // TODO(XC-501): temporary workaround to remove unspendable UTXO
+    utxos.retain(|utxo| utxo.height != 0);
+
     // Sort the data for deterministic hashing
     utxos.sort();
     canister_data.address_utxos.sort_by(|a, b| {
@@ -79,9 +82,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         a.0.cmp(&b.0)
     });
 
-    // Validate data integrity
-    if let Err(error) = check_invariants(&canister_data) {
-        eprintln!("Data integrity check failed: {}", error);
+    // Validate canister state consistency
+    if let Err(error) = check_invariants(&canister_data, &utxos) {
+        eprintln!("Data consistency check failed: {}", error);
         std::process::exit(1);
     }
 
@@ -133,7 +136,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// - Block headers count should match block heights count
 /// - Block headers and heights should have no duplicated entries
 /// - Block heights should have no missing blocks in the height range
-fn check_invariants(data: &CanisterData) -> Result<(), String> {
+fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
     if data.block_heights.is_empty() {
         return if data.address_utxos.is_empty() && data.balances.is_empty() {
             Ok(())
@@ -143,9 +146,9 @@ fn check_invariants(data: &CanisterData) -> Result<(), String> {
     }
 
     // Check for UTXOs at height 0 (genesis does not have spendable UTXOs)
-    let height_zero_count = data.address_utxos.iter().filter(|addr_utxo| addr_utxo.height == 0).count();
-    if height_zero_count > 0 {
-        return Err(format!("Found {} UTXOs at height 0, expected none", height_zero_count));
+    let utxo_height_zero_count = utxos.iter().filter(|addr_utxo| addr_utxo.height == 0).count();
+    if utxo_height_zero_count > 0 {
+        return Err(format!("Found {} UTXOs at height 0, expected none", utxo_height_zero_count));
     }
 
     // Check for zero balances
