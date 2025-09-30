@@ -1,25 +1,12 @@
 use clap::Parser;
 use separator::Separatable;
-use std::{fs::File, path::PathBuf};
-use canister_state_reader::{Utxo, UtxoReader};
-
-/// Calculate percentile from a sorted vector
-fn percentile(sorted_values: &[f64], p: f64) -> f64 {
-    if sorted_values.is_empty() {
-        return 0.0;
-    }
-    let p = p.clamp(0.0, 100.0);
-    let index = (p / 100.0) * (sorted_values.len() - 1) as f64;
-    let lower_index = index.floor() as usize;
-    let upper_index = index.ceil() as usize;
-
-    if lower_index == upper_index {
-        sorted_values[lower_index]
-    } else {
-        let weight = index - lower_index as f64;
-        sorted_values[lower_index] * (1.0 - weight) + sorted_values[upper_index] * weight
-    }
-}
+use std::{fs::File, path::PathBuf, collections::HashMap};
+use canister_state_reader::{CanisterData, Utxo, UtxoReader};
+use ic_doge_canister::types::{Address, BlockHeaderBlob};
+use ic_doge_interface::Height;
+use ic_doge_types::BlockHash;
+use ic_stable_structures::Storable;
+use sha2::{Digest, Sha256};
 
 #[derive(Parser, Debug)]
 #[command(name = "canister-state-reader")]
@@ -32,6 +19,66 @@ struct Args {
     /// Only output the UTXO hash (quiet mode)
     #[arg(short, long)]
     quiet: bool,
+}
+
+/// Compute SHA256 hash of address UTXOs data
+fn compute_address_utxos_hash(address_utxos: &[ic_doge_canister::types::AddressUtxo]) -> String {
+    let mut hasher = Sha256::new();
+    
+    for addr_utxo in address_utxos {
+        hasher.update(addr_utxo.address.to_string().as_bytes());
+        hasher.update(&addr_utxo.height.to_le_bytes());
+        hasher.update(&addr_utxo.outpoint.to_bytes());
+    }
+    
+    hex::encode(hasher.finalize())
+}
+
+/// Compute SHA256 hash of address balances data
+fn compute_address_balances_hash(balances: &[(Address, u64)]) -> String {
+    let mut hasher = Sha256::new();
+    
+    for (address, balance) in balances {
+        hasher.update(address.to_string().as_bytes());
+        hasher.update(&balance.to_le_bytes());
+    }
+    
+    hex::encode(hasher.finalize())
+}
+
+/// Compute SHA256 hash of block headers data
+fn compute_block_headers_hash(headers: &[(BlockHash, BlockHeaderBlob)]) -> String {
+    let mut hasher = Sha256::new();
+    
+    for (hash, header_blob) in headers {
+        hasher.update(&hash.to_bytes());
+        hasher.update(header_blob.as_slice());
+    }
+    
+    hex::encode(hasher.finalize())
+}
+
+/// Compute SHA256 hash of block heights data
+fn compute_block_heights_hash(heights: &[(Height, BlockHash)]) -> String {
+    let mut hasher = Sha256::new();
+    
+    for (height, hash) in heights {
+        hasher.update(&height.to_le_bytes());
+        hasher.update(&hash.to_bytes());
+    }
+    
+    hex::encode(hasher.finalize())
+}
+
+/// Compute combined hash of all individual hashes
+fn compute_combined_hash(hashes: &[&str]) -> String {
+    let mut hasher = Sha256::new();
+    
+    for hash in hashes {
+        hasher.update(hash.as_bytes());
+    }
+    
+    hex::encode(hasher.finalize())
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -60,14 +107,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reader = UtxoReader::new(&args.input)?;
 
     if !args.quiet {
-        println!("Extracting UTXOs from stable memory...");
+        println!("Extracting data from stable memory...");
     }
 
-    let canister_data = reader.extract_state_data()?;
-
-    let mut utxos = canister_data.utxos.clone();
+    let mut canister_data = reader.extract_state_data();
 
     // Extract large UTXOs from the deserialized canister state
+    let mut utxos = canister_data.utxos.clone();
     let large_utxos = ic_doge_canister::with_state(|state| {
         state.utxos.utxos.large_utxos.clone()
     });
@@ -79,147 +125,510 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
+    // Sort the data for deterministic hashing
     utxos.sort();
+    canister_data.address_utxos.sort_by(|a, b| {
+        a.address.to_string()
+            .cmp(&b.address.to_string())
+            .then(a.height.cmp(&b.height))
+            .then(a.outpoint.cmp(&b.outpoint))
+    });
+    canister_data.balances.sort_by(|a, b| {
+        a.0.to_string().cmp(&b.0.to_string()).then(a.1.cmp(&b.1))
+    });
+    canister_data.block_headers.sort_by(|a, b| {
+        a.0.to_bytes().cmp(&b.0.to_bytes())
+    });
+    canister_data.block_heights.sort_by(|a, b| {
+        a.0.cmp(&b.0).then(a.1.to_bytes().cmp(&b.1.to_bytes()))
+    });
 
-    if !args.quiet {
-        // Show details of first 20 UTXOs
-        if !utxos.is_empty() {
-            println!("\nFirst {} UTXO Details:", std::cmp::min(20, utxos.len()));
-            println!("{:<8} {:<66} {:<5} {:<20} {:<15} {}",
-                     "Index", "Txid", "Vout", "Value (DOGE)", "Height", "Script Size");
-            println!("{}", "-".repeat(132));
-
-            for (i, utxo) in utxos.iter().take(20).enumerate() {
-                let txid_hex = {
-                    let mut txid_bytes = utxo.outpoint.txid.as_bytes().to_vec();
-                    txid_bytes.reverse();
-                    hex::encode(txid_bytes)
-                };
-
-                let value_doge = utxo.txout.value as f64 / 100_000_000.0;
-
-                println!("{:<8} {:<66} {:<5} {:<20} {:<15} {}",
-                         i + 1,
-                         txid_hex,
-                         utxo.outpoint.vout,
-                         value_doge,
-                         utxo.height,
-                         utxo.txout.script_pubkey.len()
-                );
-            }
-            println!();
-        }
+    // Validate data integrity
+    if let Err(error) = check_invariants(&canister_data) {
+        eprintln!("Data integrity check failed: {}", error);
+        std::process::exit(1);
     }
 
-    let hash = UtxoReader::compute_utxo_set_hash(&utxos);
+    if !args.quiet {
+        print_statistics(&canister_data, &utxos);
+    }
+
+    let utxo_hash = UtxoReader::compute_utxo_set_hash(&utxos);
+    let address_utxos_hash = compute_address_utxos_hash(&canister_data.address_utxos);
+    let address_balance_hash = compute_address_balances_hash(&canister_data.balances);
+    let block_headers_hash = compute_block_headers_hash(&canister_data.block_headers);
+    let block_heights_hash = compute_block_heights_hash(&canister_data.block_heights);
 
     if !args.quiet {
+        println!("UTXO Set hash: {}", utxo_hash);
+        println!("Address UTXOs hash: {}", address_utxos_hash);
+        println!("Address Balance hash: {}", address_balance_hash);
+        println!("Block Headers hash: {}", block_headers_hash);
+        println!("Block Heights hash: {}", block_heights_hash);
+    }
+
+    let hash_data = compute_combined_hash(&[
+        &utxo_hash,
+        &address_utxos_hash,
+        &address_balance_hash,
+        &block_headers_hash,
+        &block_heights_hash,
+    ]);
+    if !args.quiet {
+        println!("\nCombined hash: {}", hash_data);
+    } else {
+        println!("{}", hash_data);
+    }
+
+    Ok(())
+}
+
+/// Validates the integrity and consistency of canister data
+/// 
+/// This function checks several invariants that should hold for valid canister state:
+/// - No UTXOs should exist at height 0 (they are unspendable by consensus rules)
+/// - No addresses should have zero balance
+/// - Address counts should be consistent between UTXOs and balances
+/// - Block headers should be at least 80 bytes
+/// - Block headers count should match block heights count
+/// - Block headers and heights should have no duplicated entries
+/// - Block heights should have no missing blocks in the height range
+fn check_invariants(data: &CanisterData) -> Result<(), String> {
+    if data.block_heights.is_empty() {
+        return if data.address_utxos.is_empty() && data.balances.is_empty() {
+            Ok(())
+        } else {
+            Err("Found UTXOs/balances without blocks".to_string())
+        };
+    }
+
+    // Check for UTXOs at height 0 (genesis does not have spendable UTXOs)
+    let height_zero_count = data.address_utxos.iter().filter(|addr_utxo| addr_utxo.height == 0).count();
+    if height_zero_count > 0 {
+        return Err(format!("Found {} UTXOs at height 0, expected none", height_zero_count));
+    }
+
+    // Check for zero balances
+    let balances_satoshis: Vec<u64> = data.balances.iter().map(|(_, balance)| *balance).collect();
+    let zero_balance_count = balances_satoshis.iter().filter(|&&balance| balance == 0).count();
+    if zero_balance_count > 0 {
+        return Err(format!("Found {} addresses with zero balance, expected none", zero_balance_count));
+    }
+
+    // Check address consistency between address_utxos and balances
+    let mut address_counts: HashMap<String, usize> = HashMap::new();
+    for addr_utxo in &data.address_utxos {
+        *address_counts.entry(addr_utxo.address.to_string()).or_insert(0) += 1;
+    }
+    let unique_addresses = address_counts.len();
+    let balance_count = data.balances.len();
+    if unique_addresses != balance_count {
+        return Err(format!(
+            "Address count mismatch: {} unique addresses in address UTXOs vs {} addresses with balances",
+            unique_addresses, balance_count
+        ));
+    }
+
+    // Check for undersized block headers
+    let header_sizes: Vec<usize> = data.block_headers.iter()
+        .map(|(_, blob)| blob.as_slice().len())
+        .collect();
+    let undersized_count = header_sizes.iter().filter(|&&size| size < 80).count();
+    if undersized_count > 0 {
+        return Err(format!("Found {} block headers smaller than 80 bytes, expected none", undersized_count));
+    }
+
+    // Check header/height consistency
+    let headers_count = data.block_headers.len();
+    let heights_count = data.block_heights.len();
+    
+    if headers_count != heights_count {
+        return Err(format!(
+            "Header count mismatch: {} block headers entries vs {} block heights entries",
+            headers_count, heights_count
+        ));
+    }
+
+    let mut heights: Vec<u32> = data.block_heights.iter().map(|(height, _)| *height).collect();
+    heights.sort_unstable();
+
+    // Check duplicate block height entries
+    let unique_heights: std::collections::HashSet<u32> = heights.iter().cloned().collect();
+    if unique_heights.len() != heights.len() {
+        return Err(format!("Found {} duplicate block heights",
+                           heights.len() - unique_heights.len()));
+    }
+
+    // Check duplicate block headers entries
+    let unique_hashes: std::collections::HashSet<&BlockHash> = data.block_headers.iter().map(|(blockhash, _)| blockhash).collect();
+    if unique_hashes.len() != data.block_headers.len() {
+        return Err(format!("Found {} duplicate block hashes",
+                           data.block_headers.len() - unique_hashes.len()));
+    }
+
+    // Check block height continuity
+    let min_height = *heights.first().unwrap();
+    let max_height = *heights.last().unwrap();
+    let height_span = max_height - min_height + 1;
+
+    if height_span as usize != heights.len() {
+        return Err(format!("Missing blocks: expected {} blocks from {} to {}, found {}",
+                           height_span, min_height, max_height, heights.len()));
+    }
+
+    Ok(())
+}
+
+fn print_section_header(section_num: usize, title: &str) {
+    let total_width = 120;
+    let title_with_spaces = format!(" {}: {} ", section_num, title);
+    let padding = (total_width - title_with_spaces.len()) / 2;
+    let left_border = "═".repeat(padding);
+    let right_border = "═".repeat(total_width - padding - title_with_spaces.len());
+    
+    println!("\n{}{}{}", left_border, title_with_spaces, right_border);
+}
+
+fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
+    print_section_header(1, "UTXOs");
+    if !utxos.is_empty() {
+        println!("\nFirst {} UTXO Details:", std::cmp::min(20, utxos.len()));
+        println!("{:<8} {:<66} {:<5} {:<20} {:<15} {}",
+                 "Index", "Txid", "Vout", "Value (DOGE)", "Height", "Script Size");
+        println!("{}", "-".repeat(132));
+
+        for (i, utxo) in utxos.iter().take(20).enumerate() {
+            let txid_hex = {
+                let mut txid_bytes = utxo.outpoint.txid.as_bytes().to_vec();
+                txid_bytes.reverse();
+                hex::encode(txid_bytes)
+            };
+
+            let value_doge = utxo.txout.value as f64 / 100_000_000.0;
+
+            println!("{:<8} {:<66} {:<5} {:<20} {:<15} {}",
+                     i + 1,
+                     txid_hex,
+                     utxo.outpoint.vout,
+                     value_doge,
+                     utxo.height,
+                     utxo.txout.script_pubkey.len()
+            );
+        }
+
         let total_value: u64 = utxos.iter().map(|u| u.txout.value).sum();
         let total_value_doge = total_value as f64 / 100_000_000.0;
 
-        println!("\nUTXOs Statistics:");
-        println!("  Total UTXOs: {}", utxos.len().separated_string());
-        println!("  Total Value: {} DOGE ({} satoshis)", total_value_doge.separated_string(), total_value);
+        println!("\n  Total UTXOs: {}", utxos.len().separated_string());
+        println!("  Total Value: {} DOGE", total_value_doge.separated_string());
 
-        if !utxos.is_empty() {
-            let min_height = utxos.iter().map(|u| u.height).min().unwrap();
-            let max_height = utxos.iter().map(|u| u.height).max().unwrap();
-            println!("  Height Range: {} - {}", min_height.separated_string(), max_height.separated_string());
+        let min_height = utxos.iter().map(|u| u.height).min().unwrap();
+        let max_height = utxos.iter().map(|u| u.height).max().unwrap();
+        println!("  UTXO Height Range: {} - {}", min_height.separated_string(), max_height.separated_string());
 
-            let script_sizes: Vec<usize> = utxos.iter().map(|u| u.txout.script_pubkey.len()).collect();
-            let small_count = script_sizes.iter().filter(|&&size| size <= 25).count();
-            let medium_count = script_sizes.iter().filter(|&&size| size > 25 && size <= 201).count();
-            let large_count = script_sizes.iter().filter(|&&size| size > 201).count();
+        let script_sizes: Vec<usize> = utxos.iter().map(|u| u.txout.script_pubkey.len()).collect();
+        let small_count = script_sizes.iter().filter(|&&size| size <= 25).count();
+        let medium_count = script_sizes.iter().filter(|&&size| size > 25 && size <= 201).count();
+        let large_count = script_sizes.iter().filter(|&&size| size > 201).count();
 
-            let avg_script_size = script_sizes.iter().sum::<usize>() as f64 / script_sizes.len() as f64;
-            let min_script_size = *script_sizes.iter().min().unwrap();
-            let max_script_size = *script_sizes.iter().max().unwrap();
+        let avg_script_size = script_sizes.iter().sum::<usize>() as f64 / script_sizes.len() as f64;
+        let min_script_size = *script_sizes.iter().min().unwrap();
+        let max_script_size = *script_sizes.iter().max().unwrap();
 
-            println!("  Script Size Range: {} - {} bytes (avg: {:.1})",
-                     min_script_size, max_script_size, avg_script_size);
-            
-            println!("  Script Size Distribution:");
-            println!("    Small (≤25 bytes):     {} ({:.2}%)", small_count.separated_string(), 
-                     (small_count as f64 / utxos.len() as f64) * 100.0);
-            println!("    Medium (26-201 bytes): {} ({:.2}%)", medium_count.separated_string(), 
-                     (medium_count as f64 / utxos.len() as f64) * 100.0);
-            println!("    Large (>201 bytes):    {} ({:.2}%)", large_count.separated_string(), 
-                     (large_count as f64 / utxos.len() as f64) * 100.0);
+        println!("  Script Size Range: {} - {} bytes (avg: {:.1})",
+                 min_script_size, max_script_size, avg_script_size);
 
-            let mut values_doge: Vec<f64> = utxos.iter()
-                .map(|u| u.txout.value as f64 / 100_000_000.0)
-                .collect();
-            values_doge.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        println!("  Script Size Distribution:");
+        println!("    Small (≤25 bytes):     {} ({:.2}%)", small_count.separated_string(),
+                 (small_count as f64 / utxos.len() as f64) * 100.0);
+        println!("    Medium (26-201 bytes): {} ({:.2}%)", medium_count.separated_string(),
+                 (medium_count as f64 / utxos.len() as f64) * 100.0);
+        println!("    Large (>201 bytes):    {} ({:.2}%)", large_count.separated_string(),
+                 (large_count as f64 / utxos.len() as f64) * 100.0);
 
-            let min_value = values_doge[0];
-            let max_value = values_doge[values_doge.len() - 1] as u64;
-            let mean_value = (total_value_doge / values_doge.len() as f64) as u64;
+        let mut values_doge: Vec<f64> = utxos.iter()
+            .map(|u| u.txout.value as f64 / 100_000_000.0)
+            .collect();
+        values_doge.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-            let median = percentile(&values_doge, 50.0) as u64;
-            let p25 = percentile(&values_doge, 25.0) as u64;
-            let p75 = percentile(&values_doge, 75.0) as u64;
-            let p90 = percentile(&values_doge, 90.0) as u64;
-            let p95 = percentile(&values_doge, 95.0) as u64;
-            let p99 = percentile(&values_doge, 99.0) as u64;
+        let min_value = values_doge[0];
+        let max_value = values_doge[values_doge.len() - 1] as u64;
+        let mean_value = (total_value_doge / values_doge.len() as f64) as u64;
 
-            println!("\n  Value Distribution (DOGE):");
-            println!("    Min:     {:.8}", min_value);
-            println!("    25th %:  {}", p25.separated_string());
-            println!("    Median:  {}", median.separated_string());
-            println!("    Mean:    {}", mean_value.separated_string());
-            println!("    75th %:  {}", p75.separated_string());
-            println!("    90th %:  {}", p90.separated_string());
-            println!("    95th %:  {}", p95.separated_string());
-            println!("    99th %:  {}", p99.separated_string());
-            println!("    Max:     {}\n", max_value.separated_string());
-        }
+        let median = percentile(&values_doge, 50.0) as u64;
+        let p25 = percentile(&values_doge, 25.0) as u64;
+        let p75 = percentile(&values_doge, 75.0) as u64;
+        let p90 = percentile(&values_doge, 90.0) as u64;
+        let p95 = percentile(&values_doge, 95.0) as u64;
+        let p99 = percentile(&values_doge, 99.0) as u64;
+
+        println!("  Value Distribution (DOGE):");
+        println!("    Min:     {:.8}", min_value);
+        println!("    25th %:  {}", p25.separated_string());
+        println!("    Median:  {}", median.separated_string());
+        println!("    Mean:    {}", mean_value.separated_string());
+        println!("    75th %:  {}", p75.separated_string());
+        println!("    90th %:  {}", p90.separated_string());
+        println!("    95th %:  {}", p95.separated_string());
+        println!("    99th %:  {}", p99.separated_string());
+        println!("    Max:     {}\n", max_value.separated_string());
     }
 
-    println!("Address UTXOs Index: {} entries", canister_data.address_utxos.len().separated_string());
-    if !canister_data.address_utxos.is_empty() && canister_data.address_utxos.len() <= 10 {
-        println!("  Sample entries:");
-        for (i, addr_utxo) in canister_data.address_utxos.iter().take(5).enumerate() {
+    print_section_header(2, "Address UTXOs");
+    println!("\n  Total Address UTXOs entries: {}", data.address_utxos.len().separated_string());
+    
+    if !data.address_utxos.is_empty() {
+        println!("\nFirst {} Address UTXO Details:", std::cmp::min(20, data.address_utxos.len()));
+        println!("{:<8} {:<40} {:<66} {:<5} {}",
+                 "Index", "Address", "Txid", "Vout", "Height");
+        println!("{}", "-".repeat(130));
+
+        for (i, addr_utxo) in data.address_utxos.iter().take(20).enumerate() {
             let txid_hex = {
                 let mut txid_bytes = addr_utxo.outpoint.txid.as_bytes().to_vec();
                 txid_bytes.reverse();
                 hex::encode(txid_bytes)
             };
-            println!("    {}: {} -> {}:{} (height {})",
-                     i + 1, addr_utxo.address, txid_hex, addr_utxo.outpoint.vout, addr_utxo.height);
+
+            println!("{:<8} {:<40} {:<66} {:<5} {}",
+                     i + 1,
+                     addr_utxo.address.to_string(),
+                     txid_hex,
+                     addr_utxo.outpoint.vout,
+                     addr_utxo.height
+            );
+        }
+
+        let mut address_counts: HashMap<String, usize> = HashMap::new();
+        let mut heights: Vec<u32> = Vec::new();
+
+        for addr_utxo in &data.address_utxos {
+            *address_counts.entry(addr_utxo.address.to_string()).or_insert(0) += 1;
+            heights.push(addr_utxo.height);
+        }
+
+        let unique_addresses = address_counts.len();
+        let total_entries = data.address_utxos.len();
+        
+        // UTXO count distribution
+        let mut counts: Vec<usize> = address_counts.values().cloned().collect();
+        counts.sort_unstable();
+        
+        let min_utxos_per_addr = *counts.first().unwrap_or(&0);
+        let max_utxos_per_addr = *counts.last().unwrap_or(&0);
+        let avg_utxos_per_addr = total_entries as f64 / unique_addresses as f64;
+        let median_utxos_per_addr = if counts.is_empty() { 0 } else { counts[counts.len() / 2] };
+
+        println!("\n  Unique addresses: {}", unique_addresses.separated_string());
+        println!("  UTXOs per address - Min: {}, Max: {}, Avg: {:.1}, Median: {}",
+                 min_utxos_per_addr, max_utxos_per_addr, avg_utxos_per_addr, median_utxos_per_addr);
+
+        // Address reuse patterns
+        let single_utxo_addresses = counts.iter().filter(|&&count| count == 1).count();
+        let multi_utxo_addresses = unique_addresses - single_utxo_addresses;
+        
+        println!("  Single-use addresses: {} ({:.2}%)",
+                 single_utxo_addresses.separated_string(),
+                 (single_utxo_addresses as f64 / unique_addresses as f64) * 100.0);
+        println!("  Reused addresses: {} ({:.2}%)",
+                 multi_utxo_addresses.separated_string(),
+                 (multi_utxo_addresses as f64 / unique_addresses as f64) * 100.0);
+
+        // Top addresses by UTXO count
+        let mut sorted_addresses: Vec<_> = address_counts.iter().collect();
+        sorted_addresses.sort_by(|a, b| b.1.cmp(a.1));
+        println!("\n  Top 5 Addresses by UTXO Count:");
+        for (i, (address, count)) in sorted_addresses.iter().take(5).enumerate() {
+            println!("    {}: {} ({} UTXOs)", i + 1, address, count.separated_string());
+        }
+
+        // Height distribution
+        heights.sort_unstable();
+        let min_height = *heights.first().unwrap_or(&0);
+        let max_height = *heights.last().unwrap_or(&0);
+        let height_range = max_height - min_height;
+        
+        println!("\n  Height range: {} - {} (span: {} blocks)",
+                 min_height.separated_string(), max_height.separated_string(), height_range.separated_string());
+
+        // Address type analysis
+        let mut p2pkh_count = 0;
+        let mut p2sh_count = 0;
+        let mut other_count = 0;
+        
+        for addr_utxo in &data.address_utxos {
+            let addr_str = addr_utxo.address.to_string();
+            if addr_str.starts_with('D') {
+                p2pkh_count += 1;
+            } else if addr_str.starts_with('A') || addr_str.starts_with('9') {
+                p2sh_count += 1;
+            } else {
+                other_count += 1;
+            }
+        }
+        
+        println!("\n  Address Type Distribution:");
+        println!("    P2PKH (D*):     {} ({:.2}%)",
+                 p2pkh_count.separated_string(),
+                 (p2pkh_count as f64 / total_entries as f64) * 100.0);
+        println!("    P2SH (A*/9*):    {} ({:.2}%)",
+                 p2sh_count.separated_string(),
+                 (p2sh_count as f64 / total_entries as f64) * 100.0);
+        if other_count > 0 {
+            println!("    Other formats:   {} ({:.2}%)",
+                     other_count.separated_string(),
+                     (other_count as f64 / total_entries as f64) * 100.0);
         }
     }
 
-    println!("\nBalances: {} addresses", canister_data.balances.len().separated_string());
-    if !canister_data.balances.is_empty() && canister_data.balances.len() <= 10 {
-        println!("  Sample balances:");
-        for (i, (address, balance)) in canister_data.balances.iter().take(5).enumerate() {
-            let balance_doge = *balance as f64 / 100_000_000.0;
-            println!("    {}: {} = {:.8} DOGE", i + 1, address, balance_doge);
+    print_section_header(3, "Address Balance");
+    let balance_count = data.balances.len();
+    println!("\n  Total Address Balances entries: {}", balance_count.separated_string());
+    
+    if !data.balances.is_empty() {
+        let mut balances_satoshis: Vec<u64> = data.balances.iter().map(|(_, balance)| *balance).collect();
+        let mut balances_doge: Vec<f64> = balances_satoshis.iter().map(|&b| b as f64 / 100_000_000.0).collect();
+        balances_satoshis.sort_unstable();
+        balances_doge.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        let total_supply: u64 = balances_satoshis.iter().sum();
+        let total_supply_doge = (total_supply as f64 / 100_000_000.0) as u64;
+        let mean_balance = total_supply as f64 / balances_satoshis.len() as f64;
+
+        println!("\n  Total Supply: {} DOGE", total_supply_doge.separated_string());
+
+        println!("\n  Balance Distribution (Non-zero addresses):");
+        println!("    Min:     {:.8} DOGE", balances_doge[0]);
+        println!("    Median:  {:.8} DOGE", balances_doge[balances_doge.len() / 2]);
+        println!("    Mean:    {:.8} DOGE", mean_balance / 100_000_000.0);
+        println!("    Max:     {:.8} DOGE", *balances_doge.last().unwrap());
+
+        let p25 = percentile(&balances_doge, 25.0);
+        let p75 = percentile(&balances_doge, 75.0);
+        let p90 = percentile(&balances_doge, 90.0);
+        let p95 = percentile(&balances_doge, 95.0);
+        let p99 = percentile(&balances_doge, 99.0);
+
+        println!("    25th %:  {:.8} DOGE", p25);
+        println!("    75th %:  {:.8} DOGE", p75);
+        println!("    90th %:  {:.8} DOGE", p90);
+        println!("    95th %:  {:.8} DOGE", p95);
+        println!("    99th %:  {:.8} DOGE", p99);
+
+        let dust_threshold = 10_000_000u64; // 0.1 DOGE
+        let small_threshold = 10_000_000_000u64; // 100 DOGE
+        let medium_threshold = 1_000_000_000_000u64; // 10,000 DOGE
+        let large_threshold = 1_000_000_000_000_000u64; // 10,000,000 DOGE
+
+        let dust_count = balances_satoshis.iter().filter(|&&b| b > 0 && b < dust_threshold).count();
+        let small_count = balances_satoshis.iter().filter(|&&b| b >= dust_threshold && b < small_threshold).count();
+        let medium_count = balances_satoshis.iter().filter(|&&b| b >= small_threshold && b < medium_threshold).count();
+        let large_count = balances_satoshis.iter().filter(|&&b| b >= medium_threshold && b < large_threshold).count();
+        let whale_count = balances_satoshis.iter().filter(|&&b| b >= large_threshold).count();
+
+        println!("\n  Balance Range Distribution:");
+        println!("    Dust (<0.1 DOGE):     {} ({:.2}%)",
+                 dust_count.separated_string(),
+                 (dust_count as f64 / balance_count as f64) * 100.0);
+        println!("    Small (0.1-100 DOGE):   {} ({:.2}%)",
+                 small_count.separated_string(),
+                 (small_count as f64 / balance_count as f64) * 100.0);
+        println!("    Medium (100-10K DOGE):   {} ({:.2}%)",
+                 medium_count.separated_string(),
+                 (medium_count as f64 / balance_count as f64) * 100.0);
+        println!("    Large (10K-10M DOGE):  {} ({:.2}%)",
+                 large_count.separated_string(),
+                 (large_count as f64 / balance_count as f64) * 100.0);
+        println!("    Whale (>10M DOGE):     {} ({:.2}%)",
+                 whale_count.separated_string(),
+                 (whale_count as f64 / balance_count as f64) * 100.0);
+
+        // Top addresses by balance
+        let mut sorted_balances: Vec<_> = data.balances.iter().collect();
+        sorted_balances.sort_by(|a, b| b.1.cmp(&a.1));
+
+        println!("\n  Top 10 Addresses by Balance:");
+        for (i, (address, balance)) in sorted_balances.iter().take(10).enumerate() {
+            let balance_doge = (*balance as f64 / 100_000_000.0) as u64;
+            let percentage = (*balance as f64 / total_supply as f64) * 100.0;
+            println!("    {}: {} = {} DOGE ({:.4}% of supply)",
+                     i + 1, address, balance_doge.separated_string(), percentage);
         }
+
+        // Wealth concentration analysis
+        let top_1_percent = std::cmp::max(1, balance_count / 100);
+        let top_5_percent = std::cmp::max(1, balance_count * 5 / 100);
+        let top_10_percent = std::cmp::max(1, balance_count / 10);
+
+        let top_1_wealth: u64 = balances_satoshis.iter().rev().take(top_1_percent).sum();
+        let top_5_wealth: u64 = balances_satoshis.iter().rev().take(top_5_percent).sum();
+        let top_10_wealth: u64 = balances_satoshis.iter().rev().take(top_10_percent).sum();
+
+        println!("\n  Wealth Concentration:");
+        println!("    Top 1% of addresses hold: {:.2}% of total supply",
+                 (top_1_wealth as f64 / total_supply as f64) * 100.0);
+        println!("    Top 5% of addresses hold: {:.2}% of total supply",
+                 (top_5_wealth as f64 / total_supply as f64) * 100.0);
+        println!("    Top 10% of addresses hold: {:.2}% of total supply",
+                 (top_10_wealth as f64 / total_supply as f64) * 100.0);
+
     }
 
-    println!("\nBlock Headers: {} entries", canister_data.block_headers.len().separated_string());
-    if !canister_data.block_headers.is_empty() && canister_data.block_headers.len() <= 10 {
-        println!("  Sample block headers:");
-        for (i, (block_hash, header_blob)) in canister_data.block_headers.iter().take(5).enumerate() {
-            println!("    {}: {} ({} bytes)", i + 1, block_hash, header_blob.as_slice().len());
-        }
+    print_section_header(4, "Block Headers");
+    let headers_count = data.block_headers.len();
+    let heights_count = data.block_heights.len();
+    
+    println!("\n  Total block headers entries: {}", headers_count.separated_string());
+    println!("  Total block heights entries: {}", heights_count.separated_string());
+
+    if !data.block_headers.is_empty() && !data.block_heights.is_empty() {
+        let mut heights: Vec<u32> = data.block_heights.iter().map(|(height, _)| *height).collect();
+        heights.sort_unstable();
+
+        let min_height = *heights.first().unwrap();
+        let max_height = *heights.last().unwrap();
+        let height_span = max_height - min_height + 1;
+
+        println!("\n  Block Height Analysis:");
+        println!("    Height range: {} - {} (span: {} blocks)", 
+                 min_height.separated_string(), max_height.separated_string(), height_span.separated_string());
+
+        let mut header_sizes: Vec<usize> = data.block_headers.iter()
+            .map(|(_, blob)| blob.as_slice().len())
+            .collect();
+        header_sizes.sort_unstable();
+        println!("\n  Block Header Size Analysis:");
+        // Standard header (pure header) is 80 bytes, AuxPow header is larger than 80 bytes
+        let standard_size_count = header_sizes.iter().filter(|&&size| size == 80).count();
+        let auxpow_count = header_sizes.iter().filter(|&&size| size > 80).count();
+
+        println!("    Standard Header (80 bytes):  {} ({:.2}%)",
+                 standard_size_count.separated_string(),
+                 (standard_size_count as f64 / headers_count as f64) * 100.0);
+        println!("    AuxPow Header (>80 bytes): {} ({:.2}%)",
+                 auxpow_count.separated_string(),
+                 (auxpow_count as f64 / headers_count as f64) * 100.0);
     }
 
-    println!("\nBlock Heights: {} entries", canister_data.block_heights.len().separated_string());
-    if !canister_data.block_heights.is_empty() && canister_data.block_heights.len() <= 10 {
-        println!("  Sample height mappings:");
-        for (i, (height, block_hash)) in canister_data.block_heights.iter().take(5).enumerate() {
-            println!("    {}: {} -> {}", i + 1, height.separated_string(), block_hash);
-        }
+    println!();
+    println!();
+    println!();
+}
+
+/// Calculate percentile from a sorted vector
+fn percentile(sorted_values: &[f64], p: f64) -> f64 {
+    if sorted_values.is_empty() {
+        return 0.0;
     }
+    let p = p.clamp(0.0, 100.0);
+    let index = (p / 100.0) * (sorted_values.len() - 1) as f64;
+    let lower_index = index.floor() as usize;
+    let upper_index = index.ceil() as usize;
 
-    if !args.quiet {
-        println!("UTXO Set Hash (SHA256): {}", hash);
-        // TODO: add rest
+    if lower_index == upper_index {
+        sorted_values[lower_index]
+    } else {
+        let weight = index - lower_index as f64;
+        sorted_values[lower_index] * (1.0 - weight) + sorted_values[upper_index] * weight
     }
-
-    // TODO: if args.quiet, only print the hash of all the information
-
-    Ok(())
 }

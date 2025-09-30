@@ -42,7 +42,7 @@ impl Ord for Utxo {
     }
 }
 
-/// Comprehensive data extracted from canister state
+/// Comprehensive data extracted from the canister state stored in stable memory
 #[derive(Debug)]
 pub struct CanisterData {
     pub address_utxos: Vec<AddressUtxo>,
@@ -52,13 +52,13 @@ pub struct CanisterData {
     pub block_heights: Vec<(Height, BlockHash)>,
 }
 
-/// UTXO reader that can extract UTXOs from a canister_state.bin file
+/// UTXO reader that can read stable memory from a file
 pub struct UtxoReader {
     memory_manager: MemoryManager<FileMemory>,
 }
 
 impl UtxoReader {
-    /// Create a new UtxoReader from a canister state file
+    /// Create a new UtxoReader from a stable memory file
     pub fn new<P: AsRef<Path>>(canister_state_path: P) -> Result<Self, std::io::Error> {
         let file = File::open(canister_state_path)?;
         let memory = FileMemory::new(file);
@@ -67,35 +67,35 @@ impl UtxoReader {
         Ok(Self { memory_manager })
     }
 
-    /// Extract all data from the canister state file
-    pub fn extract_state_data(&self) -> Result<CanisterData, Box<dyn std::error::Error>> {
-        Ok(CanisterData {
-            utxos: self.extract_utxos()?,
-            address_utxos: self.extract_address_utxos()?,
-            balances: self.extract_balances()?,
-            block_headers: self.extract_block_headers()?,
-            block_heights: self.extract_block_heights()?,
-        })
+    /// Extract all data from stable memory
+    pub fn extract_state_data(&self) -> CanisterData {
+        CanisterData {
+            utxos: self.extract_utxos(),
+            address_utxos: self.extract_address_utxos(),
+            balances: self.extract_balances(),
+            block_headers: self.extract_block_headers(),
+            block_heights: self.extract_block_heights(),
+        }
     }
 
-    /// Extract all UTXOs from the canister state file
-    pub fn extract_utxos(&self) -> Result<Vec<Utxo>, Box<dyn std::error::Error>> {
+    /// Extract all UTXOs from stable memory
+    pub fn extract_utxos(&self) -> Vec<Utxo> {
         let mut utxos = Vec::new();
 
         // Extract small UTXOs from memory region 2
-        utxos.extend(self.extract_small_utxos()?);
+        utxos.extend(self.extract_small_utxos());
 
         // Extract medium UTXOs from memory region 3
-        utxos.extend(self.extract_medium_utxos()?);
+        utxos.extend(self.extract_medium_utxos());
 
         // Note: Large UTXOs must be accessed separately as they are stored
         // in a separate memory region (upgrades memory region 0)
 
-        Ok(utxos)
+        utxos
     }
 
     /// Extract small UTXOs from stable memory
-    fn extract_small_utxos(&self) -> Result<Vec<Utxo>, Box<dyn std::error::Error>> {
+    fn extract_small_utxos(&self) -> Vec<Utxo> {
         let small_memory = self.memory_manager.get(SMALL_UTXOS_MEMORY_ID);
         let small_utxos_map: StableBTreeMap<Blob<UTXO_KEY_SIZE>, Blob<UTXO_VALUE_MAX_SIZE_SMALL>, _>
             = StableBTreeMap::init(small_memory);
@@ -113,11 +113,11 @@ impl UtxoReader {
             });
         }
         
-        Ok(utxos)
+        utxos
     }
 
     /// Extract medium UTXOs from stable memory
-    fn extract_medium_utxos(&self) -> Result<Vec<Utxo>, Box<dyn std::error::Error>> {
+    fn extract_medium_utxos(&self) -> Vec<Utxo> {
         let medium_memory = self.memory_manager.get(MEDIUM_UTXOS_MEMORY_ID);
         let medium_utxos_map: StableBTreeMap<Blob<UTXO_KEY_SIZE>, Blob<UTXO_VALUE_MAX_SIZE_MEDIUM>, _> 
             = StableBTreeMap::init(medium_memory);
@@ -135,27 +135,27 @@ impl UtxoReader {
             });
         }
         
-        Ok(utxos)
+        utxos
     }
 
     /// Extract address to UTXOs map from stable memory
-    fn extract_address_utxos(&self) -> Result<Vec<AddressUtxo>, Box<dyn std::error::Error>> {
+    fn extract_address_utxos(&self) -> Vec<AddressUtxo> {
         let address_utxos_memory = self.memory_manager.get(ADDRESS_UTXOS_MEMORY_ID);
         let address_utxos_map: StableBTreeMap<Blob<{ AddressUtxo::BOUND.max_size() as usize }>, (), _>
             = StableBTreeMap::init(address_utxos_memory);
         
         let mut address_utxos = Vec::new();
         
-        for (key_blob, _) in address_utxos_map.iter() { // TODO: why putting only the key?
+        for (key_blob, _) in address_utxos_map.iter() {
             let address_utxo = StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
             address_utxos.push(address_utxo);
         }
 
-        Ok(address_utxos)
+        address_utxos
     }
 
     /// Extract address to balance map from stable memory
-    fn extract_balances(&self) -> Result<Vec<(Address, u64)>, Box<dyn std::error::Error>> {
+    fn extract_balances(&self) -> Vec<(Address, u64)> { // TODO: change u64 to u128
         let balances_memory = self.memory_manager.get(BALANCES_MEMORY_ID);
         let balances_map: StableBTreeMap<Address, u64, _> = StableBTreeMap::init(balances_memory);
         
@@ -165,11 +165,11 @@ impl UtxoReader {
             balances.push((address, balance));
         }
         
-        Ok(balances)
+        balances
     }
 
-    /// Extract block headers from stable memory
-    fn extract_block_headers(&self) -> Result<Vec<(BlockHash, BlockHeaderBlob)>, Box<dyn std::error::Error>> {
+    /// Extract block hash to block header map from stable memory
+    fn extract_block_headers(&self) -> Vec<(BlockHash, BlockHeaderBlob)> {
         let block_headers_memory = self.memory_manager.get(BLOCK_HEADERS_MEMORY_ID);
         let block_headers_map: StableBTreeMap<BlockHash, BlockHeaderBlob, _> 
             = StableBTreeMap::init(block_headers_memory);
@@ -180,11 +180,11 @@ impl UtxoReader {
             block_headers.push((block_hash, header_blob));
         }
         
-        Ok(block_headers)
+        block_headers
     }
 
     /// Extract height to block hash map from stable memory
-    fn extract_block_heights(&self) -> Result<Vec<(Height, BlockHash)>, Box<dyn std::error::Error>> {
+    fn extract_block_heights(&self) -> Vec<(Height, BlockHash)> {
         let block_heights_memory = self.memory_manager.get(BLOCK_HEIGHTS_MEMORY_ID);
         let block_heights_map: StableBTreeMap<Height, BlockHash, _> 
             = StableBTreeMap::init(block_heights_memory);
@@ -195,7 +195,7 @@ impl UtxoReader {
             block_heights.push((height, block_hash));
         }
         
-        Ok(block_heights)
+        block_heights
     }
 
     /// Compute SHA256 hash of sorted UTXOs
