@@ -10,7 +10,7 @@ members = [
     # Crates for bootstrapping the state
     "bootstrap/state-builder",
     "bootstrap/uploader",
-    "bootstrap/canister-state-reader",
+    "bootstrap/state-reader",
     # Crates used for testing only.
     "benchmarks",
     "e2e-tests/scenario-1",
