@@ -7,11 +7,12 @@ use ic_stable_structures::{
     storable::Blob,
     FileMemory, StableBTreeMap, Storable as StableStorable
 };
-use sha2::{Digest, Sha256};
 use std::{
     fs::File,
     path::Path,
 };
+
+pub mod hash;
 
 // Matches Dogecoin canister memory constants in `canister/src/memory.rs`
 const ADDRESS_UTXOS_MEMORY_ID: MemoryId = MemoryId::new(1);
@@ -198,19 +199,6 @@ impl UtxoReader {
         block_heights
     }
 
-    /// Compute SHA256 hash of sorted UTXOs
-    pub fn compute_utxo_set_hash(utxos: &[Utxo]) -> String {
-        let mut hasher = Sha256::new();
-
-        for utxo in utxos {
-            hasher.update(&StableStorable::to_bytes(&utxo.outpoint));
-            hasher.update(&utxo.txout.value.to_le_bytes());
-            hasher.update(&utxo.txout.script_pubkey);
-            hasher.update(&utxo.height.to_le_bytes());
-        }
-
-        hex::encode(hasher.finalize())
-    }
 }
 
 #[cfg(test)]
@@ -261,10 +249,10 @@ mod tests {
         };
         
         let utxos = vec![utxo];
-        let hash = UtxoReader::compute_utxo_set_hash(&utxos);
+        let hash = crate::hash::compute_utxo_set_hash(&utxos);
         
         // Hash should be deterministic
-        let hash2 = UtxoReader::compute_utxo_set_hash(&utxos);
+        let hash2 = crate::hash::compute_utxo_set_hash(&utxos);
         assert_eq!(hash, hash2);
         
         // Hash should be a valid hex string of correct length (64 chars for SHA256)

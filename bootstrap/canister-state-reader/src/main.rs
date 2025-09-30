@@ -1,12 +1,9 @@
 use clap::Parser;
 use separator::Separatable;
 use std::{fs::File, path::PathBuf, collections::HashMap};
-use canister_state_reader::{CanisterData, Utxo, UtxoReader};
-use ic_doge_canister::types::{Address, BlockHeaderBlob};
-use ic_doge_interface::Height;
+use canister_state_reader::{CanisterData, Utxo, UtxoReader, hash};
 use ic_doge_types::BlockHash;
 use ic_stable_structures::Storable;
-use sha2::{Digest, Sha256};
 
 #[derive(Parser, Debug)]
 #[command(name = "canister-state-reader")]
@@ -19,66 +16,6 @@ struct Args {
     /// Only output the UTXO hash (quiet mode)
     #[arg(short, long)]
     quiet: bool,
-}
-
-/// Compute SHA256 hash of address UTXOs data
-fn compute_address_utxos_hash(address_utxos: &[ic_doge_canister::types::AddressUtxo]) -> String {
-    let mut hasher = Sha256::new();
-    
-    for addr_utxo in address_utxos {
-        hasher.update(addr_utxo.address.to_string().as_bytes());
-        hasher.update(&addr_utxo.height.to_le_bytes());
-        hasher.update(&addr_utxo.outpoint.to_bytes());
-    }
-    
-    hex::encode(hasher.finalize())
-}
-
-/// Compute SHA256 hash of address balances data
-fn compute_address_balances_hash(balances: &[(Address, u64)]) -> String {
-    let mut hasher = Sha256::new();
-    
-    for (address, balance) in balances {
-        hasher.update(address.to_string().as_bytes());
-        hasher.update(&balance.to_le_bytes());
-    }
-    
-    hex::encode(hasher.finalize())
-}
-
-/// Compute SHA256 hash of block headers data
-fn compute_block_headers_hash(headers: &[(BlockHash, BlockHeaderBlob)]) -> String {
-    let mut hasher = Sha256::new();
-    
-    for (hash, header_blob) in headers {
-        hasher.update(&hash.to_bytes());
-        hasher.update(header_blob.as_slice());
-    }
-    
-    hex::encode(hasher.finalize())
-}
-
-/// Compute SHA256 hash of block heights data
-fn compute_block_heights_hash(heights: &[(Height, BlockHash)]) -> String {
-    let mut hasher = Sha256::new();
-    
-    for (height, hash) in heights {
-        hasher.update(&height.to_le_bytes());
-        hasher.update(&hash.to_bytes());
-    }
-    
-    hex::encode(hasher.finalize())
-}
-
-/// Compute combined hash of all individual hashes
-fn compute_combined_hash(hashes: &[&str]) -> String {
-    let mut hasher = Sha256::new();
-    
-    for hash in hashes {
-        hasher.update(hash.as_bytes());
-    }
-    
-    hex::encode(hasher.finalize())
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -134,13 +71,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .then(a.outpoint.cmp(&b.outpoint))
     });
     canister_data.balances.sort_by(|a, b| {
-        a.0.to_string().cmp(&b.0.to_string()).then(a.1.cmp(&b.1))
+        a.0.cmp(&b.0).then(a.1.cmp(&b.1))
     });
     canister_data.block_headers.sort_by(|a, b| {
-        a.0.to_bytes().cmp(&b.0.to_bytes())
+        a.0.cmp(&b.0)
     });
     canister_data.block_heights.sort_by(|a, b| {
-        a.0.cmp(&b.0).then(a.1.to_bytes().cmp(&b.1.to_bytes()))
+        a.0.cmp(&b.0)
     });
 
     // Validate data integrity
@@ -153,21 +90,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print_statistics(&canister_data, &utxos);
     }
 
-    let utxo_hash = UtxoReader::compute_utxo_set_hash(&utxos);
-    let address_utxos_hash = compute_address_utxos_hash(&canister_data.address_utxos);
-    let address_balance_hash = compute_address_balances_hash(&canister_data.balances);
-    let block_headers_hash = compute_block_headers_hash(&canister_data.block_headers);
-    let block_heights_hash = compute_block_heights_hash(&canister_data.block_heights);
+    let utxo_hash = hash::compute_utxo_set_hash(&utxos);
+    let address_utxos_hash = hash::compute_address_utxos_hash(&canister_data.address_utxos);
+    let address_balance_hash = hash::compute_address_balances_hash(&canister_data.balances);
+    let block_headers_hash = hash::compute_block_headers_hash(&canister_data.block_headers);
+    let block_heights_hash = hash::compute_block_heights_hash(&canister_data.block_heights);
 
     if !args.quiet {
-        println!("UTXO Set hash: {}", utxo_hash);
-        println!("Address UTXOs hash: {}", address_utxos_hash);
-        println!("Address Balance hash: {}", address_balance_hash);
-        println!("Block Headers hash: {}", block_headers_hash);
-        println!("Block Heights hash: {}", block_heights_hash);
+        println!("{}", "═".repeat(120));
+        println!("{:^120}", "DATA HASHES (SHA256)");
+        println!("{}", "═".repeat(120));
+        
+        println!("\n{:<16}: {}", "UTXO Set", utxo_hash);
+        println!("{:<16}: {}", "Address UTXOs", address_utxos_hash);
+        println!("{:<16}: {}", "Address Balance", address_balance_hash);
+        println!("{:<16}: {}", "Block Headers", block_headers_hash);
+        println!("{:<16}: {}", "Block Heights", block_heights_hash);
     }
 
-    let hash_data = compute_combined_hash(&[
+    let hash_data = hash::compute_combined_hash(&[
         &utxo_hash,
         &address_utxos_hash,
         &address_balance_hash,
@@ -175,7 +116,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &block_heights_hash,
     ]);
     if !args.quiet {
-        println!("\nCombined hash: {}", hash_data);
+        println!("\n{:<16}: {}", "Combined hash", hash_data);
     } else {
         println!("{}", hash_data);
     }
@@ -446,10 +387,9 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         heights.sort_unstable();
         let min_height = *heights.first().unwrap_or(&0);
         let max_height = *heights.last().unwrap_or(&0);
-        let height_range = max_height - min_height;
-        
-        println!("\n  Height range: {} - {} (span: {} blocks)",
-                 min_height.separated_string(), max_height.separated_string(), height_range.separated_string());
+
+        println!("\n  Height range: {} - {}",
+                 min_height.separated_string(), max_height.separated_string());
 
         // Address type analysis
         let mut p2pkh_count = 0;
@@ -610,8 +550,6 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
                  (auxpow_count as f64 / headers_count as f64) * 100.0);
     }
 
-    println!();
-    println!();
     println!();
 }
 
