@@ -36,7 +36,7 @@ fn decode_header_code(code: u64) -> (u8, bool, bool, u32) {
     (coinbase, vout0_unspent, vout1_unspent, mask_nonzero_bytes as u32)
 }
 
-// TODO: this could be made more efficient by storing only the output with their associated index that are unspent
+// TODO(XC-503): this could be made more efficient by storing only the output with their associated index that are unspent
 fn read_unspentness_mask<R: Read>(reader: &mut R, mask_nonzero_bytes: u32) -> anyhow::Result<Vec<bool>> {
     let mut additional_unspent_outputs = vec![];
 

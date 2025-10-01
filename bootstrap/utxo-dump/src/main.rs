@@ -169,7 +169,7 @@ fn main() -> Result<()> {
     db_iter.reset();
     let (key, value) = db_iter.next().unwrap();
     let (prefix, key) = key.split_at(2);
-    let key_str= String::from_utf8(key.to_vec()).expect("valid UTF-8");
+    let key_str= String::from_utf8(key.to_vec()).context("Failed to convert key bytes to valid UTF-8")?;
     let obfuscate_key = if prefix == DB_KEYS_OBFUSCATE_KEY_PREFIX && key_str == DB_KEYS_OBFUSCATE_KEY {
         if !args.quiet {
             println!(">>> Obfuscation key: {}", hex::encode(&value[1..]));
@@ -236,14 +236,22 @@ fn main() -> Result<()> {
                     // vout
                     if is_selected("vout") {
                         if key.len() >= 34 { // Modern: vout is encoded in the key
-                            // TODO: add assert that blockchain is Bitcoin
+                            anyhow::ensure!(
+                                matches!(blockchain, Blockchain::Bitcoin(_)),
+                                "Expected Bitcoin blockchain for modern vout encoding"
+                            );
                             let vout_bytes = &key[33..];
                             let mut cursor = Cursor::new(vout_bytes);
                             let vout = read_varint(&mut cursor)?;
                             csv_output.insert("vout", vout.to_string());
                         } else if key.len() == 33 { // Legacy: vout is encoded in the value
-                            // TODO: add assert that blockchain is Dogecoin
-                            let vout = output.vout.expect("vout is missing");
+                            anyhow::ensure!(
+                                matches!(blockchain, Blockchain::Dogecoin(_)),
+                                "Expected Dogecoin blockchain for legacy vout encoding"
+                            );
+                            let vout = output
+                                .vout
+                                .ok_or_else(|| anyhow::anyhow!("vout is missing in the output"))?;
                             csv_output.insert("vout", vout.to_string());
                         } else {
                             anyhow::bail!("Invalid key length: {}", key.len());
@@ -305,7 +313,7 @@ fn main() -> Result<()> {
                         }
                     }
                 }
-            } // TODO: keys are sorted, so we are guaranteed to process all utxos and could break out of the loop. TO BE VERIFIED.
+            }
         } else {
             break;
         }
