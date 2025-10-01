@@ -10,12 +10,12 @@ pub(crate) fn decompress_amount(compressed: u64) -> Result<u64, Error> {
     let mut x = compressed - 1;
 
     let e = (x % 10) as u32; // remainder mod 10
-    x = x / 10; // quotient mod 10 (reduce x down by 10)
+    x /= 10; // quotient mod 10 (reduce x down by 10)
 
     // If the remainder is less than 9
     let n = if e < 9 {
         let d = (x % 9) + 1;
-        x = x / 9;
+        x /= 9;
         x * 10 + d
     } else {
         x + 1

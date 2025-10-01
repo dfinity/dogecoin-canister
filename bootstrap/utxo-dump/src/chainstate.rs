@@ -135,8 +135,8 @@ fn deserialize_script<R: Read>(
     if nsize < 6 {
         // Compressed script: nsize is the compression type (0-5)
         let compressed_data_size = match nsize {
-            0 | 1 => 20,         // P2PKH, P2SH: 20 bytes
-            2 | 3 | 4 | 5 => 33, // Compressed PK: 33 bytes
+            0 | 1 => 20, // P2PKH, P2SH: 20 bytes
+            2..=5 => 33, // Compressed PK: 33 bytes
             _ => anyhow::bail!("Invalid compression type: {}", nsize),
         };
 
@@ -270,7 +270,7 @@ pub(crate) fn deserialize_db_utxo_legacy(
 
     for (i, &is_unspent) in unspent_outputs.iter().enumerate() {
         if is_unspent {
-            let txout = deserialize_txout(&mut cursor, &blockchain)?;
+            let txout = deserialize_txout(&mut cursor, blockchain)?;
             outputs[i] = Some(txout);
         }
     }

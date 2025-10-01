@@ -161,10 +161,8 @@ fn main() -> Result<()> {
     let r = running.clone();
     std::thread::spawn(move || {
         let mut signals = Signals::new(TERM_SIGNALS).expect("Failed to register signal handler");
-        for _sig in signals.forever() {
-            r.store(false, Ordering::SeqCst);
-            break;
-        }
+        signals.wait();
+        r.store(false, Ordering::SeqCst);
     });
 
     let mut db_iter = database.new_iter()?;
