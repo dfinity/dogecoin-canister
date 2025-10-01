@@ -106,14 +106,14 @@ fn deserialize_txout<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyhow
 
 fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyhow::Result<(ScriptBuf, String, usize, String)> {
     // nsize: byte to indicate the type or size of script
-    // nsize  -     compressed script    - script
-    //   0    -        hash160 PK        - P2PKH
-    //   1    -      hash160 script      - P2SH
-    //   2    -      compressed PK       - P2PK 02publickey <- compressed PK, y:even - here and following P2PK: nsize makes up part of the compressed PK
-    //   3    -      compressed PK       - P2PK 03publickey <- compressed PK, y:odd
-    //   4    -      compressed PK       - P2PK 04publickey <- uncompressed PK, y:even
-    //   5    -      compressed PK       - P2PK 04publickey <- uncompressed PK, y:odd
-    //   6+   -   uncompressed script    - uncompressed script
+    // nsize  -     compressed script (in DB)    - script
+    //   0    -            hash160 PK            - P2PKH
+    //   1    -          hash160 script          - P2SH
+    //   2    -          compressed PK           - P2PK 02publickey <- compressed PK, y:even - here and following P2PK: nsize makes up part of the compressed PK
+    //   3    -          compressed PK           - P2PK 03publickey <- compressed PK, y:odd
+    //   4    -          compressed PK           - P2PK 04publickey <- uncompressed PK, y:even
+    //   5    -          compressed PK           - P2PK 04publickey <- uncompressed PK, y:odd
+    //   6+   -       uncompressed script        - uncompressed script
     // For 6+, nsize is script size (subtract 6 to get the actual size in bytes, to account for the previous 5 script types already taken)
     let nsize = read_varint(reader)? as usize;
 

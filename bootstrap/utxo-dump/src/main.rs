@@ -8,7 +8,6 @@ use bitcoin::{Network as BtcNetwork, dogecoin::Network as DogeNetwork};
 use std::collections::{BTreeMap, HashMap};
 use std::io::{BufWriter, Cursor, Write};
 
-use std::iter;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -24,7 +23,7 @@ use crate::serialization::read_varint;
 use crate::utils::set_macos_rlimit;
 
 const VERSION: &str = "1.0.0";
-const FIELDS_ALLOWED: Vec<&str> = vec![
+const FIELDS_ALLOWED: [&str; 10] = [
     "count", "txid", "vout", "height", "coinbase", "amount", "nsize", "script", "type",
     "address",
 ];
@@ -109,7 +108,7 @@ fn main() -> Result<()> {
     set_macos_rlimit(&args)?;
 
     if !Path::new(&args.chainstate).exists() {
-        anyhow::bail!("Couldn't find {}", args.chainstate);
+        anyhow::bail!("Couldn't find {}", args.chainstate.display());
     }
 
     let blockchain = args.to_blockchain();
@@ -171,23 +170,18 @@ fn main() -> Result<()> {
     let (key, value) = db_iter.next().unwrap();
     let (prefix, key) = key.split_at(2);
     let key_str= String::from_utf8(key.to_vec()).expect("valid UTF-8");
-    let mut obfuscate_key: Vec<u8> = Vec::new();
-    if prefix == DB_KEYS_OBFUSCATE_KEY_PREFIX && key_str == DB_KEYS_OBFUSCATE_KEY {
-        // Ignore first byte (size of the obfuscate key)
-        obfuscate_key.copy_from_slice(&value[1..]);
+    let obfuscate_key = if prefix == DB_KEYS_OBFUSCATE_KEY_PREFIX && key_str == DB_KEYS_OBFUSCATE_KEY {
         if !args.quiet {
-            println!(">>> Obfuscation key: {}", hex::encode(&obfuscate_key));
+            println!(">>> Obfuscation key: {}", hex::encode(&value[1..]));
         }
-    }
-    if obfuscate_key.is_empty() {
+        value[1..].to_vec() // Ignore first byte (size of the obfuscate key)
+    } else {
         anyhow::bail!(
             "No obfuscation key found in chainstate database.\n\
-             This database may be corrupted or from an older Bitcoin version that doesn't use obfuscation.\n\
+             This database may be corrupted or from an older version that doesn't use obfuscation.\n\
              Cannot process UTXO values without the obfuscation key."
         );
-    }
-
-    db_iter.seek_to_first();
+    };
 
     while db_iter.valid() {
         if !running.load(Ordering::SeqCst) {
@@ -197,7 +191,7 @@ fn main() -> Result<()> {
             break;
         }
 
-        if let Some((key, value)) = db_iter.next() {
+        if let Some((key, mut value)) = db_iter.next() {
             let prefix = key[0];
             if prefix == blockchain.utxo_key_prefix() {
                 // -----------------------
@@ -220,22 +214,11 @@ fn main() -> Result<()> {
                 //      /                               |
                 //  prefix                      txid (little-endian)
 
-                // Extend obfuscate key to match value length
-                // Example
-                //   [8 175 184 95 99 240 37 253 115 1 161 4 33 81 167 111 145 131 0 233 37 232 118 180 123 120 78]    <- value (len = 27)
-                //   [8 177 45 206 253 143 135 37 54]                                                                  <- obfuscate_key (len = 9)
-                //   [8 177 45 206 253 143 135 37 54 8 177 45 206 253 143 135 37 54 8 177 45 206 253 143 135 37 54]    <- obfuscate_key_extended (len = 27)
-                let obfuscate_key_extended: Vec<u8> = iter::repeat(obfuscate_key.clone())
-                    .flatten()
-                    .take(value.len())
-                    .collect();
-
-                // XOR deobfuscate the value
-                let deobfuscated_value: Vec<u8> = value
-                    .iter()
-                    .zip(obfuscate_key_extended)
-                    .map(|(v, k)| v ^ k)
-                    .collect();
+                // XOR deobfuscate the value in place
+                for (i, v) in value.iter_mut().enumerate() {
+                    *v ^= obfuscate_key[i % obfuscate_key.len()];
+                }
+                let deobfuscated_value = value;
 
                 let mut csv_output = HashMap::new();
 
@@ -402,7 +385,7 @@ mod tests {
         let hex_data = "0104835800816115944e077fe7c803cfa57f29b36bf87c1d358bb85e";
         let outputs = deserialize_db_utxo_legacy(&blockchain, hex::decode(hex_data).unwrap()).unwrap();
         assert_eq!(outputs.len(), 1);
-        assert_eq!(outputs[0].vout, 1);
+        assert_eq!(outputs[0].vout.unwrap(), 1);
         assert_eq!(outputs[0].coinbase, 0);
         assert_eq!(outputs[0].txout.amount, 60000000000);
         assert_eq!(outputs[0].txout.script_type, "p2pkh");
@@ -438,7 +421,7 @@ mod tests {
         let hex_data = "0109044086ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4eebbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa486af3b";
         let outputs = deserialize_db_utxo_legacy(&blockchain, hex::decode(hex_data).unwrap()).unwrap();
         assert_eq!(outputs.len(), 2);
-        assert_eq!(outputs[0].vout, 4);
+        assert_eq!(outputs[0].vout.unwrap(), 4);
         assert_eq!(outputs[0].coinbase, 1);
         assert_eq!(outputs[0].txout.amount, 234925952);
         assert_eq!(outputs[0].txout.script_type, "p2pkh");
@@ -446,7 +429,7 @@ mod tests {
         assert_eq!(outputs[0].txout.address, blockchain.p2pkh_address(pubkey_hash_0));
         assert_eq!(outputs[0].txout.nsize, 0);
         assert_eq!(outputs[0].height, 120891);
-        assert_eq!(outputs[1].vout, 16);
+        assert_eq!(outputs[1].vout.unwrap(), 16);
         assert_eq!(outputs[1].coinbase, 1);
         assert_eq!(outputs[1].txout.amount, 110397);
         assert_eq!(outputs[1].txout.script_type, "p2pkh");
