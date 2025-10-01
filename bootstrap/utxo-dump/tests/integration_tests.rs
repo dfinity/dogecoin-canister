@@ -95,29 +95,20 @@ fn test_utxo_dump_bitcoin_mainnet_regression() {
 
     assert!(
         output_str.contains("height,txid,vout"),
-        "Output doesn't contain expected CSV header"
+        "Output file doesn't contain expected CSV header"
     );
 
-    let line_count = output_str.lines().count();
-    println!("=== BITCOIN MAINNET TEST RESULTS ===");
-    println!("Output file hash: {}", hash_hex);
-    println!("Output file size: {} bytes", file_contents.len());
-    println!("Total lines: {} (including header)", line_count);
+    println!("UTXO dump tool output: {}", String::from_utf8_lossy(&output.stdout));
 
-    println!("First few lines of output:");
-    for (i, line) in output_str.lines().take(10).enumerate() {
-        println!("  {}: {}", i + 1, line);
+    if hash_hex == SHA256_OUTPUT_BTC_MAINNET_250K {
+        println!("✓ Output hash matches expected value!");
+    } else {
+        panic!(
+            "✗ Output hash does not match expected value!\nExpected: {}\nGot: {}",
+            SHA256_OUTPUT_BTC_MAINNET_250K,
+            hash_hex
+        );
     }
-
-    assert!(
-        line_count > 1,
-        "Should have at least header + some UTXO entries"
-    );
-
-    assert_eq!(
-        hash_hex, SHA256_OUTPUT_BTC_MAINNET_250K,
-        "Bitcoin mainnet output hash does not match expected value"
-    );
 }
 
 /// Runs utxo-dump against test chainstate data and verifies the output hash matches the expected value
@@ -172,29 +163,20 @@ fn test_utxo_dump_dogecoin_mainnet_regression() {
 
     assert!(
         output_str.contains("height,txid,vout"),
-        "Output doesn't contain expected CSV header"
+        "Output file doesn't contain expected CSV header"
     );
 
-    let line_count = output_str.lines().count();
-    println!("=== DOGECOIN MAINNET TEST RESULTS ===");
-    println!("Output file hash: {}", hash_hex);
-    println!("Output file size: {} bytes", file_contents.len());
-    println!("Total lines: {} (including header)", line_count);
+    println!("UTXO dump tool output: {}", String::from_utf8_lossy(&output.stdout));
 
-    println!("First few lines of output:");
-    for (i, line) in output_str.lines().take(10).enumerate() {
-        println!("  {}: {}", i + 1, line);
+    if hash_hex == SHA256_OUTPUT_DOGE_MAINNET_350_135 {
+        println!("✓ Output hash matches expected value!");
+    } else {
+        panic!(
+            "✗ Output hash does not match expected value!\nExpected: {}\nGot: {}",
+            SHA256_OUTPUT_DOGE_MAINNET_350_135,
+            hash_hex
+        );
     }
-
-    assert!(
-        line_count > 1,
-        "Should have at least header + some UTXO entries"
-    );
-
-    assert_eq!(
-        hash_hex, SHA256_OUTPUT_DOGE_MAINNET_350_135,
-        "Dogecoin mainnet output hash does not match expected value"
-    );
 }
 
 /// Find the tar.gz file in the tests/data directory

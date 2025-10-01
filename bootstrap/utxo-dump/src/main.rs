@@ -65,10 +65,6 @@ struct Args {
     #[arg(long = "testnet")]
     testnet: bool,
 
-    /// Print utxos as we process them
-    #[arg(short = 'v', long = "verbose")]
-    verbose: bool,
-
     /// Convert public keys in P2PK locking scripts to addresses
     #[arg(long = "p2pkaddresses")]
     p2pk_addresses: bool,
@@ -312,9 +308,7 @@ fn main() -> Result<()> {
 
                     utxo_count += 1;
                     if !args.quiet {
-                        if args.verbose {
-                            println!("{}", csvline);
-                        } else if utxo_count > 0 && utxo_count % 100000 == 0 {
+                        if utxo_count > 0 && utxo_count % 100000 == 0 {
                             println!("{} utxos processed", utxo_count);
                         }
                     }
@@ -326,23 +320,20 @@ fn main() -> Result<()> {
     }
     writer.flush()?;
 
-    if !args.quiet {
-        println!();
-        println!("Total UTXOs: {}", utxo_count);
+    println!("\nTotal UTXOs: {}", utxo_count);
 
-        if is_selected("amount") {
-            println!(
-                "Total {}:   {:.8}",
-                blockchain.ticker(),
-                total_amount as f64 / 100_000_000.0
-            );
-        }
+    if is_selected("amount") {
+        println!(
+            "Total {}:   {:.8}",
+            blockchain.ticker(),
+            total_amount as f64 / 100_000_000.0
+        );
+    }
 
-        if is_selected("type") {
-            println!("Script Types:");
-            for (script_type, count) in script_type_count {
-                println!(" {:<12} {}", script_type, count);
-            }
+    if is_selected("type") {
+        println!("Script Types:");
+        for (script_type, count) in script_type_count {
+            println!(" {:<12} {}", script_type, count);
         }
     }
 
