@@ -550,6 +550,13 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         println!("    AuxPow Header (>80 bytes):  {} ({:.2}%)",
                  auxpow_count.separated_string(),
                  (auxpow_count as f64 / headers_count as f64) * 100.0);
+
+        // AuxPow size distribution analysis
+        if auxpow_count > 0 {
+            let mut sorted_auxpow_sizes = auxpow_sizes.clone();
+            sorted_auxpow_sizes.sort_unstable();
+
+            let min_auxpow = *sorted_auxpow_sizes.first().unwrap();
             let max_auxpow = *sorted_auxpow_sizes.last().unwrap();
             let mean_auxpow = auxpow_sizes.iter().sum::<usize>() as f64 / auxpow_sizes.len() as f64;
             let median_auxpow = sorted_auxpow_sizes[sorted_auxpow_sizes.len() / 2];
