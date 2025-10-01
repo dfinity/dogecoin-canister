@@ -42,7 +42,7 @@ echo "This may take several hours. Please wait..."
 DOGECOIN_PID=$!
 
 # Wait for the RPC interface to become ready
-echo "Waiting for dogecoind to start..."
+echo "Waiting for dogecoind to load..."
 until "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount >/dev/null 2>&1; do
     sleep 5
 done

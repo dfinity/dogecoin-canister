@@ -33,7 +33,9 @@ DOGECOIND_PID=$!
 
 # Wait for dogecoind to initialize.
 echo "Waiting for dogecoind to load..."
-sleep 30
+until "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount >/dev/null 2>&1; do
+    sleep 5
+done
 
 # Function to format seconds as xxh xxm xxs.
 format_time() {
