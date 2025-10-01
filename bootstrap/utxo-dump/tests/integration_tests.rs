@@ -98,15 +98,17 @@ fn test_utxo_dump_bitcoin_mainnet_regression() {
         "Output file doesn't contain expected CSV header"
     );
 
-    println!("UTXO dump tool output: {}", String::from_utf8_lossy(&output.stdout));
+    println!(
+        "UTXO dump tool output: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
 
     if hash_hex == SHA256_OUTPUT_BTC_MAINNET_250K {
         println!("✓ Output hash matches expected value!");
     } else {
         panic!(
             "✗ Output hash does not match expected value!\nExpected: {}\nGot: {}",
-            SHA256_OUTPUT_BTC_MAINNET_250K,
-            hash_hex
+            SHA256_OUTPUT_BTC_MAINNET_250K, hash_hex
         );
     }
 }
@@ -166,15 +168,17 @@ fn test_utxo_dump_dogecoin_mainnet_regression() {
         "Output file doesn't contain expected CSV header"
     );
 
-    println!("UTXO dump tool output: {}", String::from_utf8_lossy(&output.stdout));
+    println!(
+        "UTXO dump tool output: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
 
     if hash_hex == SHA256_OUTPUT_DOGE_MAINNET_350_135 {
         println!("✓ Output hash matches expected value!");
     } else {
         panic!(
             "✗ Output hash does not match expected value!\nExpected: {}\nGot: {}",
-            SHA256_OUTPUT_DOGE_MAINNET_350_135,
-            hash_hex
+            SHA256_OUTPUT_DOGE_MAINNET_350_135, hash_hex
         );
     }
 }

@@ -307,10 +307,8 @@ fn main() -> Result<()> {
                     writeln!(writer, "{}", csvline)?;
 
                     utxo_count += 1;
-                    if !args.quiet {
-                        if utxo_count > 0 && utxo_count % 100000 == 0 {
-                            println!("{} utxos processed", utxo_count);
-                        }
+                    if !args.quiet && utxo_count > 0 && utxo_count % 100000 == 0 {
+                        println!("{} utxos processed", utxo_count);
                     }
                 }
             }
