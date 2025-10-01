@@ -352,14 +352,14 @@ mod tests {
     fn test_header_code_decoding() {
         let (coinbase, vout0, vout1, mask_bytes) = decode_header_code(4);
         assert_eq!(coinbase, 0);
-        assert_eq!(vout0, false);
-        assert_eq!(vout1, true);
+        assert!(!vout0);
+        assert!(vout1);
         assert_eq!(mask_bytes, 0);
 
         let (coinbase, vout0, vout1, mask_bytes) = decode_header_code(9);
         assert_eq!(coinbase, 1);
-        assert_eq!(vout0, false);
-        assert_eq!(vout1, false);
+        assert!(!vout0);
+        assert!(!vout1);
         assert_eq!(mask_bytes, 2);
     }
 
@@ -371,9 +371,9 @@ mod tests {
 
         // Should only include up to the last set bit (index 16)
         assert_eq!(unspent_outputs.len(), 17); // 0-16 inclusive
-        assert_eq!(unspent_outputs[0], true); // vout[2 + 0]
-        assert_eq!(unspent_outputs[1], false); // vout[2 + 1]
-        assert_eq!(unspent_outputs[2], true); // vout[2 + 2]
-        assert_eq!(unspent_outputs[16], true); // vout[16 + 2]
+        assert!(unspent_outputs[0]); // vout[2 + 0]
+        assert!(!unspent_outputs[1]); // vout[2 + 1]
+        assert!(unspent_outputs[2]); // vout[2 + 2]
+        assert!(unspent_outputs[16]); // vout[16 + 2]
     }
 }

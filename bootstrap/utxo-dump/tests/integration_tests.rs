@@ -56,7 +56,7 @@ fn test_utxo_dump_bitcoin_mainnet_regression() {
 
     // Run utxo-dump binary with Bitcoin setting
     let output = Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--bin",
             "utxo-dump",
@@ -84,7 +84,7 @@ fn test_utxo_dump_bitcoin_mainnet_regression() {
 
     assert!(output_file.exists(), "Output file was not created");
     let file_contents = fs::read(&output_file).expect("Failed to read output file");
-    assert!(file_contents.len() > 0, "Output file is empty");
+    assert!(!file_contents.is_empty(), "Output file is empty");
 
     let mut hasher = Sha256::new();
     hasher.update(&file_contents);
@@ -133,7 +133,7 @@ fn test_utxo_dump_dogecoin_mainnet_regression() {
 
     // Run utxo-dump binary with Dogecoin setting
     let output = Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--bin",
             "utxo-dump",
@@ -161,7 +161,7 @@ fn test_utxo_dump_dogecoin_mainnet_regression() {
 
     assert!(output_file.exists(), "Output file was not created");
     let file_contents = fs::read(&output_file).expect("Failed to read output file");
-    assert!(file_contents.len() > 0, "Output file is empty");
+    assert!(!file_contents.is_empty(), "Output file is empty");
 
     let mut hasher = Sha256::new();
     hasher.update(&file_contents);
@@ -287,7 +287,7 @@ fn find_extracted_chainstate_directory(
 fn test_utxo_dump_help() {
     // Simple test to verify binary runs and shows help
     let output = Command::new("cargo")
-        .args(&["run", "--bin", "utxo-dump", "--", "--help"])
+        .args(["run", "--bin", "utxo-dump", "--", "--help"])
         .current_dir(".")
         .output()
         .expect("Failed to run utxo-dump --help");
