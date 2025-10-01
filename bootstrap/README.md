@@ -29,12 +29,6 @@ Unpack the `tar.gz` file
 tar -xvf dogecoin-1.14.9-x86_64-linux-gnu.tar.gz
 ```
 
-Install the `bitcoin-utxo-dump` utility (requires `go` lang to be installed):
-
-```shell
-go install github.com/in3rsha/bitcoin-utxo-dump@5723696e694ebbfe52687f51e7fc0ce62ba43dc8
-```
-
 ## 2. Setup Environment Variables
 
 ```shell
@@ -59,8 +53,8 @@ Once it's done, run the following:
 ```
 
 Make sure that the output of the above command specifies that you have a chain that has the status "active", and has a
-height of at least `$HEIGHT - 10`. For example, if you set the `$HEIGHT` to 10010 in the earlier steps, the height of
-the chain should be >= 10000. It should look something like this:
+height of at least `$HEIGHT + 10`. For example, if you set the `$HEIGHT` to 10000 in the earlier steps, the height of
+the chain should be >= 10010. It should look something like this:
 
 ```shell
 [
@@ -72,14 +66,6 @@ the chain should be >= 10000. It should look something like this:
   }
 ]
 ```
-
-If the height returned here is < `$HEIGHT - 10`, then run
-
-```shell
-./1_download_state_retry.sh $DOGECOIN_DIR $NETWORK
-```
-
-for a minute or two, which downloads more Dogecoin blocks, and try again.
 
 ## 4. Compute the Dogecoin Canister's State
 
