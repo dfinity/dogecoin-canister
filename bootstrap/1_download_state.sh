@@ -9,7 +9,8 @@ DOGECOIN_D="$1/bin/dogecoind"
 DOGECOIN_CLI="$1/bin/dogecoin-cli"
 NETWORK="$2"
 HEIGHT="$3"
-# Blocks from height $((HEIGHT+1)) to $HEIGHT_STOP_SYNC will be considered unstable
+# Blocks are synced past the target $HEIGHT.
+# Blocks from height $((HEIGHT+1)) to $HEIGHT_STOP_SYNC will be ingested as unstable blocks in memory.
 HEIGHT_STOP_SYNC=$((HEIGHT + 12))
 
 validate_file_exists "$DOGECOIN_D"
