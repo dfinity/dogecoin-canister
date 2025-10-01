@@ -235,7 +235,7 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
     print_section_header(1, "UTXOs");
     if !utxos.is_empty() {
         println!("\nFirst {} UTXO Details:", std::cmp::min(20, utxos.len()));
-        println!("{:<8} {:<66} {:<5} {:<20} {:<15} {}",
+        println!("{:<8} {:<66} {:<5} {:<20} {:<12} {}",
                  "Index", "Txid", "Vout", "Value (DOGE)", "Height", "Script Size");
         println!("{}", "-".repeat(120));
 
@@ -541,7 +541,8 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         println!("\n  Block Header Size Analysis:");
         // Standard header (pure header) is 80 bytes, AuxPow header is larger than 80 bytes
         let standard_size_count = header_sizes.iter().filter(|&&size| size == 80).count();
-        let auxpow_count = header_sizes.iter().filter(|&&size| size > 80).count();
+        let auxpow_sizes: Vec<usize> = header_sizes.into_iter().filter(|&size| size > 80).collect();
+        let auxpow_count = auxpow_sizes.len();
 
         println!("    Standard Header (80 bytes): {} ({:.2}%)",
                  standard_size_count.separated_string(),
@@ -549,7 +550,52 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         println!("    AuxPow Header (>80 bytes):  {} ({:.2}%)",
                  auxpow_count.separated_string(),
                  (auxpow_count as f64 / headers_count as f64) * 100.0);
-    } // TODO(mducroux): add auxpow size distribution analysis
+            let max_auxpow = *sorted_auxpow_sizes.last().unwrap();
+            let mean_auxpow = auxpow_sizes.iter().sum::<usize>() as f64 / auxpow_sizes.len() as f64;
+            let median_auxpow = sorted_auxpow_sizes[sorted_auxpow_sizes.len() / 2];
+
+            println!("\n  AuxPow Size Distribution Analysis:");
+            println!("    AuxPow data size range: {} - {} bytes",
+                     min_auxpow.separated_string(), max_auxpow.separated_string());
+            println!("    Mean AuxPow size: {:.1} bytes", mean_auxpow);
+            println!("    Median AuxPow size: {} bytes", median_auxpow.separated_string());
+
+            // Size range buckets for AuxPow data
+            let small_auxpow = auxpow_sizes.iter().filter(|&&size| size < 500).count();
+            let medium_auxpow = auxpow_sizes.iter().filter(|&&size| size >= 500 && size < 1000).count();
+            let large_auxpow = auxpow_sizes.iter().filter(|&&size| size >= 1000 && size < 2000).count();
+            let xlarge_auxpow = auxpow_sizes.iter().filter(|&&size| size >= 2000).count();
+
+            println!("\n    AuxPow Size Range Distribution:");
+            println!("      Small (<500 bytes):     {} ({:.2}%)",
+                     small_auxpow.separated_string(),
+                     (small_auxpow as f64 / auxpow_count as f64) * 100.0);
+            println!("      Medium (500-999 bytes): {} ({:.2}%)",
+                     medium_auxpow.separated_string(),
+                     (medium_auxpow as f64 / auxpow_count as f64) * 100.0);
+            println!("      Large (1-2KB):          {} ({:.2}%)",
+                     large_auxpow.separated_string(),
+                     (large_auxpow as f64 / auxpow_count as f64) * 100.0);
+            println!("      X-Large (>2KB):         {} ({:.2}%)",
+                     xlarge_auxpow.separated_string(),
+                     (xlarge_auxpow as f64 / auxpow_count as f64) * 100.0);
+
+            // Percentile analysis for AuxPow sizes
+            let auxpow_f64: Vec<f64> = sorted_auxpow_sizes.iter().map(|&x| x as f64).collect();
+            let p25_auxpow = percentile(&auxpow_f64, 25.0) as usize;
+            let p75_auxpow = percentile(&auxpow_f64, 75.0) as usize;
+            let p90_auxpow = percentile(&auxpow_f64, 90.0) as usize;
+            let p95_auxpow = percentile(&auxpow_f64, 95.0) as usize;
+            let p99_auxpow = percentile(&auxpow_f64, 99.0) as usize;
+
+            println!("\n    AuxPow Size Percentiles:");
+            println!("      25th percentile: {} bytes", p25_auxpow.separated_string());
+            println!("      75th percentile: {} bytes", p75_auxpow.separated_string());
+            println!("      90th percentile: {} bytes", p90_auxpow.separated_string());
+            println!("      95th percentile: {} bytes", p95_auxpow.separated_string());
+            println!("      99th percentile: {} bytes", p99_auxpow.separated_string());
+        }
+    }
 
     println!();
 }
