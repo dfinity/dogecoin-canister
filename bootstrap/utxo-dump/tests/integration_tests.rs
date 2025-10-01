@@ -10,15 +10,13 @@
 //! cargo test --test integration_tests
 //! ```
 
-
-
+use flate2::read::GzDecoder;
+use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use sha2::{Digest, Sha256};
-use tempfile::TempDir;
-use flate2::read::GzDecoder;
 use tar::Archive;
+use tempfile::TempDir;
 
 // Expected hash of utxo-dump output for Bitcoin mainnet chainstate data
 // (present as `test-data/chainstate_btc_mainnet_250k.tar.gz`).
@@ -30,7 +28,8 @@ use tar::Archive;
 // ```
 //
 // Note: the result is the same as with running the bitcoin-utxo-dump tool from: <https://github.com/in3rsha/bitcoin-utxo-dump/tree/9b1c015308f779ac529083ed7922cc551b8ddb53>
-const SHA256_OUTPUT_BTC_MAINNET_250K: &str = "a9b6bb33239a6865f9251e2f7d8ed06920782d4735c0b331f2a496061c2e2e0e";
+const SHA256_OUTPUT_BTC_MAINNET_250K: &str =
+    "a9b6bb33239a6865f9251e2f7d8ed06920782d4735c0b331f2a496061c2e2e0e";
 
 // Expected hash of utxo-dump output for Dogecoin mainnet chainstate data
 // (present as `test-data/chainstate_doge_mainnet_350135.tar.gz`).
@@ -41,14 +40,15 @@ const SHA256_OUTPUT_BTC_MAINNET_250K: &str = "a9b6bb33239a6865f9251e2f7d8ed06920
 // ./dogecoin-1.14.9/bin/dogecoind -datadir="./data"
 // tar -czf chainstate_doge_mainnet_350135.tar.gz ./data/chainstate/
 // ```
-const SHA256_OUTPUT_DOGE_MAINNET_350_135: &str = "56a909328102dd8f177e6e264e353f0134b26f073e83e93b3efc89c5ef3daed3";
+const SHA256_OUTPUT_DOGE_MAINNET_350_135: &str =
+    "56a909328102dd8f177e6e264e353f0134b26f073e83e93b3efc89c5ef3daed3";
 
 /// Runs utxo-dump against test chainstate data and verifies the output hash matches the expected value
 #[test]
 fn test_utxo_dump_bitcoin_mainnet_regression() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let output_file = temp_dir.path().join("bitcoin_mainnet_250k_output.csv");
-    
+
     let test_chainstate_path = extract_chainstate_data(&temp_dir, "chainstate_btc_mainnet_250k.tar.gz")
         .expect("Failed to extract Bitcoin mainnet chainstate data. Make sure tests/test-data/chainstate_btc_mainnet_250k.tar.gz exists.");
 
@@ -58,12 +58,16 @@ fn test_utxo_dump_bitcoin_mainnet_regression() {
     let output = Command::new("cargo")
         .args(&[
             "run",
-            "--bin", "utxo-dump",
+            "--bin",
+            "utxo-dump",
             "--",
-            "--db", test_chainstate_path.to_str().unwrap(),
-            "--output", output_file.to_str().unwrap(),
-            "--blockchain", "bitcoin",
-            "--quiet"
+            "--db",
+            test_chainstate_path.to_str().unwrap(),
+            "--output",
+            output_file.to_str().unwrap(),
+            "--blockchain",
+            "bitcoin",
+            "--quiet",
         ])
         .current_dir(".")
         .output()
@@ -79,8 +83,7 @@ fn test_utxo_dump_bitcoin_mainnet_regression() {
     }
 
     assert!(output_file.exists(), "Output file was not created");
-    let file_contents = fs::read(&output_file)
-        .expect("Failed to read output file");
+    let file_contents = fs::read(&output_file).expect("Failed to read output file");
     assert!(file_contents.len() > 0, "Output file is empty");
 
     let mut hasher = Sha256::new();
@@ -89,25 +92,32 @@ fn test_utxo_dump_bitcoin_mainnet_regression() {
     let hash_hex = format!("{:x}", result_hash);
 
     let output_str = String::from_utf8_lossy(&file_contents);
-    
-    assert!(output_str.contains("height,txid,vout"),
-            "Output doesn't contain expected CSV header");
-    
+
+    assert!(
+        output_str.contains("height,txid,vout"),
+        "Output doesn't contain expected CSV header"
+    );
+
     let line_count = output_str.lines().count();
     println!("=== BITCOIN MAINNET TEST RESULTS ===");
     println!("Output file hash: {}", hash_hex);
     println!("Output file size: {} bytes", file_contents.len());
     println!("Total lines: {} (including header)", line_count);
-    
+
     println!("First few lines of output:");
     for (i, line) in output_str.lines().take(10).enumerate() {
         println!("  {}: {}", i + 1, line);
     }
 
-    assert!(line_count > 1, "Should have at least header + some UTXO entries");
-    
-    assert_eq!(hash_hex, SHA256_OUTPUT_BTC_MAINNET_250K,
-        "Bitcoin mainnet output hash does not match expected value");
+    assert!(
+        line_count > 1,
+        "Should have at least header + some UTXO entries"
+    );
+
+    assert_eq!(
+        hash_hex, SHA256_OUTPUT_BTC_MAINNET_250K,
+        "Bitcoin mainnet output hash does not match expected value"
+    );
 }
 
 /// Runs utxo-dump against test chainstate data and verifies the output hash matches the expected value
@@ -125,12 +135,16 @@ fn test_utxo_dump_dogecoin_mainnet_regression() {
     let output = Command::new("cargo")
         .args(&[
             "run",
-            "--bin", "utxo-dump",
+            "--bin",
+            "utxo-dump",
             "--",
-            "--db", test_chainstate_path.to_str().unwrap(),
-            "--output", output_file.to_str().unwrap(),
-            "--blockchain", "dogecoin",
-            "--quiet"
+            "--db",
+            test_chainstate_path.to_str().unwrap(),
+            "--output",
+            output_file.to_str().unwrap(),
+            "--blockchain",
+            "dogecoin",
+            "--quiet",
         ])
         .current_dir(".")
         .output()
@@ -146,8 +160,7 @@ fn test_utxo_dump_dogecoin_mainnet_regression() {
     }
 
     assert!(output_file.exists(), "Output file was not created");
-    let file_contents = fs::read(&output_file)
-        .expect("Failed to read output file");
+    let file_contents = fs::read(&output_file).expect("Failed to read output file");
     assert!(file_contents.len() > 0, "Output file is empty");
 
     let mut hasher = Sha256::new();
@@ -157,8 +170,10 @@ fn test_utxo_dump_dogecoin_mainnet_regression() {
 
     let output_str = String::from_utf8_lossy(&file_contents);
 
-    assert!(output_str.contains("height,txid,vout"),
-            "Output doesn't contain expected CSV header");
+    assert!(
+        output_str.contains("height,txid,vout"),
+        "Output doesn't contain expected CSV header"
+    );
 
     let line_count = output_str.lines().count();
     println!("=== DOGECOIN MAINNET TEST RESULTS ===");
@@ -171,10 +186,15 @@ fn test_utxo_dump_dogecoin_mainnet_regression() {
         println!("  {}: {}", i + 1, line);
     }
 
-    assert!(line_count > 1, "Should have at least header + some UTXO entries");
+    assert!(
+        line_count > 1,
+        "Should have at least header + some UTXO entries"
+    );
 
-    assert_eq!(hash_hex, SHA256_OUTPUT_DOGE_MAINNET_350_135,
-               "Dogecoin mainnet output hash does not match expected value");
+    assert_eq!(
+        hash_hex, SHA256_OUTPUT_DOGE_MAINNET_350_135,
+        "Dogecoin mainnet output hash does not match expected value"
+    );
 }
 
 /// Find the tar.gz file in the tests/test-data directory
@@ -185,25 +205,30 @@ fn find_test_chainstate_path(filename: &str) -> Result<PathBuf, Box<dyn std::err
         PathBuf::from("test-data").join(filename),
         PathBuf::from("../tests/test-data").join(filename),
     ];
-    
+
     for path in &possible_paths {
         if path.exists() {
             return Ok(path.clone());
         }
     }
-    
+
     Err(format!(
         "Test data file '{}' not found. Tried locations:\n{}",
         filename,
-        possible_paths.iter()
+        possible_paths
+            .iter()
             .map(|p| format!("  - {}", p.display()))
             .collect::<Vec<_>>()
             .join("\n")
-    ).into())
+    )
+    .into())
 }
 
 /// Extract the tar.gz file and return the path to the extracted chainstate directory
-fn extract_chainstate_data(temp_dir: &TempDir, filename: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
+fn extract_chainstate_data(
+    temp_dir: &TempDir,
+    filename: &str,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let test_data_path = find_test_chainstate_path(filename)?;
 
     let tar_gz_file = fs::File::open(&test_data_path)?;
@@ -217,36 +242,45 @@ fn extract_chainstate_data(temp_dir: &TempDir, filename: &str) -> Result<PathBuf
 
     let chainstate_path = find_extracted_chainstate_directory(&extract_dir)?;
 
-    println!("Extracted chainstate data to: {}", chainstate_path.display());
+    println!(
+        "Extracted chainstate data to: {}",
+        chainstate_path.display()
+    );
 
     Ok(chainstate_path)
 }
 
 /// Find the extracted chainstate directory
-fn find_extracted_chainstate_directory(extract_dir: &Path) -> Result<PathBuf, Box<dyn std::error::Error>> {
+fn find_extracted_chainstate_directory(
+    extract_dir: &Path,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
     // Look for chainstate directory
     let possible_paths = [
         extract_dir.join("chainstate"),
         extract_dir.join("./chainstate"),
         extract_dir.to_path_buf(), // Might be extracted directly
     ];
-    
+
     for path in &possible_paths {
         if path.exists() && path.is_dir() {
             // Verify it looks like a LevelDB directory
-            if path.join("CURRENT").exists() || 
-               path.read_dir()?.any(|entry| {
-                   entry.map(|e| e.file_name().to_string_lossy().ends_with(".ldb")).unwrap_or(false)
-               }) {
+            if path.join("CURRENT").exists()
+                || path.read_dir()?.any(|entry| {
+                    entry
+                        .map(|e| e.file_name().to_string_lossy().ends_with(".ldb"))
+                        .unwrap_or(false)
+                })
+            {
                 return Ok(path.clone());
             }
         }
     }
-    
+
     Err(format!(
         "Could not find valid chainstate directory in extracted files at: {}",
         extract_dir.display()
-    ).into())
+    )
+    .into())
 }
 
 #[test]
@@ -261,6 +295,12 @@ fn test_utxo_dump_help() {
     assert!(output.status.success(), "Help command should succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("utxo-dump"), "Help should mention the program name");
-    assert!(stdout.contains("blockchain"), "Help should mention blockchain option");
+    assert!(
+        stdout.contains("utxo-dump"),
+        "Help should mention the program name"
+    );
+    assert!(
+        stdout.contains("blockchain"),
+        "Help should mention blockchain option"
+    );
 }

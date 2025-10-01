@@ -1,9 +1,9 @@
-use std::io::{Cursor, Read};
-use bitcoin::{PubkeyHash, PublicKey, ScriptBuf, ScriptHash};
-use bitcoin::hashes::Hash;
 use crate::blockchain::Blockchain;
-use secp256k1::{PublicKey as Secp256k1Pk};
 use crate::serialization::{decompress_amount, read_varint};
+use bitcoin::hashes::Hash;
+use bitcoin::{PubkeyHash, PublicKey, ScriptBuf, ScriptHash};
+use secp256k1::PublicKey as Secp256k1Pk;
+use std::io::{Cursor, Read};
 
 pub(crate) struct DBUtxoValue {
     pub coinbase: u8,
@@ -18,7 +18,7 @@ pub(crate) struct TxOut {
     pub script: ScriptBuf,
     pub nsize: usize,
     pub script_type: String,
-    pub address: String
+    pub address: String,
 }
 
 fn decode_header_code(code: u64) -> (u8, bool, bool, u32) {
@@ -33,11 +33,19 @@ fn decode_header_code(code: u64) -> (u8, bool, bool, u32) {
         (code / 8) + 1
     };
 
-    (coinbase, vout0_unspent, vout1_unspent, mask_nonzero_bytes as u32)
+    (
+        coinbase,
+        vout0_unspent,
+        vout1_unspent,
+        mask_nonzero_bytes as u32,
+    )
 }
 
 // TODO(XC-503): this could be made more efficient by storing only the output with their associated index that are unspent
-fn read_unspentness_mask<R: Read>(reader: &mut R, mask_nonzero_bytes: u32) -> anyhow::Result<Vec<bool>> {
+fn read_unspentness_mask<R: Read>(
+    reader: &mut R,
+    mask_nonzero_bytes: u32,
+) -> anyhow::Result<Vec<bool>> {
     let mut additional_unspent_outputs = vec![];
 
     let mut remaining_nonzero = mask_nonzero_bytes;
@@ -100,11 +108,14 @@ fn deserialize_txout<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyhow
         nsize,
         script_type,
         script,
-        address
+        address,
     })
 }
 
-fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyhow::Result<(ScriptBuf, String, usize, String)> {
+fn deserialize_script<R: Read>(
+    reader: &mut R,
+    blockchain: &Blockchain,
+) -> anyhow::Result<(ScriptBuf, String, usize, String)> {
     // nsize: byte to indicate the type or size of script
     // nsize  -     compressed script (in DB)    - script
     //   0    -            hash160 PK            - P2PKH
@@ -118,7 +129,7 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
     let nsize = read_varint(reader)? as usize;
 
     let mut address = String::new();
-    let script ;
+    let script;
     let script_type;
 
     if nsize < 6 {
@@ -141,7 +152,8 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
 
         match nsize {
             0 => {
-                let pubkey_hash_bytes: [u8; 20] = compressed_data.try_into().expect("Must be 20 Bytes");
+                let pubkey_hash_bytes: [u8; 20] =
+                    compressed_data.try_into().expect("Must be 20 Bytes");
                 let pubkey_hash = PubkeyHash::from_byte_array(pubkey_hash_bytes);
                 address = blockchain.p2pkh_address(pubkey_hash);
                 if blockchain.write_full_script() {
@@ -150,9 +162,10 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
                     script = ScriptBuf::from_bytes(pubkey_hash_bytes.to_vec()); // Write the PK hash only
                 }
                 script_type = "p2pkh".to_string();
-            },
+            }
             1 => {
-                let script_hash_bytes: [u8; 20] = compressed_data.try_into().expect("Must be 20 Bytes");
+                let script_hash_bytes: [u8; 20] =
+                    compressed_data.try_into().expect("Must be 20 Bytes");
                 let script_hash = ScriptHash::from_byte_array(script_hash_bytes);
                 address = blockchain.p2sh_address(script_hash);
                 if blockchain.write_full_script() {
@@ -161,7 +174,7 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
                     script = ScriptBuf::from_bytes(script_hash_bytes.to_vec()); // Write the script hash only
                 }
                 script_type = "p2sh".to_string();
-            },
+            }
             2 | 3 => {
                 if blockchain.write_full_script() {
                     let pk = PublicKey::from_slice(&compressed_data)?;
@@ -170,7 +183,7 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
                     script = ScriptBuf::from_bytes(compressed_data); // Write the compressed PK only
                 }
                 script_type = "p2pk".to_string();
-            },
+            }
             4 | 5 => {
                 compressed_data[0] -= 2; // 4 indicates y:even -> PK prefix must be 0x02, 5 indicates y:odd -> PK prefix must be 0x03
                 let compressed_pk = Secp256k1Pk::from_slice(&compressed_data)?;
@@ -183,7 +196,7 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
                     script = ScriptBuf::from_bytes(uncompressed.to_vec()); // Write the uncompressed PK only
                 }
                 script_type = "p2pk".to_string();
-            },
+            }
             _ => unreachable!(),
         }
     } else {
@@ -191,7 +204,8 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
         let script_size = nsize - 6;
         let mut script_bytes = vec![0u8; script_size];
         reader.read_exact(&mut script_bytes)?;
-        if script_size >= 36 && script_bytes.last() == Some(&174) { // 174 = 0xae = OP_CHECKMULTISIG
+        if script_size >= 36 && script_bytes.last() == Some(&174) {
+            // 174 = 0xae = OP_CHECKMULTISIG
             script_type = "p2ms".to_string();
         } else {
             script_type = "non-standard".to_string();
@@ -202,7 +216,10 @@ fn deserialize_script<R: Read>(reader: &mut R, blockchain: &Blockchain) -> anyho
     Ok((script, script_type, nsize, address))
 }
 
-pub(crate) fn deserialize_db_utxo_legacy(blockchain: &Blockchain, value: Vec<u8>) -> anyhow::Result<Vec<DBUtxoValue>> {
+pub(crate) fn deserialize_db_utxo_legacy(
+    blockchain: &Blockchain,
+    value: Vec<u8>,
+) -> anyhow::Result<Vec<DBUtxoValue>> {
     let mut cursor = Cursor::new(value);
 
     // -------------------
@@ -268,7 +285,7 @@ pub(crate) fn deserialize_db_utxo_legacy(blockchain: &Blockchain, value: Vec<u8>
                 coinbase,
                 height,
                 vout: Some(vout as u32),
-                txout
+                txout,
             };
             db_outputs.push(db_output);
         }
@@ -277,7 +294,10 @@ pub(crate) fn deserialize_db_utxo_legacy(blockchain: &Blockchain, value: Vec<u8>
     Ok(db_outputs)
 }
 
-pub(crate) fn deserialize_db_utxo_modern(blockchain: &Blockchain, value: Vec<u8>) -> anyhow::Result<Vec<DBUtxoValue>> {
+pub(crate) fn deserialize_db_utxo_modern(
+    blockchain: &Blockchain,
+    value: Vec<u8>,
+) -> anyhow::Result<Vec<DBUtxoValue>> {
     let mut cursor = Cursor::new(value);
 
     // -------------------
@@ -313,7 +333,7 @@ pub(crate) fn deserialize_db_utxo_modern(blockchain: &Blockchain, value: Vec<u8>
         nsize,
         script_type,
         script,
-        address
+        address,
     };
 
     Ok(vec![DBUtxoValue {
@@ -351,9 +371,9 @@ mod tests {
 
         // Should only include up to the last set bit (index 16)
         assert_eq!(unspent_outputs.len(), 17); // 0-16 inclusive
-        assert_eq!(unspent_outputs[0], true);  // vout[2 + 0]
+        assert_eq!(unspent_outputs[0], true); // vout[2 + 0]
         assert_eq!(unspent_outputs[1], false); // vout[2 + 1]
-        assert_eq!(unspent_outputs[2], true);  // vout[2 + 2]
+        assert_eq!(unspent_outputs[2], true); // vout[2 + 2]
         assert_eq!(unspent_outputs[16], true); // vout[16 + 2]
     }
 }

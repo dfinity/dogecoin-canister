@@ -1,6 +1,9 @@
-use bitcoin::{PubkeyHash, ScriptHash};
 use crate::chainstate::{deserialize_db_utxo_legacy, deserialize_db_utxo_modern, DBUtxoValue};
-use bitcoin::{Address as BtcAddress, dogecoin::Address as DogeAddress, Network as BtcNetwork, dogecoin::Network as DogeNetwork};
+use bitcoin::{
+    dogecoin::Address as DogeAddress, dogecoin::Network as DogeNetwork, Address as BtcAddress,
+    Network as BtcNetwork,
+};
+use bitcoin::{PubkeyHash, ScriptHash};
 
 const DB_KEYS_UTXOS: char = 'C'; // 0x43 = 67
 const DB_KEYS_UTXOS_LEGACY: char = 'c'; // 0x63 = 99
@@ -28,12 +31,8 @@ impl Blockchain {
 
     pub(crate) fn p2pkh_address(&self, pubkey_hash: PubkeyHash) -> String {
         match self {
-            Blockchain::Bitcoin(network) => {
-                BtcAddress::p2pkh(pubkey_hash, *network).to_string()
-            }
-            Blockchain::Dogecoin(network) => {
-                DogeAddress::p2pkh(pubkey_hash, *network).to_string()
-            }
+            Blockchain::Bitcoin(network) => BtcAddress::p2pkh(pubkey_hash, *network).to_string(),
+            Blockchain::Dogecoin(network) => DogeAddress::p2pkh(pubkey_hash, *network).to_string(),
         }
     }
 
@@ -50,19 +49,15 @@ impl Blockchain {
 
     pub(crate) fn deserialize_db_utxo(&self, value: Vec<u8>) -> anyhow::Result<Vec<DBUtxoValue>> {
         match self {
-            Blockchain::Bitcoin(_) => {
-                Ok(deserialize_db_utxo_modern(self, value)?)
-            }
-            Blockchain::Dogecoin(_) => {
-                Ok(deserialize_db_utxo_legacy(self, value)?)
-            }
+            Blockchain::Bitcoin(_) => Ok(deserialize_db_utxo_modern(self, value)?),
+            Blockchain::Dogecoin(_) => Ok(deserialize_db_utxo_legacy(self, value)?),
         }
     }
 
     pub(crate) fn write_full_script(&self) -> bool {
         match self {
             Blockchain::Bitcoin(_) => false,
-            Blockchain::Dogecoin(_) => true
+            Blockchain::Dogecoin(_) => true,
         }
     }
 }

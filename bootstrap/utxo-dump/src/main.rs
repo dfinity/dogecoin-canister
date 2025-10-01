@@ -1,34 +1,33 @@
-mod serialization;
 mod blockchain;
 mod chainstate;
+mod serialization;
 #[cfg(target_os = "macos")]
 mod utils;
 
-use bitcoin::{Network as BtcNetwork, dogecoin::Network as DogeNetwork};
+use bitcoin::{dogecoin::Network as DogeNetwork, Network as BtcNetwork};
 use std::collections::{BTreeMap, HashMap};
 use std::io::{BufWriter, Cursor, Write};
 
+use blockchain::Blockchain;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use blockchain::Blockchain;
 
+use crate::serialization::read_varint;
+#[cfg(target_os = "macos")]
+use crate::utils::set_macos_rlimit;
 use anyhow::{Context, Result};
 use clap::{Parser, ValueEnum};
 use rusty_leveldb::{LdbIterator, Options, DB};
 use signal_hook::{consts::TERM_SIGNALS, iterator::Signals};
-use crate::serialization::read_varint;
-#[cfg(target_os = "macos")]
-use crate::utils::set_macos_rlimit;
 
 const VERSION: &str = "1.0.0";
 const FIELDS_ALLOWED: [&str; 10] = [
-    "count", "txid", "vout", "height", "coinbase", "amount", "nsize", "script", "type",
-    "address",
+    "count", "txid", "vout", "height", "coinbase", "amount", "nsize", "script", "type", "address",
 ];
 
-const DB_KEYS_OBFUSCATE_KEY_PREFIX: [u8;2] = [0x0e, 0x00];
+const DB_KEYS_OBFUSCATE_KEY_PREFIX: [u8; 2] = [0x0e, 0x00];
 const DB_KEYS_OBFUSCATE_KEY: &str = "obfuscate_key";
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
@@ -79,7 +78,6 @@ struct Args {
     quiet: bool,
 }
 
-
 impl Args {
     fn to_blockchain(&self) -> Blockchain {
         match self.blockchain {
@@ -125,14 +123,20 @@ fn main() -> Result<()> {
         .write(true)
         .create_new(true)
         .open(&args.output_file)
-        .with_context(|| format!("Output file {} already exists or cannot be created", args.output_file))?;
+        .with_context(|| {
+            format!(
+                "Output file {} already exists or cannot be created",
+                args.output_file
+            )
+        })?;
 
     let mut writer = BufWriter::new(output_file);
 
     if !args.quiet {
         println!(
             "Processing {} and writing results to {}",
-            args.chainstate.display(), args.output_file
+            args.chainstate.display(),
+            args.output_file
         );
     }
 
@@ -169,8 +173,11 @@ fn main() -> Result<()> {
     db_iter.reset();
     let (key, value) = db_iter.next().unwrap();
     let (prefix, key) = key.split_at(2);
-    let key_str= String::from_utf8(key.to_vec()).context("Failed to convert key bytes to valid UTF-8")?;
-    let obfuscate_key = if prefix == DB_KEYS_OBFUSCATE_KEY_PREFIX && key_str == DB_KEYS_OBFUSCATE_KEY {
+    let key_str =
+        String::from_utf8(key.to_vec()).context("Failed to convert key bytes to valid UTF-8")?;
+    let obfuscate_key = if prefix == DB_KEYS_OBFUSCATE_KEY_PREFIX
+        && key_str == DB_KEYS_OBFUSCATE_KEY
+    {
         if !args.quiet {
             println!(">>> Obfuscation key: {}", hex::encode(&value[1..]));
         }
@@ -235,7 +242,8 @@ fn main() -> Result<()> {
 
                     // vout
                     if is_selected("vout") {
-                        if key.len() >= 34 { // Modern: vout is encoded in the key
+                        if key.len() >= 34 {
+                            // Modern: vout is encoded in the key
                             anyhow::ensure!(
                                 matches!(blockchain, Blockchain::Bitcoin(_)),
                                 "Expected Bitcoin blockchain for modern vout encoding"
@@ -244,7 +252,8 @@ fn main() -> Result<()> {
                             let mut cursor = Cursor::new(vout_bytes);
                             let vout = read_varint(&mut cursor)?;
                             csv_output.insert("vout", vout.to_string());
-                        } else if key.len() == 33 { // Legacy: vout is encoded in the value
+                        } else if key.len() == 33 {
+                            // Legacy: vout is encoded in the value
                             anyhow::ensure!(
                                 matches!(blockchain, Blockchain::Dogecoin(_)),
                                 "Expected Dogecoin blockchain for legacy vout encoding"
@@ -281,8 +290,7 @@ fn main() -> Result<()> {
                     }
 
                     // address and script type processing
-                    if is_selected("address") || is_selected("type")
-                    {
+                    if is_selected("address") || is_selected("type") {
                         let script_type = output.txout.script_type;
                         if let Some(count) = script_type_count.get_mut(script_type.as_str()) {
                             *count += 1;
@@ -325,7 +333,11 @@ fn main() -> Result<()> {
         println!("Total UTXOs: {}", utxo_count);
 
         if is_selected("amount") {
-            println!("Total {}:   {:.8}", blockchain.ticker(), total_amount as f64 / 100_000_000.0);
+            println!(
+                "Total {}:   {:.8}",
+                blockchain.ticker(),
+                total_amount as f64 / 100_000_000.0
+            );
         }
 
         if is_selected("type") {
@@ -340,7 +352,6 @@ fn main() -> Result<()> {
 }
 
 fn validate_and_parse_fields(fields_str: &str) -> Result<BTreeMap<String, bool>> {
-
     let mut fields_selected = BTreeMap::new();
     for field in &FIELDS_ALLOWED {
         fields_selected.insert(field.to_string(), false);
@@ -361,88 +372,100 @@ fn validate_and_parse_fields(fields_str: &str) -> Result<BTreeMap<String, bool>>
     Ok(fields_selected)
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-    use bitcoin::PubkeyHash;
-    use crate::chainstate::deserialize_db_utxo_legacy;
     use super::*;
+    use crate::chainstate::deserialize_db_utxo_legacy;
+    use bitcoin::PubkeyHash;
+    use std::str::FromStr;
 
     #[test]
     fn test_deserialize_db_utxo_legacy() {
         /*
-        * Example: 0104835800816115944e077fe7c803cfa57f29b36bf87c1d358bb85e
-        *          <><><--------------------------------------------><---->
-        *          |  \                  |                             /
-        *    version   code             vout[1]                  height
-        *
-        *    - version = 1
-        *    - code = 4 (vout[1] is not spent, and 0 non-zero bytes of bitvector follow)
-        *    - unspentness bitvector: as 0 non-zero bytes follow, it has length 0
-        *    - vout[1]: 835800816115944e077fe7c803cfa57f29b36bf87c1d35
-        *               * 8358: compact amount representation for 60000000000 (600 BTC)
-        *               * 00: special txout type pay-to-pubkey-hash
-        *               * 816115944e077fe7c803cfa57f29b36bf87c1d35: address uint160
-        *    - height = 203998
-        *
-        * Ref: <https://github.com/dogecoin/dogecoin/blob/7dac1e5e9e887f5f6ff146e812a05bd3bf281eae/src/coins.h#L40>
-        */
+         * Example: 0104835800816115944e077fe7c803cfa57f29b36bf87c1d358bb85e
+         *          <><><--------------------------------------------><---->
+         *          |  \                  |                             /
+         *    version   code             vout[1]                  height
+         *
+         *    - version = 1
+         *    - code = 4 (vout[1] is not spent, and 0 non-zero bytes of bitvector follow)
+         *    - unspentness bitvector: as 0 non-zero bytes follow, it has length 0
+         *    - vout[1]: 835800816115944e077fe7c803cfa57f29b36bf87c1d35
+         *               * 8358: compact amount representation for 60000000000 (600 BTC)
+         *               * 00: special txout type pay-to-pubkey-hash
+         *               * 816115944e077fe7c803cfa57f29b36bf87c1d35: address uint160
+         *    - height = 203998
+         *
+         * Ref: <https://github.com/dogecoin/dogecoin/blob/7dac1e5e9e887f5f6ff146e812a05bd3bf281eae/src/coins.h#L40>
+         */
 
         let blockchain = Blockchain::Bitcoin(BtcNetwork::Bitcoin);
         let hex_data = "0104835800816115944e077fe7c803cfa57f29b36bf87c1d358bb85e";
-        let outputs = deserialize_db_utxo_legacy(&blockchain, hex::decode(hex_data).unwrap()).unwrap();
+        let outputs =
+            deserialize_db_utxo_legacy(&blockchain, hex::decode(hex_data).unwrap()).unwrap();
         assert_eq!(outputs.len(), 1);
         assert_eq!(outputs[0].vout.unwrap(), 1);
         assert_eq!(outputs[0].coinbase, 0);
         assert_eq!(outputs[0].txout.amount, 60000000000);
         assert_eq!(outputs[0].txout.script_type, "p2pkh");
         let pubkey_hash = PubkeyHash::from_str("816115944e077fe7c803cfa57f29b36bf87c1d35").unwrap();
-        assert_eq!(outputs[0].txout.address, blockchain.p2pkh_address(pubkey_hash));
+        assert_eq!(
+            outputs[0].txout.address,
+            blockchain.p2pkh_address(pubkey_hash)
+        );
         assert_eq!(outputs[0].txout.nsize, 0);
         assert_eq!(outputs[0].height, 203998);
 
         /*
-        * Example: 0109044086ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4eebbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa486af3b
-        *          <><><--><--------------------------------------------------><----------------------------------------------><---->
-        *         /  \   \                     |                                                           |                     /
-        *  version  code  unspentness       vout[4]                                                     vout[16]           height
-        *
-        *  - version = 1
-        *  - code = 9 (coinbase, neither vout[0] or vout[1] are unspent,
-        *                2 (1, +1 because both bit 1 and bit 2 are unset) non-zero bitvector bytes follow)
-        *  - unspentness bitvector: bits 2 (0x04) and 14 (0x4000) are set, so vout[2+2] and vout[14+2] are unspent
-        *  - vout[4]: 86ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4ee
-        *             * 86ef97d579: compact amount representation for 234925952 (2.35 BTC)
-        *             * 00: special txout type pay-to-pubkey-hash
-        *             * 61b01caab50f1b8e9c50a5057eb43c2d9563a4ee: address uint160
-        *  - vout[16]: bbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa4
-        *              * bbd123: compact amount representation for 110397 (0.001 BTC)
-        *              * 00: special txout type pay-to-pubkey-hash
-        *              * 8c988f1a4a4de2161e0f50aac7f17e7f9555caa4: address uint160
-        *  - height = 120891
-        *
-        * Ref: <https://github.com/dogecoin/dogecoin/blob/7dac1e5e9e887f5f6ff146e812a05bd3bf281eae/src/coins.h#L55>
-        */
+         * Example: 0109044086ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4eebbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa486af3b
+         *          <><><--><--------------------------------------------------><----------------------------------------------><---->
+         *         /  \   \                     |                                                           |                     /
+         *  version  code  unspentness       vout[4]                                                     vout[16]           height
+         *
+         *  - version = 1
+         *  - code = 9 (coinbase, neither vout[0] or vout[1] are unspent,
+         *                2 (1, +1 because both bit 1 and bit 2 are unset) non-zero bitvector bytes follow)
+         *  - unspentness bitvector: bits 2 (0x04) and 14 (0x4000) are set, so vout[2+2] and vout[14+2] are unspent
+         *  - vout[4]: 86ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4ee
+         *             * 86ef97d579: compact amount representation for 234925952 (2.35 BTC)
+         *             * 00: special txout type pay-to-pubkey-hash
+         *             * 61b01caab50f1b8e9c50a5057eb43c2d9563a4ee: address uint160
+         *  - vout[16]: bbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa4
+         *              * bbd123: compact amount representation for 110397 (0.001 BTC)
+         *              * 00: special txout type pay-to-pubkey-hash
+         *              * 8c988f1a4a4de2161e0f50aac7f17e7f9555caa4: address uint160
+         *  - height = 120891
+         *
+         * Ref: <https://github.com/dogecoin/dogecoin/blob/7dac1e5e9e887f5f6ff146e812a05bd3bf281eae/src/coins.h#L55>
+         */
 
         let blockchain = Blockchain::Bitcoin(BtcNetwork::Bitcoin);
         let hex_data = "0109044086ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4eebbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa486af3b";
-        let outputs = deserialize_db_utxo_legacy(&blockchain, hex::decode(hex_data).unwrap()).unwrap();
+        let outputs =
+            deserialize_db_utxo_legacy(&blockchain, hex::decode(hex_data).unwrap()).unwrap();
         assert_eq!(outputs.len(), 2);
         assert_eq!(outputs[0].vout.unwrap(), 4);
         assert_eq!(outputs[0].coinbase, 1);
         assert_eq!(outputs[0].txout.amount, 234925952);
         assert_eq!(outputs[0].txout.script_type, "p2pkh");
-        let pubkey_hash_0 = PubkeyHash::from_str("61b01caab50f1b8e9c50a5057eb43c2d9563a4ee").unwrap();
-        assert_eq!(outputs[0].txout.address, blockchain.p2pkh_address(pubkey_hash_0));
+        let pubkey_hash_0 =
+            PubkeyHash::from_str("61b01caab50f1b8e9c50a5057eb43c2d9563a4ee").unwrap();
+        assert_eq!(
+            outputs[0].txout.address,
+            blockchain.p2pkh_address(pubkey_hash_0)
+        );
         assert_eq!(outputs[0].txout.nsize, 0);
         assert_eq!(outputs[0].height, 120891);
         assert_eq!(outputs[1].vout.unwrap(), 16);
         assert_eq!(outputs[1].coinbase, 1);
         assert_eq!(outputs[1].txout.amount, 110397);
         assert_eq!(outputs[1].txout.script_type, "p2pkh");
-        let pubkey_hash_1 = PubkeyHash::from_str("8c988f1a4a4de2161e0f50aac7f17e7f9555caa4").unwrap();
-        assert_eq!(outputs[1].txout.address, blockchain.p2pkh_address(pubkey_hash_1));
+        let pubkey_hash_1 =
+            PubkeyHash::from_str("8c988f1a4a4de2161e0f50aac7f17e7f9555caa4").unwrap();
+        assert_eq!(
+            outputs[1].txout.address,
+            blockchain.p2pkh_address(pubkey_hash_1)
+        );
         assert_eq!(outputs[1].txout.nsize, 0);
         assert_eq!(outputs[1].height, 120891);
     }

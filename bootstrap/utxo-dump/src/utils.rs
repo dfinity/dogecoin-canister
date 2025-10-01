@@ -1,7 +1,7 @@
 #[cfg(target_os = "macos")]
 use {
+    crate::Args,
     libc::{rlimit, setrlimit, RLIMIT_NOFILE},
-    crate::Args
 };
 
 #[cfg(target_os = "macos")]
