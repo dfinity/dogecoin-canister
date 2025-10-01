@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Extracting data from stable memory...");
     }
 
-    let mut canister_data = reader.extract_state_data();
+    let mut canister_data = reader.read_state_data();
 
     // Extract large UTXOs from the deserialized canister state
     let mut utxos = canister_data.utxos.clone();
@@ -131,7 +131,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// This function checks several invariants that should hold for valid canister state:
 /// - No UTXOs should exist at height 0 (they are unspendable by consensus rules)
 /// - No addresses should have zero balance
-/// - Address counts should be consistent between UTXOs and balances
 /// - Block headers should be at least 80 bytes
 /// - Block headers count should match block heights count
 /// - Block headers and heights should have no duplicated entries
@@ -238,7 +237,7 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         println!("\nFirst {} UTXO Details:", std::cmp::min(20, utxos.len()));
         println!("{:<8} {:<66} {:<5} {:<20} {:<15} {}",
                  "Index", "Txid", "Vout", "Value (DOGE)", "Height", "Script Size");
-        println!("{}", "-".repeat(132));
+        println!("{}", "-".repeat(120));
 
         for (i, utxo) in utxos.iter().take(20).enumerate() {
             let txid_hex = {
@@ -249,7 +248,7 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
 
             let value_doge = utxo.txout.value as f64 / 100_000_000.0;
 
-            println!("{:<8} {:<66} {:<5} {:<20} {:<15} {}",
+            println!("{:<8} {:<66} {:<5} {:<20} {:<12} {}",
                      i + 1,
                      txid_hex,
                      utxo.outpoint.vout,
@@ -324,7 +323,7 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         println!("\nFirst {} Address UTXO Details:", std::cmp::min(20, data.address_utxos.len()));
         println!("{:<8} {:<40} {:<66} {:<5} {}",
                  "Index", "Address", "Txid", "Vout", "Height");
-        println!("{}", "-".repeat(130));
+        println!("{}", "-".repeat(120));
 
         for (i, addr_utxo) in data.address_utxos.iter().take(20).enumerate() {
             let txid_hex = {
@@ -410,10 +409,10 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         }
         
         println!("\n  Address Type Distribution:");
-        println!("    P2PKH (D*):     {} ({:.2}%)",
+        println!("    P2PKH (D*):    {} ({:.2}%)",
                  p2pkh_count.separated_string(),
                  (p2pkh_count as f64 / total_entries as f64) * 100.0);
-        println!("    P2SH (A*/9*):    {} ({:.2}%)",
+        println!("    P2SH (A*/9*):  {} ({:.2}%)",
                  p2sh_count.separated_string(),
                  (p2sh_count as f64 / total_entries as f64) * 100.0);
         if other_count > 0 {
@@ -469,13 +468,13 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         let whale_count = balances_satoshis.iter().filter(|&&b| b >= large_threshold).count();
 
         println!("\n  Balance Range Distribution:");
-        println!("    Dust (<0.1 DOGE):     {} ({:.2}%)",
+        println!("    Dust (<0.1 DOGE):      {} ({:.2}%)",
                  dust_count.separated_string(),
                  (dust_count as f64 / balance_count as f64) * 100.0);
-        println!("    Small (0.1-100 DOGE):   {} ({:.2}%)",
+        println!("    Small (0.1-100 DOGE):  {} ({:.2}%)",
                  small_count.separated_string(),
                  (small_count as f64 / balance_count as f64) * 100.0);
-        println!("    Medium (100-10K DOGE):   {} ({:.2}%)",
+        println!("    Medium (100-10K DOGE): {} ({:.2}%)",
                  medium_count.separated_string(),
                  (medium_count as f64 / balance_count as f64) * 100.0);
         println!("    Large (10K-10M DOGE):  {} ({:.2}%)",
@@ -544,13 +543,13 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         let standard_size_count = header_sizes.iter().filter(|&&size| size == 80).count();
         let auxpow_count = header_sizes.iter().filter(|&&size| size > 80).count();
 
-        println!("    Standard Header (80 bytes):  {} ({:.2}%)",
+        println!("    Standard Header (80 bytes): {} ({:.2}%)",
                  standard_size_count.separated_string(),
                  (standard_size_count as f64 / headers_count as f64) * 100.0);
-        println!("    AuxPow Header (>80 bytes): {} ({:.2}%)",
+        println!("    AuxPow Header (>80 bytes):  {} ({:.2}%)",
                  auxpow_count.separated_string(),
                  (auxpow_count as f64 / headers_count as f64) * 100.0);
-    }
+    } // TODO(mducroux): add auxpow size distribution analysis
 
     println!();
 }
