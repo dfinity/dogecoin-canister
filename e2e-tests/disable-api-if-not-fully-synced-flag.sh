@@ -28,9 +28,9 @@ dfx deploy --no-wallet dogecoin --argument "(record {
 # should reject all requests.
 wait_until_stable_height 2 60
 
-# bitcoin_get_balance should panic.
+# dogecoin_get_balance should panic.
 set +e
-MSG=$(dfx canister call dogecoin bitcoin_get_balance '(record {
+MSG=$(dfx canister call dogecoin dogecoin_get_balance '(record {
   network = variant { regtest };
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })' 2>&1);
@@ -41,9 +41,9 @@ if ! [[ $MSG = *"Canister state is not fully synced."* ]]; then
   exit 1
 fi
 
-# bitcoin_get_balance_query should panic.
+# dogecoin_get_balance_query should panic.
 set +e
-MSG=$(dfx canister call --query dogecoin bitcoin_get_balance_query '(record {
+MSG=$(dfx canister call --query dogecoin dogecoin_get_balance_query '(record {
   network = variant { regtest };
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })' 2>&1);
@@ -54,9 +54,9 @@ if ! [[ $MSG = *"Canister state is not fully synced."* ]]; then
   exit 1
 fi
 
-# bitcoin_get_utxos should panic.
+# dogecoin_get_utxos should panic.
 set +e
-MSG=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
+MSG=$(dfx canister call dogecoin dogecoin_get_utxos '(record {
   network = variant { regtest };
   address = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
 })' 2>&1);
@@ -67,9 +67,9 @@ if ! [[ $MSG = *"Canister state is not fully synced."* ]]; then
   exit 1
 fi
 
-# bitcoin_get_block_headers should panic.
+# dogecoin_get_block_headers should panic.
 set +e
-MSG=$(dfx canister call dogecoin bitcoin_get_block_headers '(record {
+MSG=$(dfx canister call dogecoin dogecoin_get_block_headers '(record {
   start_height = 0;
   network = variant { regtest };
 })' 2>&1);
@@ -80,9 +80,9 @@ if ! [[ $MSG = *"Canister state is not fully synced."* ]]; then
   exit 1
 fi
 
-# bitcoin_get_utxos_query should panic.
+# dogecoin_get_utxos_query should panic.
 set +e
-MSG=$(dfx canister call --query dogecoin bitcoin_get_utxos_query '(record {
+MSG=$(dfx canister call --query dogecoin dogecoin_get_utxos_query '(record {
   network = variant { regtest };
   address = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
 })' 2>&1);
@@ -93,9 +93,9 @@ if ! [[ $MSG = *"Canister state is not fully synced."* ]]; then
   exit 1
 fi
 
-# bitcoin_get_current_fee_percentiles should panic.
+# dogecoin_get_current_fee_percentiles should panic.
 set +e
-MSG=$(dfx canister call dogecoin bitcoin_get_current_fee_percentiles '(record {
+MSG=$(dfx canister call dogecoin dogecoin_get_current_fee_percentiles '(record {
   network = variant { regtest };
 })' 2>&1);
 set -e
@@ -125,7 +125,7 @@ dfx deploy --no-wallet dogecoin --argument "(record {
 # Wait until the ingestion of stable blocks is complete.
 wait_until_main_chain_height 2 60
 
-BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
+BALANCE=$(dfx canister call dogecoin dogecoin_get_balance '(record {
   network = variant { regtest };
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
@@ -136,7 +136,7 @@ if ! [[ $BALANCE = "(2 : nat64)" ]]; then
 fi
 
 # Verify that we are able to fetch the UTXOs of one address.
-UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
+UTXOS=$(dfx canister call dogecoin dogecoin_get_utxos '(record {
   network = variant { regtest };
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
@@ -147,7 +147,7 @@ if ! [[ $(num_utxos "$UTXOS") = 2 ]]; then
   exit 1
 fi
 
-FEES=$(dfx canister call dogecoin bitcoin_get_current_fee_percentiles '(record {
+FEES=$(dfx canister call dogecoin dogecoin_get_current_fee_percentiles '(record {
   network = variant { regtest };
 })')
 
@@ -157,7 +157,7 @@ if ! [[ $FEES = "(vec {})" ]]; then
 fi
 
 # Verify that we are able to fetch block headers.
-MSG=$(dfx canister call dogecoin bitcoin_get_block_headers '(record {
+MSG=$(dfx canister call dogecoin dogecoin_get_block_headers '(record {
   start_height = 0;
   network = variant { regtest };
 })');

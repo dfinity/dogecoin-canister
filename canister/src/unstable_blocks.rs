@@ -399,7 +399,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
 
     // Prevent excessive chain growth in testnets where difficulty resets.
     if network == Network::Testnet || network == Network::Regtest {
-        // The difficulty in the Bitcoin testnet/regtest can be reset to the minimum
+        // The difficulty in the Dogecoin testnet/regtest can be reset to the minimum
         // in case a block hasn't been found for 20 minutes. This can be problematic.
         // Consider the following scenario:
         //

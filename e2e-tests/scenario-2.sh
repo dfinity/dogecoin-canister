@@ -26,7 +26,7 @@ dfx deploy --no-wallet dogecoin --argument "(record {
 # Wait until the ingestion of stable blocks is complete.
 wait_until_main_chain_height 4 60
 
-BALANCE=$(dfx canister call dogecoin bitcoin_get_balance '(record {
+BALANCE=$(dfx canister call dogecoin dogecoin_get_balance '(record {
   network = variant { regtest };
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
@@ -40,7 +40,7 @@ fi
 # We temporarily pause outputting the commands to the terminal as
 # this command would print thousands of UTXOs.
 set +x
-UTXOS=$(dfx canister call dogecoin bitcoin_get_utxos '(record {
+UTXOS=$(dfx canister call dogecoin dogecoin_get_utxos '(record {
   network = variant { regtest };
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
