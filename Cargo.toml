@@ -19,6 +19,7 @@ members = [
     "test-utils",
     "ic-http",
     "ic-http/example_canister/src/canister_backend",
+    "bootstrap/utxo-dump",
 ]
 
 resolver = "2"
