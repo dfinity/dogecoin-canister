@@ -53,8 +53,7 @@ START_TIME=$(date +%s)
 echo "Fetching block headers up to height $STABLE_HEIGHT..."
 for ((height = 0; height <= STABLE_HEIGHT; height++)); do
     BLOCK_HASH=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash "$height")
-    # Retrieve the block header without AuxPow information (first 80 bytes only)
-    BLOCK_HEADER=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockheader "$BLOCK_HASH" false | head -c160)
+    BLOCK_HEADER=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockheader "$BLOCK_HASH" false)
 
     # Append the block hash and header to the file.
     echo "$BLOCK_HASH,$BLOCK_HEADER" >> "$BLOCK_HEADERS_FILE"
