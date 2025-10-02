@@ -1,4 +1,4 @@
-//! A script for building the main state struct of the Bitcoin canister.
+//! A script for building the main state struct of the Dogecoin canister.
 //!
 //! Example run:
 //!
@@ -44,7 +44,7 @@ struct Args {
     #[clap(long, value_hint = clap::ValueHint::DirPath)]
     block_headers: PathBuf,
 
-    /// The bitcoin network.
+    /// The Dogecoin network.
     #[clap(long)]
     network: Network,
 

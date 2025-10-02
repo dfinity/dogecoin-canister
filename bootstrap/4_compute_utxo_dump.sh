@@ -13,14 +13,15 @@ validate_network "$NETWORK"
 if [[ "$NETWORK" == "mainnet" ]]; then
     CHAIN_STATE_DIR=$DATA_DIR/chainstate
 elif [[ "$NETWORK" == "testnet" ]]; then
-    CHAIN_STATE_DIR=$DATA_DIR/testnet4/chainstate
+    CHAIN_STATE_DIR=$DATA_DIR/testnet3/chainstate
 else
     echo "Error: unknown network $NETWORK, can't define CHAIN_STATE_DIR."
     exit 1
 fi
 
 echo "Generating the UTXO dump for $NETWORK..."
-~/go/bin/bitcoin-utxo-dump -db "$CHAIN_STATE_DIR" -o "$UTXO_DUMP" -f "height,txid,vout,amount,type,address,script,coinbase,nsize"
+cargo run -p utxo-dump --release --bin utxo-dump -- \
+   --db "$CHAIN_STATE_DIR" --output "$UTXO_DUMP" --blockchain "dogecoin"
 
 echo "Removing the headers from the file..."
 tail -n +2 "$UTXO_DUMP" > "$UTXO_DUMP.tmp" && mv "$UTXO_DUMP.tmp" "$UTXO_DUMP"

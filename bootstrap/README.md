@@ -1,6 +1,7 @@
-# Computing the Bitcoin State
+# Computing the Dogecoin State
 
-Rather than syncing the Bitcoin canister from genesis, which can take several weeks, the state of the canister can be computed offline much more quickly with the help of `bitcoind`.
+Rather than syncing the Dogecoin canister from genesis, which can take several weeks, the state of the canister can be
+computed offline much more quickly with the help of `dogecoind`.
 
 ## Requirements
 
@@ -8,7 +9,7 @@ Rather than syncing the Bitcoin canister from genesis, which can take several we
 * \>= 16GiB RAM
 * \>= 100GB of disk space
 
-## 1. Download Bitcoin Core
+## 1. Download Dogecoin Core
 
 Go to `bootstrap` directory:
 
@@ -16,16 +17,16 @@ Go to `bootstrap` directory:
 cd ./bootstrap
 ```
 
-Download Bitcoin Core 28.0
+Download Dogecoin Core 1.14.9
 
 ```shell
-curl -O https://bitcoincore.org/bin/bitcoin-core-28.0/bitcoin-28.0-x86_64-linux-gnu.tar.gz
+curl -L -O https://github.com/dogecoin/dogecoin/releases/download/v1.14.9/dogecoin-1.14.9-x86_64-linux-gnu.tar.gz
 ```
 
 Unpack the `tar.gz` file
 
 ```shell
-tar -xvf bitcoin-28.0-x86_64-linux-gnu.tar.gz
+tar -xvf dogecoin-1.14.9-x86_64-linux-gnu.tar.gz
 ```
 
 Install the `bitcoin-utxo-dump` utility (requires `go` lang to be installed):
@@ -37,27 +38,29 @@ go install github.com/in3rsha/bitcoin-utxo-dump@5723696e694ebbfe52687f51e7fc0ce6
 ## 2. Setup Environment Variables
 
 ```shell
-BITCOIN_DIR=./bitcoin-28.0
+DOGECOIN_DIR=./dogecoin-1.14.9
 NETWORK=<mainnet or testnet>
 HEIGHT=<height of the state you want to compute>
 STABILITY_THRESHOLD=<desired stability threshold>
 ```
 
-## 3. Download the Bitcoin state
+## 3. Download the Dogecoin state
 
-Run `1_download_state.sh`, which downloads the bitcoin state. This can several hours.
+Run `1_download_state.sh`, which downloads the dogecoin state. This can several hours.
 
 ```shell
-./1_download_state.sh $BITCOIN_DIR $NETWORK $HEIGHT
+./1_download_state.sh $DOGECOIN_DIR $NETWORK $HEIGHT
 ```
 
 Once it's done, run the following:
 
 ```shell
-./check_chaintip.sh $BITCOIN_DIR $NETWORK
+./check_chaintip.sh $DOGECOIN_DIR $NETWORK
 ```
 
-Make sure that the output of the above command specifies that you have a chain that has the status "active", and has a height of at least `$HEIGHT - 10`. For example, if you set the `$HEIGHT` to 10010 in the earlier steps, the height of the chain should be >= 10000. It should look something like this:
+Make sure that the output of the above command specifies that you have a chain that has the status "active", and has a
+height of at least `$HEIGHT - 10`. For example, if you set the `$HEIGHT` to 10010 in the earlier steps, the height of
+the chain should be >= 10000. It should look something like this:
 
 ```shell
 [
@@ -73,19 +76,19 @@ Make sure that the output of the above command specifies that you have a chain t
 If the height returned here is < `$HEIGHT - 10`, then run
 
 ```shell
-./1_download_state_retry.sh $BITCOIN_DIR $NETWORK
+./1_download_state_retry.sh $DOGECOIN_DIR $NETWORK
 ```
 
-for a minute or two, which downloads more Bitcoin blocks, and try again.
+for a minute or two, which downloads more Dogecoin blocks, and try again.
 
-## 4. Compute the Bitcoin Canister's State
+## 4. Compute the Dogecoin Canister's State
 
 ```shell
-./2_compute_unstable_blocks.sh $BITCOIN_DIR $NETWORK $HEIGHT
+./2_compute_unstable_blocks.sh $DOGECOIN_DIR $NETWORK $HEIGHT
 ```
 
 ```shell
-./3_compute_block_headers.sh $BITCOIN_DIR $NETWORK $HEIGHT
+./3_compute_block_headers.sh $DOGECOIN_DIR $NETWORK $HEIGHT
 ```
 
 ```shell
@@ -101,6 +104,7 @@ for a minute or two, which downloads more Bitcoin blocks, and try again.
 ```
 
 (Optional) check output data size:
+
 ```shell
 $ du -sh ./output/*
 13M     ./output/block_headers
@@ -113,18 +117,20 @@ $ du -sh ./output/*
 469M    ./output/utxodump_shuffled.csv
 ```
 
-Once all these steps are complete, the canister's state will be available in this directory with the name `canister_state.bin`.
+Once all these steps are complete, the canister's state will be available in this directory with the name
+`canister_state.bin`.
 
 ## 5. Compute the State Hashes
 
-A canister's state is uploaded in "chunks" through ingress messages to the `uploader` canister. 
+A canister's state is uploaded in "chunks" through ingress messages to the `uploader` canister.
 The required chunk hashes can be computed as follows:
 
 ```shell
 cargo run --release --example compute_hashes -- --file ./output/canister_state.bin > chunk_hashes.txt
 ```
 
-The hashes of each chunk are saved in `./bootstrap/chunk_hashes.txt` and can be used later when building the `uploader` canister in Docker.
+The hashes of each chunk are saved in `./bootstrap/chunk_hashes.txt` and can be used later when building the `uploader`
+canister in Docker.
 
 ## 6. Build Canisters
 
@@ -193,34 +199,37 @@ Update your `dfx.json` with IPv6 from the above:
 
 ```json
     "testnet": {
-      "providers": [
-        "http://[2602:xx:xx:xx:xx:xx:xx:df47]:8080" // <- USE IPv6 FROM THE ABOVE
-      ],
-      "type": "persistent"
-    }
+"providers": [
+"http://[2602:xx:xx:xx:xx:xx:xx:df47]:8080" // <- USE IPv6 FROM THE ABOVE
+],
+"type": "persistent"
+}
 ```
 
-If you want to deploy both `testnet` and `mainnet` canisters via dfx you might want to clone their setups in `dfx.json`, so instead of having `bitcoin` you have `bitcoin_t` and `bitcoin_m`, same for `watchdog` (`watchdog_t`, `watchdog_m`).
+If you want to deploy both `testnet` and `mainnet` canisters via dfx you might want to clone their setups in `dfx.json`,
+so instead of having `dogecoin` you have `dogecoin_t` and `dogecoin_m`, same for `watchdog` (`watchdog_t`,
+`watchdog_m`).
 
 ```shell
 # Helper constants
 NETWORK=testnet; \
   STABILITY_THRESHOLD=144; \
-  TESTNET_BITCOIN_CANISTER_ID="g4xu7-jiaaa-aaaan-aaaaq-cai"; \
+  TESTNET_DOGECOIN_CANISTER_ID="g4xu7-jiaaa-aaaan-aaaaq-cai"; \
   TESTNET_WATCHDOG_CANISTER_ID="gjqfs-iaaaa-aaaan-aaada-cai"; \
-  MAINNET_BITCOIN_CANISTER_ID="ghsi2-tqaaa-aaaan-aaaca-cai"; \
+  MAINNET_DOGECOIN_CANISTER_ID="ghsi2-tqaaa-aaaan-aaaca-cai"; \
   MAINNET_WATCHDOG_CANISTER_ID="gatoo-6iaaa-aaaan-aaacq-cai"
 ```
 
 Create corresponding canister
+
 ```shell
 # (Optional) remove current canister ids. 
 $ rm canister_ids.json
 
-$ dfx canister create bitcoin_t --no-wallet \
+$ dfx canister create dogecoin_t --no-wallet \
     --network testnet \
     --subnet-type system \
-    --specified-id $TESTNET_BITCOIN_CANISTER_ID \
+    --specified-id $TESTNET_DOGECOIN_CANISTER_ID \
     --provisional-create-canister-effective-canister-id "5v3p4-iyaaa-aaaaa-qaaaa-cai" \
     --with-cycles 1000000000000000000
 ```
@@ -228,6 +237,7 @@ $ dfx canister create bitcoin_t --no-wallet \
 ## 8. Install Uploader Canister & Upload Chunks
 
 Prepare install arguments
+
 ```shell
 # Get canister state size
 $ wc -c < ./bootstrap/output/canister_state.bin
@@ -235,38 +245,43 @@ $ wc -c < ./bootstrap/output/canister_state.bin
 ```
 
 Calculate required number of pages, page is `64 * 1024` bytes
+
 ```txt
 ceil(1149304832 / (64 * 1024)) = 17537
 ```
 
 Calculate args hash
+
 ```shell
 $ didc encode -t '(nat64)' "(17537)" | xxd -r -p | sha256sum
 e299fbe18558a3646ab33e5d28eec04e474339f235cf4f22dd452c98f831a249  -
 ```
 
 Install uploader canister
+
 ```shell
 $ dfx canister install \
-    --network testnet $TESTNET_BITCOIN_CANISTER_ID \
+    --network testnet $TESTNET_DOGECOIN_CANISTER_ID \
     --mode reinstall \
     --wasm ./uploader.wasm.gz \
     --argument "(17537 : nat64)"  # Use calculated number of pages.
 ```
 
 Upload chunks
+
 ```shell
 # USE IPv6 FROM THE ABOVE
 $ cargo run --example upload -- \
-    --canister-id $TESTNET_BITCOIN_CANISTER_ID \
+    --canister-id $TESTNET_DOGECOIN_CANISTER_ID \
     --state ./bootstrap/output/canister_state.bin \
     --ic-network http://\[2602:xx:xx:xx:xx:xx:xx:df47\]:8080 \
     --fetch-root-key
 ```
 
-## 9. Upgrade Bitcoin Canister
+## 9. Upgrade Dogecoin Canister
 
 Prepare upgrade arguments
+
 ```shell
 # https://internetcomputer.org/docs/references/bitcoin-how-it-works#api-fees-and-pricing
 $ CUSTOM_FEES="record { 
@@ -303,15 +318,16 @@ $ didc encode -d ./canister/candid.did -t '(opt set_config_request)' "$POST_UPGR
 6d3bcdfdefaf3dd444a218735277f6d1cba15196d09b9544b7a04dbc3c36642f  -
 ```
 
-Upgrade bitcoin canister
+Upgrade dogecoin canister
+
 ```shell
-$ dfx canister stop --network testnet $TESTNET_BITCOIN_CANISTER_ID
+$ dfx canister stop --network testnet $TESTNET_DOGECOIN_CANISTER_ID
 
 $ dfx canister install \
-    --network testnet $TESTNET_BITCOIN_CANISTER_ID \
+    --network testnet $TESTNET_DOGECOIN_CANISTER_ID \
     --mode upgrade \
     --wasm ./ic-doge-canister.wasm.gz \
     --argument "$ARG"
 
-$ dfx canister start --network testnet $TESTNET_BITCOIN_CANISTER_ID
+$ dfx canister start --network testnet $TESTNET_DOGECOIN_CANISTER_ID
 ```

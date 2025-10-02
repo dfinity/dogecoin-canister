@@ -1,4 +1,4 @@
-//! A script for building the Bitcoin canister's address UTXOs from a UTXO dump text file.
+//! A script for building the Dogecoin canister's address UTXOs from a UTXO dump text file.
 //!
 //! Example run:
 //!
@@ -29,7 +29,7 @@ struct Args {
     #[clap(long, value_hint = clap::ValueHint::DirPath)]
     output: PathBuf,
 
-    /// The bitcoin network.
+    /// The Dogecoin network.
     #[clap(long)]
     network: Network,
 }
@@ -65,8 +65,8 @@ fn main() {
             println!("Processed {} UTXOs", i);
         }
 
-        // Load the address. The UTXO dump tool we use doesn't output all the addresses
-        // we support, so if parsing the address itself fails, we try parsing the script directly.
+        // Load the address.
+        // If parsing the address itself fails, we try parsing the script directly.
         let dogecoin_network = into_dogecoin_network(args.network);
         let address = if let Ok(address) = DogecoinAddress::from_str(address_str) {
             let checked_address = address

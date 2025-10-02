@@ -57,8 +57,8 @@ fn main() {
             println!("Processed {} UTXOs", i);
         }
 
-        // Load the address. The UTXO dump tool we use doesn't output all the addresses
-        // we support, so if parsing the address itself fails, we try parsing the script directly.
+        // Load the address.
+        // If parsing the address itself fails, we try parsing the script directly.
         let dogecoin_network = into_dogecoin_network(args.network);
         let address = if let Ok(address) = DogecoinAddress::from_str(address_str) {
             let checked_address = address
@@ -74,7 +74,7 @@ fn main() {
             let address: Address = address.into();
 
             // Update the balance of the address.
-            if amount != 0 {
+            if amount != 0 { // TODO(XC-505): ensure this condition is consistent with the canister code.
                 balances
                     .entry(address.clone())
                     .and_modify(|curr| *curr += amount)
