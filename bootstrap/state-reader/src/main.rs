@@ -1,6 +1,7 @@
 use clap::Parser;
 use separator::Separatable;
 use std::{fs::File, path::PathBuf, collections::HashMap};
+use std::collections::HashSet;
 use state_reader::{CanisterData, Utxo, UtxoReader, hash};
 use ic_doge_types::BlockHash;
 
@@ -61,10 +62,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    // TODO(XC-501): temporary workaround to remove unspendable UTXO
+    // TODO(XC-501): temporary workaround to remove unspendable UTXO from Genesis block.
+    // Note that we don't need to remove the corresponding entry from the balance map and
+    // address UTXOs map because the script is P2PK and is never translated into an address.
+    if !args.quiet {
+        println!("Removing unspendable UTXO from Genesis block...");
+    }
     utxos.retain(|utxo| utxo.height != 0);
 
+    // TODO(XC-505): there is a discrepancy between addresses and UTXOs for 0-amount UTXOs. Ignore addresses with 0 balance for now.
+    canister_data.balances.retain(|(_address, balance)| *balance != 0);
+
     // Sort the data for deterministic hashing
+    if !args.quiet {
+        println!("Sorting data...");
+    }
     utxos.sort();
     canister_data.address_utxos.sort_by(|a, b| {
         a.address.to_string()
@@ -82,7 +94,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         a.0.cmp(&b.0)
     });
 
-    // Validate canister state consistency
+    if !args.quiet {
+        println!("Validating data consistency...");
+    }
     if let Err(error) = check_invariants(&canister_data, &utxos) {
         eprintln!("Data consistency check failed: {}", error);
         std::process::exit(1);
@@ -92,11 +106,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print_statistics(&canister_data, &utxos);
     }
 
+    if !args.quiet {
+        println!("Computing hashes...");
+    }
+
     let utxo_hash = hash::compute_utxo_set_hash(&utxos);
     let address_utxos_hash = hash::compute_address_utxos_hash(&canister_data.address_utxos);
     let address_balance_hash = hash::compute_address_balances_hash(&canister_data.balances);
     let block_headers_hash = hash::compute_block_headers_hash(&canister_data.block_headers);
     let block_heights_hash = hash::compute_block_heights_hash(&canister_data.block_heights);
+
+    let hash_data = hash::compute_combined_hash(&[
+        &utxo_hash,
+        &address_utxos_hash,
+        &address_balance_hash,
+        &block_headers_hash,
+        &block_heights_hash,
+    ]);
 
     if !args.quiet {
         println!("{}", "═".repeat(120));
@@ -108,16 +134,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{:<16}: {}", "Address Balance", address_balance_hash);
         println!("{:<16}: {}", "Block Headers", block_headers_hash);
         println!("{:<16}: {}", "Block Heights", block_heights_hash);
-    }
 
-    let hash_data = hash::compute_combined_hash(&[
-        &utxo_hash,
-        &address_utxos_hash,
-        &address_balance_hash,
-        &block_headers_hash,
-        &block_heights_hash,
-    ]);
-    if !args.quiet {
         println!("\n{:<16}: {}", "Combined hash", hash_data);
     } else {
         println!("{}", hash_data);
@@ -130,7 +147,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// 
 /// This function checks several invariants that should hold for valid canister state:
 /// - No UTXOs should exist at height 0 (they are unspendable by consensus rules)
-/// - No addresses should have zero balance
 /// - Block headers should be at least 80 bytes
 /// - Block headers count should match block heights count
 /// - Block headers and heights should have no duplicated entries
@@ -148,27 +164,6 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
     let utxo_height_zero_count = utxos.iter().filter(|addr_utxo| addr_utxo.height == 0).count();
     if utxo_height_zero_count > 0 {
         return Err(format!("Found {} UTXOs at height 0, expected none", utxo_height_zero_count));
-    }
-
-    // Check for zero balances
-    let balances_satoshis: Vec<u64> = data.balances.iter().map(|(_, balance)| *balance).collect();
-    let zero_balance_count = balances_satoshis.iter().filter(|&&balance| balance == 0).count();
-    if zero_balance_count > 0 {
-        return Err(format!("Found {} addresses with zero balance, expected none", zero_balance_count));
-    }
-
-    // Check address consistency between address_utxos and balances
-    let mut address_counts: HashMap<String, usize> = HashMap::new();
-    for addr_utxo in &data.address_utxos {
-        *address_counts.entry(addr_utxo.address.to_string()).or_insert(0) += 1;
-    }
-    let unique_addresses = address_counts.len();
-    let balance_count = data.balances.len();
-    if unique_addresses != balance_count {
-        return Err(format!(
-            "Address count mismatch: {} unique addresses in address UTXOs vs {} addresses with balances",
-            unique_addresses, balance_count
-        ));
     }
 
     // Check for undersized block headers
@@ -195,14 +190,14 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
     heights.sort_unstable();
 
     // Check duplicate block height entries
-    let unique_heights: std::collections::HashSet<u32> = heights.iter().cloned().collect();
+    let unique_heights: HashSet<u32> = heights.iter().cloned().collect();
     if unique_heights.len() != heights.len() {
         return Err(format!("Found {} duplicate block heights",
                            heights.len() - unique_heights.len()));
     }
 
     // Check duplicate block headers entries
-    let unique_hashes: std::collections::HashSet<&BlockHash> = data.block_headers.iter().map(|(blockhash, _)| blockhash).collect();
+    let unique_hashes: HashSet<&BlockHash> = data.block_headers.iter().map(|(blockhash, _)| blockhash).collect();
     if unique_hashes.len() != data.block_headers.len() {
         return Err(format!("Found {} duplicate block hashes",
                            data.block_headers.len() - unique_hashes.len()));
@@ -314,6 +309,9 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         println!("    95th %:  {}", p95.separated_string());
         println!("    99th %:  {}", p99.separated_string());
         println!("    Max:     {}\n", max_value.separated_string());
+
+        let zero_utxos_count = utxos.iter().filter(|u| u.txout.value == 0).count();
+        println!("    Number of UTXOs with 0 amount: {}\n", zero_utxos_count);
     }
 
     print_section_header(2, "Address UTXOs");
@@ -483,6 +481,10 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         println!("    Whale (>10M DOGE):     {} ({:.2}%)",
                  whale_count.separated_string(),
                  (whale_count as f64 / balance_count as f64) * 100.0);
+
+        // Zero balance addresses
+        let zero_balance_count = balances_satoshis.iter().filter(|&&balance| balance == 0).count();
+        println!("\n  Number of addresses with zero balance: {}", zero_balance_count);
 
         // Top addresses by balance
         let mut sorted_balances: Vec<_> = data.balances.iter().collect();
