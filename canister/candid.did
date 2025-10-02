@@ -108,7 +108,8 @@ type send_transaction_request = record {
   transaction : blob;
 };
 
-// Transaction fee cannot exceed 10B DOGE, which can be safely represented by nat64.
+// DOGE transaction fee in millikoinu_per_byte is usually between 10^9 and 10^10.
+// It should be safe to assume this value can be represented by u64.
 type millikoinu_per_byte = nat64;
 
 type set_config_request = record {

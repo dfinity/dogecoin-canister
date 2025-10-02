@@ -147,7 +147,7 @@ This endpoint can only be called by canisters, i.e., it cannot be called by exte
 
 The transaction fees in the Dogecoin network change dynamically based on the number of pending transactions. It must be possible for a canister to determine an adequate fee when creating a Dogecoin transaction.
 
-This function returns fee percentiles, measured in millikoinu/vbyte (1000 millikoinu = 1 koinu), over the last 10,000 transactions in the specified network, i.e., over the transactions in the last approximately 4-10 blocks.
+This function returns fee percentiles, measured in millikoinu/byte (1000 millikoinu = 1 koinu), over the last 10,000 transactions in the specified network, i.e., over the transactions in the last approximately 4-10 blocks.
 
 The [standard nearest-rank estimation method](https://en.wikipedia.org/wiki/Percentile#The_nearest-rank_method), inclusive, with the addition of a 0th percentile is used. Concretely, for any i from 1 to 100, the ith percentile is the fee with rank `⌈i * 100⌉`. The 0th percentile is defined as the smallest fee (excluding coinbase transactions).
 

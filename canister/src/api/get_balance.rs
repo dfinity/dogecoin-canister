@@ -36,9 +36,10 @@ fn get_balance_private(request: GetBalanceRequest) -> Result<u128, GetBalanceErr
     let address =
         Address::from_str(&request.address).map_err(|_| GetBalanceError::MalformedAddress)?;
 
-    // NOTE: It is safe to sum up the balances here without the risk of overflow.
-    // The maximum number of bitcoins is 2.1 * 10^7, which is 2.1* 10^15 koinus.
-    // That is well below the max value of a `u64`.
+    // NOTE: The protocol limits the max value of a single utxo to be 10B DOGE,
+    // or 10^18 koinu, which fits in a `u64`. However, DOGE's circulating supply in
+    // terms of koinus will exceed the max value of `u64` by around year 2030. So
+    // it is safer to use `u128` to represent the sum of utxos.
     let (balance, stats) = with_state(|state| {
         // Retrieve the balance that's pre-computed for stable blocks.
         let mut balance = state.utxos.get_balance(&address);
@@ -193,6 +194,45 @@ mod test {
             })
             .unwrap(),
             0
+        );
+    }
+
+    #[test]
+    fn retrieves_very_large_balance() {
+        let network = Network::Regtest;
+        let doge_network = into_dogecoin_network(network);
+        crate::init(InitConfig {
+            stability_threshold: Some(2),
+            network: Some(network),
+            ..Default::default()
+        });
+
+        // Create 2 blocks each of which gives 10^19 koinus to an address.
+        // Technically the max value of a Utxo is 10^18, but that is enforced
+        // at the protocol level, and we can still go beyond it in tests.
+        let address = random_p2pkh_address(doge_network).into();
+        let coinbase_tx = TransactionBuilder::coinbase()
+            .with_output(&address, 10_000_000_000_000_000_000)
+            .build();
+        let block_1 = BlockBuilder::with_prev_header(genesis_block(network).header())
+            .with_transaction(coinbase_tx.clone())
+            .build();
+        let block_2 = BlockBuilder::with_prev_header(block_1.header())
+            .with_transaction(coinbase_tx)
+            .build();
+
+        // Set the state.
+        with_state_mut(|state| {
+            state::insert_block(state, block_1).unwrap();
+            state::insert_block(state, block_2).unwrap();
+        });
+
+        assert_eq!(
+            get_balance(GetBalanceRequest {
+                address: address.to_string(),
+                min_confirmations: None,
+            }),
+            Ok(20_000_000_000_000_000_000u128)
         );
     }
 
