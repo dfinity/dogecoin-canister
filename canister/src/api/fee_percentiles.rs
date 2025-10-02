@@ -599,7 +599,7 @@ mod test {
     }
 
     #[test]
-    fn measures_fees_in_vbytes() {
+    fn measures_fees_in_bytes() {
         let balance = 1000;
         let fee = 1;
         let fee_in_millikoinu = 1000;
@@ -643,7 +643,7 @@ mod test {
         init_state(blocks, stability_threshold);
 
         with_state_mut(|s| {
-            // Coinbase txs are ignored, so the percentiles should be the fee / vbyte of the second transaction.
+            // Coinbase txs are ignored, so the percentiles should be the fee / byte of the second transaction.
             let x = get_current_fee_percentiles_with_number_of_transactions(s, 1);
             let fee_per_total_size = fee_in_millikoinu / tx.total_size() as u64;
             let fee_per_vsize = fee_in_millikoinu / tx.vsize() as u64;
