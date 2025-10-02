@@ -46,7 +46,7 @@ impl BlockHeaderStore {
         let block_hash = block.block_hash();
         let mut header_blob = vec![];
         block
-            .header()
+            .auxpow_header()
             .consensus_encode(&mut header_blob)
             .expect("block header must be valid");
 
