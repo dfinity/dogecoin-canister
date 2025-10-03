@@ -23,7 +23,7 @@ impl<'a> ValidationContext<'a> {
         // Retrieve the chain that the given header extends.
         // The given header must extend one of the unstable blocks.
         let prev_block_hash = header.prev_blockhash.into();
-        let current_block_hash = ic_btc_types::BlockHash::from(header.block_hash());
+        let current_block_hash = ic_doge_types::BlockHash::from(header.block_hash());
         let (chain, tip_successors) =
             unstable_blocks::get_chain_with_tip(&state.unstable_blocks, &prev_block_hash)
                 .ok_or_else(|| {

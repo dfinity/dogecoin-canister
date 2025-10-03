@@ -16,9 +16,7 @@ use bitcoin::{consensus::Decodable, dogecoin::Header};
 use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillikoinuPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
-use ic_doge_validation::{
-    BlockValidator, HeaderValidator, ValidateBlockError,
-};
+use ic_doge_validation::{BlockValidator, DogecoinHeaderValidator, HeaderValidator, ValidateBlockError};
 use serde::{Deserialize, Serialize};
 
 /// A structure used to maintain the entire state.
@@ -253,7 +251,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
                 .map_err(|e| format!("{:?}", e))
                 .and_then(|store| {
                     let validator =
-                        HeaderValidator::new(store, into_dogecoin_network(state.network()));
+                        DogecoinHeaderValidator::new(store, into_dogecoin_network(state.network()));
                     validator
                         .validate_header(&block_header, duration_since_epoch())
                         .map_err(|e| format!("{:?}", e))

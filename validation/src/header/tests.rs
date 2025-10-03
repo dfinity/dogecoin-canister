@@ -5,7 +5,7 @@ mod doge;
 mod utils;
 
 use crate::header::tests::utils::test_data_file;
-use crate::header::timestamp_is_less_than_2h_in_future;
+use crate::header::timestamp_is_at_most_2h_in_future;
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
 #[cfg(feature = "doge")]
 use crate::header::{
@@ -333,21 +333,21 @@ fn test_timestamp_is_less_than_2h_in_future() {
     // Hence, if block time is 10 seconds after that time,
     // 'timestamp_is_less_than_2h_in_future' should return true.
 
-    assert!(timestamp_is_less_than_2h_in_future(10, MOCK_CURRENT_TIME).is_ok());
+    assert!(timestamp_is_at_most_2h_in_future(10, MOCK_CURRENT_TIME).is_ok());
 
     assert!(
-        timestamp_is_less_than_2h_in_future(MOCK_CURRENT_TIME - ONE_HOUR, MOCK_CURRENT_TIME)
+        timestamp_is_at_most_2h_in_future(MOCK_CURRENT_TIME - ONE_HOUR, MOCK_CURRENT_TIME)
             .is_ok()
     );
 
-    assert!(timestamp_is_less_than_2h_in_future(MOCK_CURRENT_TIME, MOCK_CURRENT_TIME).is_ok());
+    assert!(timestamp_is_at_most_2h_in_future(MOCK_CURRENT_TIME, MOCK_CURRENT_TIME).is_ok());
 
     assert!(
-        timestamp_is_less_than_2h_in_future(MOCK_CURRENT_TIME + ONE_HOUR, MOCK_CURRENT_TIME)
+        timestamp_is_at_most_2h_in_future(MOCK_CURRENT_TIME + ONE_HOUR, MOCK_CURRENT_TIME)
             .is_ok()
     );
 
-    assert!(timestamp_is_less_than_2h_in_future(
+    assert!(timestamp_is_at_most_2h_in_future(
         MOCK_CURRENT_TIME + 2 * ONE_HOUR - 5,
         MOCK_CURRENT_TIME
     )
@@ -356,7 +356,7 @@ fn test_timestamp_is_less_than_2h_in_future() {
     // 'timestamp_is_less_than_2h_in_future' should return false
     // because the time is more than 2 hours from the current time.
     assert_eq!(
-        timestamp_is_less_than_2h_in_future(
+        timestamp_is_at_most_2h_in_future(
             MOCK_CURRENT_TIME + 2 * ONE_HOUR + 10,
             MOCK_CURRENT_TIME
         ),

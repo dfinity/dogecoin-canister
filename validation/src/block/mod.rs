@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests;
 
-use crate::{HeaderStore, HeaderValidator, ValidateHeaderError};
-use bitcoin::{Network, Transaction};
+use crate::{DogecoinHeaderValidator, HeaderStore, HeaderValidator, ValidateHeaderError};
+use bitcoin::{dogecoin, dogecoin::Network, Transaction};
 use std::collections::BTreeSet;
 use std::time::Duration;
 
@@ -22,13 +22,13 @@ impl From<ValidateHeaderError> for ValidateBlockError {
 }
 
 pub struct BlockValidator<T> {
-    header_validator: HeaderValidator<T>,
+    header_validator: DogecoinHeaderValidator<T>,
 }
 
 impl<T> BlockValidator<T> {
     pub fn new(store: T, network: Network) -> Self {
         BlockValidator {
-            header_validator: HeaderValidator::new(store, network),
+            header_validator: DogecoinHeaderValidator::new(store, network),
         }
     }
 }
@@ -36,7 +36,7 @@ impl<T> BlockValidator<T> {
 impl<T: HeaderStore> BlockValidator<T> {
     pub fn validate_block(
         &self,
-        block: &bitcoin::Block,
+        block: &dogecoin::Block,
         current_time: Duration,
     ) -> Result<(), ValidateBlockError> {
         #[cfg(feature = "canbench-rs")]
@@ -49,7 +49,7 @@ impl<T: HeaderStore> BlockValidator<T> {
     }
 }
 
-fn validate_block(block: &bitcoin::Block) -> Result<(), ValidateBlockError> {
+fn validate_block(block: &dogecoin::Block) -> Result<(), ValidateBlockError> {
     #[cfg(feature = "canbench-rs")]
     let _p = canbench_rs::bench_scope("validate_block");
 
