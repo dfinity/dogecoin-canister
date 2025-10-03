@@ -101,7 +101,6 @@ fn init_block_heights() -> StableBTreeMap<u32, BlockHash, Memory> {
 #[cfg(test)]
 mod test {
     use bitcoin::consensus::Encodable;
-    use datasize::DataSize;
     use proptest::proptest;
 
     use crate::test_utils::BlockChainBuilder;
