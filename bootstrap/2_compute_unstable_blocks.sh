@@ -2,6 +2,10 @@
 #
 # Script for preparing the unstable blocks file and setting the chainstate database
 # to the exact height needed.
+#
+# The unstable blocks are used to populate the `unstable_block` field of the state of the canister.
+# These serve as anchor point - when new blocks are received, the canister verifies that they build
+# on top of the unstable blocks tree.
 set -euo pipefail
 
 source "./utils.sh"
