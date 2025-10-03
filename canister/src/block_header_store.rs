@@ -118,11 +118,11 @@ mod test {
     use bitcoin::consensus::Encodable;
     use proptest::proptest;
 
+    use crate::block_header_store::deserialize_block_header;
     use crate::test_utils::BlockChainBuilder;
     use crate::{
         block_header_store::BlockHeaderStore, test_utils::BlockBuilder, types::BlockHeaderBlob,
     };
-    use crate::block_header_store::deserialize_block_header;
 
     #[test]
     fn test_get_block_headers_in_range() {
@@ -190,21 +190,21 @@ mod test {
     fn test_serialize_deserialize_header_from_auxpow_header() {
         // Create a block with AuxPoW enabled
         let auxpow_block = BlockBuilder::genesis().with_auxpow(true).build();
-        
+
         // Serialize the pure header (without AuxPoW)
         let mut pure_header_bytes = vec![];
         auxpow_block
             .header()
             .consensus_encode(&mut pure_header_bytes)
             .unwrap();
-        
+
         // Serialize the AuxPoW header (with AuxPoW)
         let mut auxpow_header_bytes = vec![];
         auxpow_block
             .auxpow_header()
             .consensus_encode(&mut auxpow_header_bytes)
             .unwrap();
-        
+
         // Verify that pure header is exactly 80 bytes
         assert_eq!(
             pure_header_bytes.len(),
@@ -212,19 +212,18 @@ mod test {
             "Pure header should be exactly 80 bytes, got {}",
             pure_header_bytes.len()
         );
-        
+
         // Verify that AuxPoW header is larger than 80 bytes
         assert!(
             auxpow_header_bytes.len() > 80,
             "AuxPoW header should be larger than 80 bytes, got {}",
             auxpow_header_bytes.len()
         );
-        
+
         // Verify that the first 80 bytes of the AuxPoW header are identical to the pure header
         let auxpow_prefix = &auxpow_header_bytes[0..80];
         assert_eq!(
-            pure_header_bytes,
-            auxpow_prefix,
+            pure_header_bytes, auxpow_prefix,
             "First 80 bytes of serialized AuxPoW header should match pure header serialization"
         );
 
