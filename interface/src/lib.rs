@@ -8,8 +8,8 @@ use std::fmt;
 use std::str::FromStr;
 
 pub type Address = String;
-pub type Satoshi = u64;
-pub type MillisatoshiPerByte = u64;
+pub type Koinu = u64;
+pub type MillikoinuPerByte = u64;
 pub type BlockHash = Vec<u8>;
 pub type Height = u32;
 pub type Page = ByteBuf;
@@ -329,7 +329,7 @@ pub struct OutPoint {
 #[derive(CandidType, Debug, Deserialize, PartialEq, Serialize, Clone, Hash, Eq)]
 pub struct Utxo {
     pub outpoint: OutPoint,
-    pub value: Satoshi,
+    pub value: Koinu,
     pub height: Height,
 }
 

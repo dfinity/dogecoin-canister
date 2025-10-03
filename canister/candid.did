@@ -4,7 +4,13 @@ type network = variant {
   regtest;
 };
 
-type satoshi = nat64;
+// The total amount of DOGE is going to exceed the bound of nat64 by around year 2030.
+// So it is safer to use nat to represent an arbitrary amount of DOGE in koinus.
+type amount = nat;
+
+// The smallest unit of DOGE: 10^8 koinu = 1 DOGE. The value of an UTXO can be safely
+// represented as a nat64 value because it cannot exceed 10B DOGE according to the protocol.
+type koinu = nat64;
 
 type address = text;
 
@@ -21,7 +27,7 @@ type outpoint = record {
 
 type utxo = record {
   outpoint : outpoint;
-  value : satoshi;
+  value : koinu;
   height : block_height;
 };
 
@@ -102,7 +108,9 @@ type send_transaction_request = record {
   transaction : blob;
 };
 
-type millisatoshi_per_byte = nat64;
+// DOGE transaction fee in millikoinu_per_byte is usually between 10^9 and 10^10.
+// It should be safe to assume this value can be represented by u64.
+type millikoinu_per_byte = nat64;
 
 type set_config_request = record {
   stability_threshold : opt nat;
@@ -127,15 +135,15 @@ type get_block_headers_response = record {
 };
 
 service dogecoin : (init_config) -> {
-  dogecoin_get_balance : (get_balance_request) -> (satoshi);
+  dogecoin_get_balance : (get_balance_request) -> (amount);
 
-  dogecoin_get_balance_query : (get_balance_request) -> (satoshi) query;
+  dogecoin_get_balance_query : (get_balance_request) -> (amount) query;
 
   dogecoin_get_utxos : (get_utxos_request) -> (get_utxos_response);
 
   dogecoin_get_utxos_query : (get_utxos_request) -> (get_utxos_response) query;
 
-  dogecoin_get_current_fee_percentiles : (get_current_fee_percentiles_request) -> (vec millisatoshi_per_byte);
+  dogecoin_get_current_fee_percentiles : (get_current_fee_percentiles_request) -> (vec millikoinu_per_byte);
 
   dogecoin_get_block_headers : (get_block_headers_request) -> (get_block_headers_response);
 

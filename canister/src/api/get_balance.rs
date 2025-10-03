@@ -4,7 +4,7 @@ use crate::{
     types::{Address, GetBalanceRequest},
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut,
 };
-use ic_doge_interface::{GetBalanceError, Satoshi};
+use ic_doge_interface::GetBalanceError;
 use std::str::FromStr;
 
 // Various profiling stats for tracking the performance of `get_balance`.
@@ -18,7 +18,7 @@ struct Stats {
 }
 
 /// Retrieves the balance of the given Dogecoin address.
-pub fn get_balance(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceError> {
+pub fn get_balance(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     verify_has_enough_cycles(with_state(|s| s.fees.get_balance_maximum));
     charge_cycles(with_state(|s| s.fees.get_balance));
 
@@ -27,18 +27,19 @@ pub fn get_balance(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceErro
 
 /// Retrieves the balance of the given Dogecoin address,
 /// while not charging for the execution, used only for queries.
-pub fn get_balance_query(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceError> {
+pub fn get_balance_query(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     get_balance_private(request)
 }
 
-fn get_balance_private(request: GetBalanceRequest) -> Result<Satoshi, GetBalanceError> {
+fn get_balance_private(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     let min_confirmations = request.min_confirmations.unwrap_or(0);
     let address =
         Address::from_str(&request.address).map_err(|_| GetBalanceError::MalformedAddress)?;
 
-    // NOTE: It is safe to sum up the balances here without the risk of overflow.
-    // The maximum number of bitcoins is 2.1 * 10^7, which is 2.1* 10^15 satoshis.
-    // That is well below the max value of a `u64`.
+    // NOTE: The protocol limits the max value of a single utxo to be 10B DOGE,
+    // or 10^18 koinu, which fits in a `u64`. However, DOGE's circulating supply in
+    // terms of koinus will exceed the max value of `u64` by around year 2030. So
+    // it is safer to use `u128` to represent the sum of utxos.
     let (balance, stats) = with_state(|state| {
         // Retrieve the balance that's pre-computed for stable blocks.
         let mut balance = state.utxos.get_balance(&address);
@@ -69,7 +70,7 @@ fn get_balance_private(request: GetBalanceRequest) -> Result<Satoshi, GetBalance
                 .get_added_outpoints(&block.block_hash(), &address)
             {
                 let (txout, _) = state.unstable_blocks.get_tx_out(outpoint).unwrap();
-                balance += txout.value;
+                balance += txout.value as u128;
             }
 
             for outpoint in state
@@ -77,7 +78,7 @@ fn get_balance_private(request: GetBalanceRequest) -> Result<Satoshi, GetBalance
                 .get_removed_outpoints(&block.block_hash(), &address)
             {
                 let (txout, _) = state.unstable_blocks.get_tx_out(outpoint).unwrap();
-                balance -= txout.value;
+                balance -= txout.value as u128;
             }
         }
 
@@ -160,7 +161,7 @@ mod test {
             ..Default::default()
         });
 
-        // Create a block where 1000 satoshis are given to an address.
+        // Create a block where 1000 koinus are given to an address.
         let address = random_p2pkh_address(doge_network).into();
         let coinbase_tx = TransactionBuilder::coinbase()
             .with_output(&address, 1000)
@@ -193,6 +194,45 @@ mod test {
             })
             .unwrap(),
             0
+        );
+    }
+
+    #[test]
+    fn retrieves_very_large_balance() {
+        let network = Network::Regtest;
+        let doge_network = into_dogecoin_network(network);
+        crate::init(InitConfig {
+            stability_threshold: Some(2),
+            network: Some(network),
+            ..Default::default()
+        });
+
+        // Create 2 blocks each of which gives 10^19 koinus to an address.
+        // Technically the max value of a Utxo is 10^18, but that is enforced
+        // at the protocol level, and we can still go beyond it in tests.
+        let address = random_p2pkh_address(doge_network).into();
+        let coinbase_tx = TransactionBuilder::coinbase()
+            .with_output(&address, 10_000_000_000_000_000_000)
+            .build();
+        let block_1 = BlockBuilder::with_prev_header(genesis_block(network).header())
+            .with_transaction(coinbase_tx.clone())
+            .build();
+        let block_2 = BlockBuilder::with_prev_header(block_1.header())
+            .with_transaction(coinbase_tx)
+            .build();
+
+        // Set the state.
+        with_state_mut(|state| {
+            state::insert_block(state, block_1).unwrap();
+            state::insert_block(state, block_2).unwrap();
+        });
+
+        assert_eq!(
+            get_balance(GetBalanceRequest {
+                address: address.to_string(),
+                min_confirmations: None,
+            }),
+            Ok(20_000_000_000_000_000_000u128)
         );
     }
 
@@ -245,8 +285,8 @@ mod test {
         let address_1 = random_p2pkh_address(doge_network).into();
         let address_2 = random_p2pkh_address(doge_network).into();
 
-        // Create a chain where 1000 satoshis are given to the address_1, then
-        // address_1 gives 1000 satoshis to address_2.
+        // Create a chain where 1000 koinus are given to the address_1, then
+        // address_1 gives 1000 koinus to address_2.
         let coinbase_tx = TransactionBuilder::coinbase()
             .with_output(&address_1, 1000)
             .build();

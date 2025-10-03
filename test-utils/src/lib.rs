@@ -364,9 +364,9 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn with_output(mut self, address: &Address, satoshi: u64) -> Self {
+    pub fn with_output(mut self, address: &Address, koinu: u64) -> Self {
         self.output.push(TxOut {
-            value: Amount::from_sat(satoshi),
+            value: Amount::from_sat(koinu),
             script_pubkey: address.script_pubkey(),
         });
         self

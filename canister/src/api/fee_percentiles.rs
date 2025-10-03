@@ -5,14 +5,14 @@ use crate::{
     unstable_blocks::{self, UnstableBlocks},
     verify_has_enough_cycles, with_state, with_state_mut,
 };
-use ic_doge_interface::MillisatoshiPerByte;
+use ic_doge_interface::MillikoinuPerByte;
 use ic_doge_types::{Block, Transaction};
 
 /// The number of transactions to include in the percentiles calculation.
 const NUM_TRANSACTIONS: u32 = 10_000;
 
 /// Returns the 100 fee percentiles of the chain's 10,000 most recent transactions.
-pub fn get_current_fee_percentiles() -> Vec<MillisatoshiPerByte> {
+pub fn get_current_fee_percentiles() -> Vec<MillikoinuPerByte> {
     verify_has_enough_cycles(with_state(|s| s.fees.get_current_fee_percentiles_maximum));
     charge_cycles(with_state(|s| s.fees.get_current_fee_percentiles));
 
@@ -34,14 +34,14 @@ pub fn get_current_fee_percentiles() -> Vec<MillisatoshiPerByte> {
     res
 }
 
-pub(crate) fn get_current_fee_percentiles_impl(state: &mut State) -> Vec<MillisatoshiPerByte> {
+pub(crate) fn get_current_fee_percentiles_impl(state: &mut State) -> Vec<MillikoinuPerByte> {
     get_current_fee_percentiles_with_number_of_transactions(state, NUM_TRANSACTIONS)
 }
 
 fn get_current_fee_percentiles_with_number_of_transactions(
     state: &mut State,
     number_of_transactions: u32,
-) -> Vec<MillisatoshiPerByte> {
+) -> Vec<MillikoinuPerByte> {
     let main_chain = unstable_blocks::get_main_chain(&state.unstable_blocks);
     let tip_block_hash = main_chain.tip().block_hash();
 
@@ -85,7 +85,7 @@ fn get_fees_per_byte(
     main_chain: Vec<&Block>,
     unstable_blocks: &UnstableBlocks,
     number_of_transactions: u32,
-) -> Vec<MillisatoshiPerByte> {
+) -> Vec<MillikoinuPerByte> {
     let mut fees = Vec::new();
     let mut tx_i = 0;
     for block in main_chain.iter().rev() {
@@ -111,28 +111,28 @@ fn get_fees_per_byte(
 fn get_tx_fee_per_byte(
     tx: &Transaction,
     unstable_blocks: &UnstableBlocks,
-) -> Option<MillisatoshiPerByte> {
+) -> Option<MillikoinuPerByte> {
     if tx.is_coinbase() {
         // Coinbase transactions do not have a fee.
         return None;
     }
 
-    let mut satoshi = 0;
+    let mut koinu = 0;
     for tx_in in tx.input() {
         let outpoint = (&tx_in.previous_output).into();
-        satoshi += unstable_blocks
+        koinu += unstable_blocks
             .get_tx_out(&outpoint)
             .unwrap_or_else(|| panic!("tx out of outpoint {:?} must exist", outpoint))
             .0
             .value;
     }
     for tx_out in tx.output() {
-        satoshi -= tx_out.value.to_sat();
+        koinu -= tx_out.value.to_sat();
     }
 
     if tx.vsize() > 0 {
         // Don't use floating point division to avoid non-determinism.
-        Some(((1000 * satoshi) / tx.vsize() as u64) as MillisatoshiPerByte)
+        Some(((1000 * koinu) / tx.vsize() as u64) as MillikoinuPerByte)
     } else {
         // Calculating fee is not possible for a zero-size invalid transaction.
         None
@@ -172,7 +172,7 @@ mod test {
     };
     use async_std::task::block_on;
     use bitcoin::Witness;
-    use ic_doge_interface::{Fees, InitConfig, Network, Satoshi};
+    use ic_doge_interface::{Fees, InitConfig, Koinu, Network};
     use ic_doge_test_utils::random_p2pkh_address;
     use ic_doge_types::OutPoint;
     use std::iter::FromIterator;
@@ -246,12 +246,12 @@ mod test {
     // - genesis block receives a coinbase transaction on address_1 with initial_balance
     // - follow-up blocks transfer payments from address_1 to address_2 with a specified fee
     // Fee is choosen to be a multiple of transaction size to have round values of fee.
-    fn generate_blocks(initial_balance: Satoshi, number_of_blocks: u32) -> Vec<Block> {
+    fn generate_blocks(initial_balance: Koinu, number_of_blocks: u32) -> Vec<Block> {
         let network = Network::Regtest;
         let doge_network = into_dogecoin_network(network);
         let mut blocks = Vec::new();
 
-        let pay: Satoshi = 1;
+        let pay: Koinu = 1;
         let address_1 = random_p2pkh_address(doge_network).into();
         let address_2 = random_p2pkh_address(doge_network).into();
 
@@ -268,16 +268,16 @@ mod test {
         let mut previous_block = block_0;
 
         for i in 0..number_of_blocks {
-            // For testing purposes every transaction has 1 Satoshi higher fee than the previous one, starting with 0 satoshi.
+            // For testing purposes every transaction has 1 Koinu higher fee than the previous one, starting with 0 koinu.
             // Each fake transaction is 119 bytes in size.
-            // I.e. a sequence of fees [0, 1, 2, 3] satoshi converts to [0, 8, 16, 25] milisatoshi per byte.
+            // I.e. a sequence of fees [0, 1, 2, 3] koinu converts to [0, 8, 16, 25] milikoinu per byte.
             // To estimate initial balance:
             // number_of_blocks * (number_of_blocks + 1) / 2
-            let fee = i as Satoshi;
+            let fee = i as Koinu;
             let change = match balance.checked_sub(pay + fee) {
                 Some(value) => value,
                 None => panic!(
-                    "There is not enough balance of {} Satoshi to perform transaction #{} with fee of {} satoshi",
+                    "There is not enough balance of {} Koinu to perform transaction #{} with fee of {} koinu",
                     balance, i, fee
                 ),
             };
@@ -335,10 +335,10 @@ mod test {
                 number_of_transactions as u32,
             );
 
-            // Initial transactions' fees [0, 1, 2, 3, 4] satoshi, with 119 bytes of transaction size
-            // transfer into [0, 8, 16, 25, 33] millisatoshi per byte fees in chronological order.
+            // Initial transactions' fees [0, 1, 2, 3, 4] koinu, with 119 bytes of transaction size
+            // transfer into [0, 8, 16, 25, 33] millikoinu per byte fees in chronological order.
             assert_eq!(fees.len(), number_of_blocks as usize);
-            // Fees are in a reversed order, in millisatoshi per byte units.
+            // Fees are in a reversed order, in millikoinu per byte units.
             assert_eq!(fees, vec![33, 25, 16, 8, 0]);
         });
 
@@ -355,7 +355,7 @@ mod test {
     fn coinbase_txs_are_ignored() {
         let balance = 1000;
         let fee = 1;
-        let fee_in_millisatoshi = fee * 1000;
+        let fee_in_millikoinu = fee * 1000;
         let network = Network::Regtest;
         let doge_network = into_dogecoin_network(network);
 
@@ -382,7 +382,7 @@ mod test {
             // so the percentiles should be the fee / byte of the second transaction.
             assert_eq!(
                 get_current_fee_percentiles_with_number_of_transactions(s, 1),
-                vec![fee_in_millisatoshi / tx_2.vsize() as u64; PERCENTILE_BUCKETS]
+                vec![fee_in_millikoinu / tx_2.vsize() as u64; PERCENTILE_BUCKETS]
             );
         });
     }
@@ -455,11 +455,11 @@ mod test {
                 &state.unstable_blocks,
                 number_of_transactions,
             );
-            // Initial transactions' fees [0, 1, 2, 3, 4, 5, 6, 7, 8] satoshi, with 119 bytes of transaction size
-            // transfer into [0, 8, 16, 25, 33, 42, 50, 58] millisatoshi per byte fees in chronological order.
+            // Initial transactions' fees [0, 1, 2, 3, 4, 5, 6, 7, 8] koinu, with 119 bytes of transaction size
+            // transfer into [0, 8, 16, 25, 33, 42, 50, 58] millikoinu per byte fees in chronological order.
             // Extracted fees contain only last 4 transaction fees in a reversed order.
             assert_eq!(fees.len(), number_of_transactions as usize);
-            // Fees are in a reversed order, in millisatoshi per byte units.
+            // Fees are in a reversed order, in millikoinu per byte units.
             assert_eq!(fees, vec![58, 50, 42, 33]);
 
             let percentiles = get_current_fee_percentiles_with_number_of_transactions(state, 4);
@@ -492,10 +492,10 @@ mod test {
                 number_of_transactions,
             );
 
-            // Initial transactions' fees [0, 1, 2, 3, 4] satoshi, with 119 bytes of transaction size
-            // transfer into [0, 8, 16, 25, 33] millisatoshi per byte fees in chronological order.
+            // Initial transactions' fees [0, 1, 2, 3, 4] koinu, with 119 bytes of transaction size
+            // transfer into [0, 8, 16, 25, 33] millikoinu per byte fees in chronological order.
             assert_eq!(fees.len(), number_of_blocks as usize);
-            // Fees are in a reversed order, in millisatoshi per byte units.
+            // Fees are in a reversed order, in millikoinu per byte units.
             assert_eq!(fees, vec![33, 25, 16, 8, 0]);
 
             assert_eq!(percentiles.len(), PERCENTILE_BUCKETS);
@@ -546,13 +546,13 @@ mod test {
                 number_of_transactions,
             );
 
-            // Initial transactions' fees [0, 1, 2, 3, 4] satoshi, with 119 bytes of transaction size
-            // transfer into [0, 8, 16, 25, 33] millisatoshi per byte fees in chronological order.
+            // Initial transactions' fees [0, 1, 2, 3, 4] koinu, with 119 bytes of transaction size
+            // transfer into [0, 8, 16, 25, 33] millikoinu per byte fees in chronological order.
             // But only 2 last transactions are placed in unstable blocks that form a main chain.
             // All the rest of the blocks are partially stored in UTXO set, which does not have information
             // about the sequence and input values, which does not allow to compute the fee.
             assert_eq!(fees.len(), 2);
-            // Fees are in a reversed order, in millisatoshi per byte units.
+            // Fees are in a reversed order, in millikoinu per byte units.
             assert_eq!(fees, vec![33, 25]);
         });
 
@@ -599,10 +599,10 @@ mod test {
     }
 
     #[test]
-    fn measures_fees_in_vbytes() {
+    fn measures_fees_in_bytes() {
         let balance = 1000;
         let fee = 1;
-        let fee_in_millisatoshi = 1000;
+        let fee_in_millikoinu = 1000;
         let network = Network::Regtest;
         let doge_network = into_dogecoin_network(network);
 
@@ -643,10 +643,10 @@ mod test {
         init_state(blocks, stability_threshold);
 
         with_state_mut(|s| {
-            // Coinbase txs are ignored, so the percentiles should be the fee / vbyte of the second transaction.
+            // Coinbase txs are ignored, so the percentiles should be the fee / byte of the second transaction.
             let x = get_current_fee_percentiles_with_number_of_transactions(s, 1);
-            let fee_per_total_size = fee_in_millisatoshi / tx.total_size() as u64;
-            let fee_per_vsize = fee_in_millisatoshi / tx.vsize() as u64;
+            let fee_per_total_size = fee_in_millikoinu / tx.total_size() as u64;
+            let fee_per_vsize = fee_in_millikoinu / tx.vsize() as u64;
             assert_ne!(x, vec![fee_per_total_size; PERCENTILE_BUCKETS]);
             assert_eq!(x, vec![fee_per_vsize; PERCENTILE_BUCKETS]);
         });

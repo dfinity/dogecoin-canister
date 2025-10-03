@@ -6,8 +6,8 @@ use candid::CandidType;
 use datasize::DataSize;
 use ic_doge_interface::{
     Address as AddressStr, GetBalanceRequest as PublicGetBalanceRequest,
-    GetUtxosRequest as PublicGetUtxosRequest, Height, Network, NetworkAdapter, Satoshi,
-    UtxosFilter, UtxosFilterInRequest,
+    GetUtxosRequest as PublicGetUtxosRequest, Height, Koinu, Network, NetworkAdapter, UtxosFilter,
+    UtxosFilterInRequest,
 };
 use ic_doge_types::{BlockHash, OutPoint, Txid};
 use ic_stable_structures::{
@@ -540,7 +540,7 @@ pub enum Slicing<T, U> {
 pub struct Utxo {
     pub height: u32,
     pub outpoint: OutPoint,
-    pub value: Satoshi,
+    pub value: Koinu,
 }
 
 impl Ord for Utxo {

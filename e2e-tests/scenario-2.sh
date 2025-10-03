@@ -31,7 +31,7 @@ BALANCE=$(dfx canister call dogecoin dogecoin_get_balance '(record {
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
 })')
 
-if ! [[ $BALANCE = "(40_000 : nat64)" ]]; then
+if ! [[ $BALANCE = "(40_000 : nat)" ]]; then
   echo "FAIL"
   exit 1
 fi
