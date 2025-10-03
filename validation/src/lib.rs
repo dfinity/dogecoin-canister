@@ -1,5 +1,11 @@
 mod header;
+mod block;
 
+#[cfg(test)]
+mod fixtures;
+
+
+pub use crate::block::{BlockValidator, ValidateBlockError};
 pub use crate::header::{HeaderStore, HeaderValidator, ValidateHeaderError};
 
 #[cfg(feature = "btc")]

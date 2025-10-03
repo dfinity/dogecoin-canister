@@ -13,38 +13,40 @@ use std::time::Duration;
 /// Ref: <https://github.com/dogecoin/dogecoin/blob/51cbc1fd5d0d045dda2ad84f53572bbf524c6a8e/src/dogecoin.cpp#L33>
 pub(crate) const ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT: u32 = 157_500;
 
-pub struct DogecoinHeaderValidator {
+pub struct DogecoinHeaderValidator<T> {
+    store: T,
     network: DogecoinNetwork,
 }
 
-impl DogecoinHeaderValidator {
-    pub fn new(network: DogecoinNetwork) -> Self {
-        Self { network }
+impl<T> DogecoinHeaderValidator<T> {
+    pub fn new(store: T, network: DogecoinNetwork) -> Self {
+        Self { store, network }
+    }
+}
+
+impl<T: HeaderStore> DogecoinHeaderValidator<T> {
+    pub fn mainnet(store: T) -> Self {
+        Self::new(store, DogecoinNetwork::Dogecoin)
     }
 
-    pub fn mainnet() -> Self {
-        Self::new(DogecoinNetwork::Dogecoin)
+    pub fn testnet(store: T) -> Self {
+        Self::new(store, DogecoinNetwork::Testnet)
     }
 
-    pub fn testnet() -> Self {
-        Self::new(DogecoinNetwork::Testnet)
-    }
-
-    pub fn regtest() -> Self {
-        Self::new(DogecoinNetwork::Regtest)
+    pub fn regtest(store: T) -> Self {
+        Self::new(store, DogecoinNetwork::Regtest)
     }
 
     /// Context-dependent header validity checks
     /// Ref: <https://github.com/dogecoin/dogecoin/blob/215fc33d08ef55cdb52a639bb2d8ce0af502c126/src/validation.cpp#L3065>
     fn contextual_check_header(
         &self,
-        store: &impl HeaderStore,
         header: &PureHeader,
-        current_time: u64,
+        current_time: Duration,
     ) -> Result<Target, ValidateHeaderError> {
-        let prev_height = store.height();
+        let prev_height = self.store.height();
         let height = prev_height + 1;
-        let prev_header = match store.get_with_block_hash(&header.prev_blockhash) {
+        let prev_header = match self.store.get_with_block_hash(&header.prev_blockhash) {
             Some(result) => result,
             None => {
                 return Err(ValidateHeaderError::PrevHeaderNotFound);
@@ -59,7 +61,7 @@ impl DogecoinHeaderValidator {
             return Err(ValidateAuxPowHeaderError::AuxPowBlockNotAllowed.into());
         }
 
-        is_timestamp_valid(store, header, current_time)?;
+        is_timestamp_valid(&self.store, header, current_time)?;
 
         if (header.extract_base_version() < 3 && height >= self.network().params().bip66_height)
             || (header.extract_base_version() < 4 && height >= self.network().params().bip65_height)
@@ -72,7 +74,7 @@ impl DogecoinHeaderValidator {
             return Err(ValidateHeaderError::TargetDifficultyAboveMax);
         }
 
-        let target = self.get_next_target(store, &prev_header, prev_height, header.time);
+        let target = self.get_next_target(&prev_header, prev_height, header.time);
 
         let header_target = header.target();
         if target != header_target {
@@ -84,7 +86,7 @@ impl DogecoinHeaderValidator {
     }
 }
 
-impl HeaderValidator for DogecoinHeaderValidator {
+impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
     type Network = DogecoinNetwork;
 
     fn network(&self) -> &Self::Network {
@@ -121,11 +123,10 @@ impl HeaderValidator for DogecoinHeaderValidator {
 
     fn validate_header(
         &self,
-        store: &impl HeaderStore,
         header: &PureHeader,
-        current_time: u64,
+        current_time: Duration,
     ) -> Result<(), ValidateHeaderError> {
-        let target = self.contextual_check_header(store, header, current_time)?;
+        let target = self.contextual_check_header(header, current_time)?;
 
         if let Err(err) = header.validate_pow_with_scrypt(target) {
             match err {
@@ -141,7 +142,6 @@ impl HeaderValidator for DogecoinHeaderValidator {
 
     fn get_next_target(
         &self,
-        store: &impl HeaderStore,
         prev_header: &PureHeader,
         prev_height: BlockHeight,
         timestamp: u32,
@@ -169,7 +169,6 @@ impl HeaderValidator for DogecoinHeaderValidator {
                     // use the previous difficulty target that is not equal to the maximum
                     // difficulty target
                     return Target::from_compact(self.find_next_difficulty_in_chain(
-                        store,
                         prev_header,
                         prev_height,
                     ));
@@ -178,12 +177,11 @@ impl HeaderValidator for DogecoinHeaderValidator {
             return Target::from_compact(prev_header.bits);
         };
 
-        Target::from_compact(self.compute_next_difficulty(store, prev_header, prev_height))
+        Target::from_compact(self.compute_next_difficulty(prev_header, prev_height))
     }
 
     fn find_next_difficulty_in_chain(
         &self,
-        store: &impl HeaderStore,
         prev_header: &PureHeader,
         prev_height: BlockHeight,
     ) -> CompactTarget {
@@ -194,7 +192,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
                 let mut current_header = *prev_header;
                 let mut current_height = prev_height;
                 let mut current_hash = current_header.block_hash();
-                let initial_header_hash = store.get_initial_hash();
+                let initial_header_hash = self.store.get_initial_hash();
 
                 // Keep traversing the blockchain backwards from the recent block to initial
                 // header hash.
@@ -214,7 +212,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
 
                     // Traverse to the previous header.
                     let prev_blockhash = current_header.prev_blockhash;
-                    current_header = store
+                    current_header = self.store
                         .get_with_block_hash(&prev_blockhash)
                         .expect("previous header should be in the header store");
                     // Update the current height and hash.
@@ -230,7 +228,6 @@ impl HeaderValidator for DogecoinHeaderValidator {
 
     fn compute_next_difficulty(
         &self,
-        store: &impl HeaderStore,
         prev_header: &PureHeader,
         prev_height: BlockHeight,
     ) -> CompactTarget {
@@ -253,7 +250,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
         } else {
             height - difficulty_adjustment_interval - 1
         };
-        let last_adjustment_header = store
+        let last_adjustment_header = self.store
             .get_with_height(last_adjustment_height)
             .expect("Last adjustment header must exist");
 
@@ -278,7 +275,7 @@ impl HeaderValidator for DogecoinHeaderValidator {
     }
 }
 
-impl AuxPowHeaderValidator for DogecoinHeaderValidator {
+impl<T: HeaderStore> AuxPowHeaderValidator for DogecoinHeaderValidator<T> {
     fn strict_chain_id(&self) -> bool {
         self.network().params().strict_chain_id
     }
@@ -295,9 +292,8 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
     /// Ref: <https://github.com/dogecoin/dogecoin/blob/51cbc1fd5d0d045dda2ad84f53572bbf524c6a8e/src/dogecoin.cpp#L89>
     fn validate_auxpow_header(
         &self,
-        store: &impl HeaderStore,
         header: &DogecoinHeader,
-        current_time: u64,
+        current_time: Duration,
     ) -> Result<(), ValidateHeaderError> {
         if !header.is_legacy()
             && self.strict_chain_id()
@@ -311,7 +307,7 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
                 return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet.into());
             }
 
-            let target = self.contextual_check_header(store, &header.pure_header, current_time)?;
+            let target = self.contextual_check_header(&header.pure_header, current_time)?;
 
             if !target.is_met_by(aux_pow.parent_block_header.block_hash_with_scrypt()) {
                 return Err(ValidateAuxPowHeaderError::InvalidParentPoW.into());
@@ -331,7 +327,7 @@ impl AuxPowHeaderValidator for DogecoinHeaderValidator {
                 return Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet.into());
             }
 
-            self.validate_header(store, &header.pure_header, current_time)?;
+            self.validate_header(&header.pure_header, current_time)?;
         }
 
         Ok(())
