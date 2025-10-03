@@ -74,14 +74,29 @@ impl BlockHeaderStore {
         })
     }
 
-    /// Returns iterator on block headers in the range `heights`.
-    pub fn get_block_headers_in_range(
+    /// Returns iterator on AuxPow block headers in the range `heights`.
+    pub fn get_auxpow_block_headers_in_range(
         &self,
         heights: std::ops::RangeInclusive<Height>,
     ) -> impl Iterator<Item = BlockHeaderBlob> + '_ {
         self.block_heights
             .range(heights)
             .map(move |(_, block_hash)| self.block_headers.get(&block_hash).unwrap())
+    }
+
+    /// Returns iterator on block headers (80 bytes, no AuxPow) in the range `heights`.
+    pub fn get_block_headers_in_range(
+        &self,
+        heights: std::ops::RangeInclusive<Height>,
+    ) -> impl Iterator<Item = BlockHeaderBlob> + '_ {
+        self.block_heights
+            .range(heights)
+            .map(move |(_, block_hash)| {
+                let header_blob = self.block_headers.get(&block_hash).unwrap();
+                // Extract only the first 80 bytes (pure header, no AuxPow information)
+                let header_bytes: Vec<u8> = header_blob.into();
+                BlockHeaderBlob::from(header_bytes[0..80].to_vec())
+            })
     }
 }
 
@@ -131,7 +146,7 @@ mod test {
             range_length in 1..=block_num)|{
                 let requested_end = start_range + range_length - 1;
 
-                let res: Vec<BlockHeaderBlob>= store.get_block_headers_in_range(std::ops::RangeInclusive::new(start_range as u32, requested_end as u32)).collect();
+                let res: Vec<BlockHeaderBlob>= store.get_auxpow_block_headers_in_range(std::ops::RangeInclusive::new(start_range as u32, requested_end as u32)).collect();
 
                 let end_range = std::cmp::min(requested_end, block_num - 1);
 
@@ -157,7 +172,8 @@ mod test {
             store.insert_block(&blockchain[i as usize], i);
         }
 
-        for header in store.get_block_headers_in_range(std::ops::RangeInclusive::new(1, block_num))
+        for header in
+            store.get_auxpow_block_headers_in_range(std::ops::RangeInclusive::new(1, block_num))
         {
             let header_bytes: Vec<u8> = header.into();
             let header_bytes_len = header_bytes.len();
