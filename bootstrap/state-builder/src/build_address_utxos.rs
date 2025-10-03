@@ -1,4 +1,4 @@
-//! A script for building the Bitcoin canister's address UTXOs from a UTXO dump text file.
+//! A script for building the Dogecoin canister's address UTXOs from a UTXO dump text file.
 //!
 //! Example run:
 //!
@@ -29,7 +29,7 @@ struct Args {
     #[clap(long, value_hint = clap::ValueHint::DirPath)]
     output: PathBuf,
 
-    /// The bitcoin network.
+    /// The Dogecoin network.
     #[clap(long)]
     network: Network,
 }
