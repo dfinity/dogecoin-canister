@@ -46,7 +46,7 @@ impl BlockHeaderStore {
         let block_hash = block.block_hash();
         let mut header_blob = vec![];
         block
-            .header()
+            .auxpow_header()
             .consensus_encode(&mut header_blob)
             .expect("block header must be valid");
 
@@ -103,6 +103,7 @@ mod test {
     use bitcoin::consensus::Encodable;
     use proptest::proptest;
 
+    use crate::test_utils::BlockChainBuilder;
     use crate::{
         block_header_store::BlockHeaderStore, test_utils::BlockBuilder, types::BlockHeaderBlob,
     };
@@ -111,15 +112,17 @@ mod test {
     fn test_get_block_headers_in_range() {
         let mut headers = vec![];
         let block_0 = BlockBuilder::genesis().build();
-        headers.push(*block_0.header());
+        headers.push(block_0.auxpow_header().clone());
 
         let mut store = BlockHeaderStore::init();
         store.insert_block(&block_0, 0);
         let block_num = 100;
 
         for i in 1..block_num {
-            let block = BlockBuilder::with_prev_header(&headers[i - 1]).build();
-            headers.push(*block.header());
+            let block = BlockBuilder::with_prev_header(&headers[i - 1])
+                .with_auxpow(true)
+                .build();
+            headers.push(block.auxpow_header().clone());
             store.insert_block(&block, i as u32);
         }
 
@@ -142,5 +145,27 @@ mod test {
                 }
             }
         );
+    }
+
+    #[test]
+    fn test_auxpow_header_stored() {
+        let block_num = 10;
+        let blockchain = BlockChainBuilder::new(block_num).with_auxpow().build();
+
+        let mut store = BlockHeaderStore::init();
+        for i in 0..block_num {
+            store.insert_block(&blockchain[i as usize], i);
+        }
+
+        for header in store.get_block_headers_in_range(std::ops::RangeInclusive::new(1, block_num))
+        {
+            let header_bytes: Vec<u8> = header.into();
+            let header_bytes_len = header_bytes.len();
+            assert!(
+                header_bytes_len > 80,
+                "Stored header should be AuxPow header, i.e. larger than 80 bytes, got {} bytes",
+                header_bytes_len
+            );
+        }
     }
 }
