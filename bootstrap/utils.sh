@@ -52,7 +52,8 @@ generate_config() {
     # Basic configuration.
     cat << EOF > "$conf_file"
 # Reduce storage requirements by only storing the most recent N MiB of blocks.
-prune=5000
+# Dogecoin: we don't set the prune option as it also prunes AuxPow information.
+# prune=5000
 
 # Disable XOR-ing blocksdir *.dat files.
 # See "Blockstorage" section at https://bitcoincore.org/en/releases/28.0/
