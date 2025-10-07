@@ -33,7 +33,7 @@ pub fn compute_address_utxos_hash(address_utxos: &[AddressUtxo]) -> String {
 }
 
 /// Compute SHA256 hash of address balances data
-pub fn compute_address_balances_hash(balances: &[(Address, u64)]) -> String {
+pub fn compute_address_balances_hash(balances: &[(Address, u128)]) -> String {
     let mut hasher = Sha256::new();
     
     for (address, balance) in balances {

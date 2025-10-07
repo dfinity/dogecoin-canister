@@ -53,7 +53,7 @@ impl Ord for Utxo {
 pub struct CanisterData {
     pub address_utxos: Vec<AddressUtxo>,
     pub utxos: Vec<Utxo>,
-    pub balances: Vec<(Address, u64)>,
+    pub balances: Vec<(Address, u128)>,
     pub block_headers: Vec<(BlockHash, BlockHeaderBlob)>,
     pub block_heights: Vec<(Height, BlockHash)>,
 }
@@ -161,9 +161,9 @@ impl UtxoReader {
     }
 
     /// Read address to balance map from stable memory
-    fn read_balances(&self) -> Vec<(Address, u64)> { // TODO(XC-492): change u64 to u128
+    fn read_balances(&self) -> Vec<(Address, u128)> {
         let balances_memory = self.memory_manager.get(memory_ids::BALANCES);
-        let balances_map: StableBTreeMap<Address, u64, _> = StableBTreeMap::init(balances_memory);
+        let balances_map: StableBTreeMap<Address, u128, _> = StableBTreeMap::init(balances_memory);
         
         let mut balances = Vec::new();
         

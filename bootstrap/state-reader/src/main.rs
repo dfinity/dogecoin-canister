@@ -425,13 +425,13 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
     println!("\n  Total Address Balances entries: {}", balance_count.separated_string());
     
     if !data.balances.is_empty() {
-        let mut balances_satoshis: Vec<u64> = data.balances.iter().map(|(_, balance)| *balance).collect();
+        let mut balances_satoshis: Vec<u128> = data.balances.iter().map(|(_, balance)| *balance).collect();
         let mut balances_doge: Vec<f64> = balances_satoshis.iter().map(|&b| b as f64 / 100_000_000.0).collect();
         balances_satoshis.sort_unstable();
         balances_doge.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-        let total_supply: u64 = balances_satoshis.iter().sum();
-        let total_supply_doge = (total_supply as f64 / 100_000_000.0) as u64;
+        let total_supply: u128 = balances_satoshis.iter().sum();
+        let total_supply_doge = (total_supply as f64 / 100_000_000.0) as u128;
         let mean_balance = total_supply as f64 / balances_satoshis.len() as f64;
 
         println!("\n  Total Supply: {} DOGE", total_supply_doge.separated_string());
@@ -454,10 +454,10 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         println!("    95th %:  {:.8} DOGE", p95);
         println!("    99th %:  {:.8} DOGE", p99);
 
-        let dust_threshold = 10_000_000u64; // 0.1 DOGE
-        let small_threshold = 10_000_000_000u64; // 100 DOGE
-        let medium_threshold = 1_000_000_000_000u64; // 10,000 DOGE
-        let large_threshold = 1_000_000_000_000_000u64; // 10,000,000 DOGE
+        let dust_threshold = 10_000_000u128; // 0.1 DOGE
+        let small_threshold = 10_000_000_000u128; // 100 DOGE
+        let medium_threshold = 1_000_000_000_000u128; // 10,000 DOGE
+        let large_threshold = 1_000_000_000_000_000u128; // 10,000,000 DOGE
 
         let dust_count = balances_satoshis.iter().filter(|&&b| b > 0 && b < dust_threshold).count();
         let small_count = balances_satoshis.iter().filter(|&&b| b >= dust_threshold && b < small_threshold).count();
@@ -503,9 +503,9 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
         let top_5_percent = std::cmp::max(1, balance_count * 5 / 100);
         let top_10_percent = std::cmp::max(1, balance_count / 10);
 
-        let top_1_wealth: u64 = balances_satoshis.iter().rev().take(top_1_percent).sum();
-        let top_5_wealth: u64 = balances_satoshis.iter().rev().take(top_5_percent).sum();
-        let top_10_wealth: u64 = balances_satoshis.iter().rev().take(top_10_percent).sum();
+        let top_1_wealth: u128 = balances_satoshis.iter().rev().take(top_1_percent).sum();
+        let top_5_wealth: u128 = balances_satoshis.iter().rev().take(top_5_percent).sum();
+        let top_10_wealth: u128 = balances_satoshis.iter().rev().take(top_10_percent).sum();
 
         println!("\n  Wealth Concentration:");
         println!("    Top 1% of addresses hold: {:.2}% of total supply",
