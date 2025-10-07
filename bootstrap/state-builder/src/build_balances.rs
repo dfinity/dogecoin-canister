@@ -44,12 +44,12 @@ fn main() {
     let reader = BufReader::new(utxos_file);
 
     // Compute the balances. We use a standard BTreeMap here for speed.
-    let mut balances: BTreeMap<Address, u64> = BTreeMap::new();
+    let mut balances: BTreeMap<Address, u128> = BTreeMap::new();
     for (i, line) in reader.lines().enumerate() {
         let line = line.unwrap();
         let parts: Vec<_> = line.split(',').collect();
 
-        let amount: u64 = parts[3].parse().unwrap();
+        let amount: u128 = parts[3].parse().unwrap();
         let address_str = parts[5];
         let script = parts[6];
 
@@ -92,7 +92,8 @@ fn main() {
 
     println!("Writing to stable structure...");
     let memory = DefaultMemoryImpl::default();
-    let mut stable_balances: StableBTreeMap<Address, u64, _> = StableBTreeMap::init(memory.clone());
+    let mut stable_balances: StableBTreeMap<Address, u128, _> =
+        StableBTreeMap::init(memory.clone());
 
     // Write the balances into a stable btreemap.
     for (address, amount) in balances.into_iter() {
