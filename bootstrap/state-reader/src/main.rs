@@ -148,6 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// This function checks several invariants that should hold for valid canister state:
 /// - No UTXOs should exist at height 0 (they are unspendable by consensus rules)
 /// - Block headers should be at least 80 bytes
+/// - Block headers should not be all zeros (happens for AuxPow header when the daemon was run in pruned mode)
 /// - Block headers count should match block heights count
 /// - Block headers and heights should have no duplicated entries
 /// - Block heights should have no missing blocks in the height range
@@ -173,6 +174,15 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
     let undersized_count = header_sizes.iter().filter(|&&size| size < 80).count();
     if undersized_count > 0 {
         return Err(format!("Found {} block headers smaller than 80 bytes, expected none", undersized_count));
+    }
+
+    // Check for zero block headers
+    let zero_hash = BlockHash::from(vec![0u8; 32]);
+    let zero_header_count = data.block_headers.iter()
+        .filter(|(block_hash, _)| *block_hash == zero_hash)
+        .count();
+    if zero_header_count > 0 {
+        return Err(format!("Found {} zero block headers, expected none", zero_header_count));
     }
 
     // Check header/height consistency
