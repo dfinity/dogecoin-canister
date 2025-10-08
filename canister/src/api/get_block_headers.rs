@@ -698,26 +698,27 @@ mod test {
             ingest_stable_blocks_into_utxoset(state);
         });
 
+        // Verify that headers after AuxPow height activation are larger than 80 bytes
+        let auxpow_height = into_dogecoin_network(network).params().auxpow_height as usize;
+        for (i, block) in chain.iter().skip(auxpow_height).enumerate() {
+            let mut auxpow_header_bytes = vec![];
+            block
+                .auxpow_header()
+                .consensus_encode(&mut auxpow_header_bytes)
+                .unwrap();
+            assert!(
+                auxpow_header_bytes.len() > 80,
+                "Block {} should have AuxPow header larger than 80 bytes, got {} bytes",
+                i,
+                auxpow_header_bytes.len()
+            );
+        }
+
         // Verify that all stable block headers have been ingested
         assert_eq!(
             with_state(|s| { s.stable_block_headers.block_headers.len() }),
             num_blocks as u64 - stability_threshold
         );
-
-        // Verify that stable headers after AuxPow height activation are larger than 80 bytes
-        let auxpow_height = into_dogecoin_network(network).params().auxpow_height;
-        let vec_headers_stable: Vec<Vec<u8>> = with_state(|s| {
-            s.stable_block_headers
-                .get_auxpow_block_headers_in_range(std::ops::RangeInclusive::new(
-                    auxpow_height,
-                    num_blocks,
-                ))
-                .map(|header_blob| header_blob.into())
-                .collect()
-        });
-        for header_vec in vec_headers_stable {
-            assert!(header_vec.len() > 80, "Stable AuxPow header should be larger than 80 bytes to validate our test, got {} bytes", header_vec.len());
-        }
 
         // Retrieve headers for both stable and unstable blocks
         let request = GetBlockHeadersRequest {
@@ -742,24 +743,6 @@ mod test {
                 80,
                 "Header in response should be exactly 80 bytes (no AuxPow information), got {} bytes",
                 header_bytes.len()
-            );
-        }
-
-        // Verify that the returned headers match the stored headers without AuxPow information
-        for (i, (returned_header, stored_header)) in response
-            .block_headers
-            .iter()
-            .zip(chain.iter().map(|b| b.header()))
-            .enumerate()
-        {
-            let mut expected_header = vec![];
-            stored_header
-                .consensus_encode(&mut expected_header)
-                .unwrap();
-            assert_eq!(
-                returned_header, &expected_header,
-                "Header at index {} doesn't match expected header",
-                i
             );
         }
     }

@@ -46,7 +46,7 @@ impl BlockHeaderStore {
         let block_hash = block.block_hash();
         let mut header_blob = vec![];
         block
-            .auxpow_header()
+            .header()
             .consensus_encode(&mut header_blob)
             .expect("block header must be valid");
 
@@ -74,29 +74,14 @@ impl BlockHeaderStore {
         })
     }
 
-    /// Returns iterator on AuxPow block headers in the range `heights`.
-    pub fn get_auxpow_block_headers_in_range(
-        &self,
-        heights: std::ops::RangeInclusive<Height>,
-    ) -> impl Iterator<Item = BlockHeaderBlob> + '_ {
-        self.block_heights
-            .range(heights)
-            .map(move |(_, block_hash)| self.block_headers.get(&block_hash).unwrap())
-    }
-
-    /// Returns iterator on block headers (80 bytes, no AuxPow) in the range `heights`.
+    /// Returns iterator on block headers in the range `heights`.
     pub fn get_block_headers_in_range(
         &self,
         heights: std::ops::RangeInclusive<Height>,
     ) -> impl Iterator<Item = BlockHeaderBlob> + '_ {
         self.block_heights
             .range(heights)
-            .map(move |(_, block_hash)| {
-                let header_blob = self.block_headers.get(&block_hash).unwrap();
-                // Extract only the first 80 bytes (pure header, no AuxPow information)
-                let header_bytes: Vec<u8> = header_blob.into();
-                BlockHeaderBlob::from(header_bytes[0..80].to_vec())
-            })
+            .map(move |(_, block_hash)| self.block_headers.get(&block_hash).unwrap())
     }
 }
 
@@ -118,7 +103,6 @@ mod test {
     use bitcoin::consensus::Encodable;
     use proptest::proptest;
 
-    use crate::block_header_store::deserialize_block_header;
     use crate::test_utils::BlockChainBuilder;
     use crate::{
         block_header_store::BlockHeaderStore, test_utils::BlockBuilder, types::BlockHeaderBlob,
@@ -128,17 +112,15 @@ mod test {
     fn test_get_block_headers_in_range() {
         let mut headers = vec![];
         let block_0 = BlockBuilder::genesis().build();
-        headers.push(block_0.auxpow_header().clone());
+        headers.push(*block_0.header());
 
         let mut store = BlockHeaderStore::init();
         store.insert_block(&block_0, 0);
         let block_num = 100;
 
         for i in 1..block_num {
-            let block = BlockBuilder::with_prev_header(&headers[i - 1])
-                .with_auxpow(true)
-                .build();
-            headers.push(block.auxpow_header().clone());
+            let block = BlockBuilder::with_prev_header(&headers[i - 1]).build();
+            headers.push(*block.header());
             store.insert_block(&block, i as u32);
         }
 
@@ -147,7 +129,7 @@ mod test {
             range_length in 1..=block_num)|{
                 let requested_end = start_range + range_length - 1;
 
-                let res: Vec<BlockHeaderBlob>= store.get_auxpow_block_headers_in_range(std::ops::RangeInclusive::new(start_range as u32, requested_end as u32)).collect();
+                let res: Vec<BlockHeaderBlob>= store.get_block_headers_in_range(std::ops::RangeInclusive::new(start_range as u32, requested_end as u32)).collect();
 
                 let end_range = std::cmp::min(requested_end, block_num - 1);
 
@@ -164,76 +146,40 @@ mod test {
     }
 
     #[test]
-    fn test_auxpow_header_stored() {
+    fn test_headers_stored_are_pure_headers() {
         let block_num = 10;
         let blockchain = BlockChainBuilder::new(block_num).with_auxpow().build();
+
+        for (i, block) in blockchain.iter().skip(1).enumerate() {
+            // Verify the original AuxPow header is larger than 80 bytes
+            let mut auxpow_header_bytes = vec![];
+            block
+                .auxpow_header()
+                .consensus_encode(&mut auxpow_header_bytes)
+                .unwrap();
+            assert!(
+                auxpow_header_bytes.len() > 80,
+                "Block {} should have AuxPow header larger than 80 bytes, got {} bytes",
+                i,
+                auxpow_header_bytes.len()
+            );
+        }
 
         let mut store = BlockHeaderStore::init();
         for i in 0..block_num {
             store.insert_block(&blockchain[i as usize], i);
         }
 
-        for header in
-            store.get_auxpow_block_headers_in_range(std::ops::RangeInclusive::new(1, block_num))
+        // Verify that stored headers are pure 80-byte headers (no AuxPow)
+        for header in store.get_block_headers_in_range(std::ops::RangeInclusive::new(1, block_num))
         {
             let header_bytes: Vec<u8> = header.into();
             let header_bytes_len = header_bytes.len();
-            assert!(
-                header_bytes_len > 80,
-                "Stored header should be AuxPow header, i.e. larger than 80 bytes, got {} bytes",
+            assert_eq!(
+                header_bytes_len, 80,
+                "Stored header should be pure 80-byte header, got {} bytes",
                 header_bytes_len
             );
         }
-    }
-
-    #[test]
-    fn test_serialize_deserialize_header_from_auxpow_header() {
-        // Create a block with AuxPoW enabled
-        let auxpow_block = BlockBuilder::genesis().with_auxpow(true).build();
-
-        // Serialize the pure header (without AuxPoW)
-        let mut pure_header_bytes = vec![];
-        auxpow_block
-            .header()
-            .consensus_encode(&mut pure_header_bytes)
-            .unwrap();
-
-        // Serialize the AuxPoW header (with AuxPoW)
-        let mut auxpow_header_bytes = vec![];
-        auxpow_block
-            .auxpow_header()
-            .consensus_encode(&mut auxpow_header_bytes)
-            .unwrap();
-
-        // Verify that pure header is exactly 80 bytes
-        assert_eq!(
-            pure_header_bytes.len(),
-            80,
-            "Pure header should be exactly 80 bytes, got {}",
-            pure_header_bytes.len()
-        );
-
-        // Verify that AuxPoW header is larger than 80 bytes
-        assert!(
-            auxpow_header_bytes.len() > 80,
-            "AuxPoW header should be larger than 80 bytes, got {}",
-            auxpow_header_bytes.len()
-        );
-
-        // Verify that the first 80 bytes of the AuxPoW header are identical to the pure header
-        let auxpow_prefix = &auxpow_header_bytes[0..80];
-        assert_eq!(
-            pure_header_bytes, auxpow_prefix,
-            "First 80 bytes of serialized AuxPoW header should match pure header serialization"
-        );
-
-        // Verify that the deserializing the first 80 bytes yields the pure header
-        let block_header_blob = BlockHeaderBlob::from(auxpow_prefix.to_vec());
-        let reconstructed_header = deserialize_block_header(block_header_blob);
-        assert_eq!(
-            *auxpow_block.header(),
-            reconstructed_header,
-            "The 80-byte prefix of a serialized AuxPow header should reconstruct to the original header"
-        );
     }
 }
