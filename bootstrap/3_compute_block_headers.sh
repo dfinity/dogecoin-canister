@@ -54,9 +54,10 @@ echo "Fetching block headers up to height $STABLE_HEIGHT..."
 for ((height = 0; height <= STABLE_HEIGHT; height++)); do
     BLOCK_HASH=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash "$height")
     BLOCK_HEADER=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockheader "$BLOCK_HASH" false)
+    PURE_HEADER="${BLOCK_HEADER:0:160}"
 
     # Append the block hash and header to the file.
-    echo "$BLOCK_HASH,$BLOCK_HEADER" >> "$BLOCK_HEADERS_FILE"
+    echo "$BLOCK_HASH,$PURE_HEADER" >> "$BLOCK_HEADERS_FILE"
 
     # Calculate and log progress every 100 blocks.
     if ((height % 100 == 0 || height == STABLE_HEIGHT)); then
