@@ -78,7 +78,3 @@ BLOCK_HASH=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhas
 # Wait for daemon to exit cleanly
 wait $DOGECOIN_PID
 
-# Create a backup of the downloaded data.
-echo "Creating a backup of the downloaded state in: $BACKUP_DIR"
-cp -r "$DATA_DIR" "$BACKUP_DIR"
-echo "Backup complete."
