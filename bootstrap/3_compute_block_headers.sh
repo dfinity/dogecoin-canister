@@ -54,9 +54,18 @@ echo "Fetching block headers up to height $STABLE_HEIGHT..."
 for ((height = 0; height <= STABLE_HEIGHT; height++)); do
     BLOCK_HASH=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash "$height")
     BLOCK_HEADER=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockheader "$BLOCK_HASH" false)
+    PURE_HEADER="${BLOCK_HEADER:0:160}"
+
+    # Check if header is all zeros (indicates missing data, e.g. pruned AuxPow header)
+    if [[ "$PURE_HEADER" =~ ^0+$ ]]; then
+        echo "Error: Got all zeros header at height $height (hash: $BLOCK_HASH)"
+        echo "This likely means that the header is a AuxPow header which has been pruned."
+        echo "Try syncing the chain again without the prune option."
+        exit 1
+    fi
 
     # Append the block hash and header to the file.
-    echo "$BLOCK_HASH,$BLOCK_HEADER" >> "$BLOCK_HEADERS_FILE"
+    echo "$BLOCK_HASH,$PURE_HEADER" >> "$BLOCK_HEADERS_FILE"
 
     # Calculate and log progress every 100 blocks.
     if ((height % 100 == 0 || height == STABLE_HEIGHT)); then

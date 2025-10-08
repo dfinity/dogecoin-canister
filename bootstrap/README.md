@@ -7,7 +7,7 @@ computed offline much more quickly with the help of `dogecoind`.
 
 * A linux machine
 * \>= 16GiB RAM
-* \>= 100GB of disk space
+* \>= 200GB of disk space
 
 ## 1. Download Dogecoin Core
 
