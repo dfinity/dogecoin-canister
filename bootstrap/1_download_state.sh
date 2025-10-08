@@ -73,15 +73,6 @@ done
 BLOCK_HASH=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash "$((HEIGHT_STOP_SYNC + 1))")
 "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" invalidateblock "$BLOCK_HASH"
 
-COUNT=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount)
-
-# We need at least two blocks beyond the target height (unstable blocks).
-if [[ "$COUNT" -le "$((HEIGHT + 1))" ]]; then
-    echo "Error: Blocks not fully synchronized. Current height: $COUNT. Additional unstable blocks beyond $HEIGHT are needed. Stopping node..." >&2
-else
-    echo "Blocks synchronized successfully. Current height: $COUNT. Stopping node..."
-fi
-
 "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" stop
 
 # Wait for daemon to exit cleanly
