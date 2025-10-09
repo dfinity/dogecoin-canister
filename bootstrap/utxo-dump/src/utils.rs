@@ -8,7 +8,7 @@ use libc::{rlimit, setrlimit, RLIMIT_NOFILE};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) fn set_unix_rlimit(args: &Args) -> anyhow::Result<()> {
     const TARGET_LIMIT: u64 = 16_384;
-    
+
     if !args.quiet {
         println!("Setting file descriptor limit to {}", TARGET_LIMIT);
     }
@@ -22,21 +22,28 @@ pub(crate) fn set_unix_rlimit(args: &Args) -> anyhow::Result<()> {
     if ret != 0 {
         let error = std::io::Error::last_os_error();
         eprintln!("Failed to set rlimit to {}: {}", TARGET_LIMIT, error);
-        
-        let mut current_limit = rlimit { rlim_cur: 0, rlim_max: 0 };
+
+        let mut current_limit = rlimit {
+            rlim_cur: 0,
+            rlim_max: 0,
+        };
         let get_ret = unsafe { libc::getrlimit(RLIMIT_NOFILE, &mut current_limit) };
         if get_ret == 0 {
-            eprintln!("Current limits: soft={}, hard={}", current_limit.rlim_cur, current_limit.rlim_max);
+            eprintln!(
+                "Current limits: soft={}, hard={}",
+                current_limit.rlim_cur, current_limit.rlim_max
+            );
             if current_limit.rlim_max < TARGET_LIMIT {
                 eprintln!("Hard limit ({}) is less than target ({}). You may need to run as root or modify /etc/security/limits.conf", 
                          current_limit.rlim_max, TARGET_LIMIT);
             }
         }
-        
+
         anyhow::bail!(
             "Failed to set file descriptor limit to {}. This may cause silent data loss!\n\
-             Try running: ulimit -n {} before running the tool", 
-            TARGET_LIMIT, TARGET_LIMIT
+             Try running: ulimit -n {} before running the tool",
+            TARGET_LIMIT,
+            TARGET_LIMIT
         );
     } else {
         if !args.quiet {
