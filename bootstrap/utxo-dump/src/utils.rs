@@ -45,10 +45,8 @@ pub(crate) fn set_unix_rlimit(args: &Args) -> anyhow::Result<()> {
             TARGET_LIMIT,
             TARGET_LIMIT
         );
-    } else {
-        if !args.quiet {
-            println!("Successfully updated RLIMIT_NOFILE to {}", TARGET_LIMIT);
-        }
+    } else if !args.quiet {
+        println!("Successfully updated RLIMIT_NOFILE to {}", TARGET_LIMIT);
     }
 
     Ok(())
