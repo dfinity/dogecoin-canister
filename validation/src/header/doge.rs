@@ -177,10 +177,9 @@ impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
                     // If the block has been found within `pow_target_spacing * 2` minutes, then
                     // use the previous difficulty target that is not equal to the maximum
                     // difficulty target
-                    return Target::from_compact(self.find_next_difficulty_in_chain(
-                        prev_header,
-                        prev_height,
-                    ));
+                    return Target::from_compact(
+                        self.find_next_difficulty_in_chain(prev_header, prev_height),
+                    );
                 };
             }
             return Target::from_compact(prev_header.bits);
@@ -221,7 +220,8 @@ impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
 
                     // Traverse to the previous header.
                     let prev_blockhash = current_header.prev_blockhash;
-                    current_header = self.store
+                    current_header = self
+                        .store
                         .get_with_block_hash(&prev_blockhash)
                         .expect("previous header should be in the header store");
                     // Update the current height and hash.
@@ -259,7 +259,8 @@ impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
         } else {
             height - difficulty_adjustment_interval - 1
         };
-        let last_adjustment_header = self.store
+        let last_adjustment_header = self
+            .store
             .get_with_height(last_adjustment_height)
             .expect("Last adjustment header must exist");
 

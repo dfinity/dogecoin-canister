@@ -1,4 +1,5 @@
 use crate::header::HeaderValidator;
+use crate::HeaderStore;
 use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
 #[cfg(feature = "doge")]
@@ -16,7 +17,6 @@ use csv::{Reader, StringRecord};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
-use crate::fixtures::SimpleHeaderStore;
 
 pub const MOCK_CURRENT_TIME: Duration = Duration::from_secs(2_634_590_600);
 const TEST_DATA_FOLDER: &str = "tests/data";
@@ -166,21 +166,17 @@ pub fn next_block_header<T: HeaderValidator>(
 
 /// Creates a chain of headers with the given length and
 /// proof of work for the first header.
-pub fn build_header_chain<T: HeaderValidator>(
-    validator: &T,
-    genesis_header: Header,
-    chain_length: u32,
-) -> (SimpleHeaderStore, Header) {
+pub fn build_header_chain<T: HeaderValidator>(validator: &mut T, chain_length: u32) -> Header {
     let pow_limit = validator.pow_limit_bits();
-    let h0 = genesis_header;
-    let mut store = SimpleHeaderStore::new(h0, 0);
-    let mut last_header = h0;
+
+    let current_height = validator.store().height();
+    let mut last_header = validator.store().get_with_height(current_height).unwrap();
 
     for _ in 1..chain_length {
         let new_header = next_block_header(validator, last_header, pow_limit);
-        store.add(new_header);
+        validator.store_mut().add(new_header);
         last_header = new_header;
     }
 
-    (store, last_header)
+    last_header
 }

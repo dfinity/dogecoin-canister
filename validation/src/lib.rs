@@ -1,9 +1,8 @@
-mod header;
 mod block;
+mod header;
 
 #[cfg(test)]
 mod fixtures;
-
 
 pub use crate::block::{BlockValidator, ValidateBlockError};
 pub use crate::header::{HeaderStore, HeaderValidator, ValidateHeaderError};

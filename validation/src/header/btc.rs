@@ -30,7 +30,7 @@ impl<T> BitcoinHeaderValidator<T> {
     }
 }
 
-impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
+impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
     type Network = BitcoinNetwork;
     type Store = T;
 
@@ -127,7 +127,9 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
                     // "If no block has been found in 20 minutes, the difficulty automatically
                     // resets back to the minimum for a single block, after which it
                     // returns to its previous value."
-                    if timestamp > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32 {
+                    if timestamp
+                        > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32
+                    {
                         // If no block has been found in 20 minutes, then use the maximum difficulty
                         // target
                         self.max_target()
@@ -145,7 +147,7 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
             BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => {
                 Target::from_compact(self.compute_next_difficulty(prev_header, prev_height))
             }
-            &other => unreachable!("Unsupported network: {:?}", other)
+            &other => unreachable!("Unsupported network: {:?}", other),
         }
     }
 
