@@ -5,7 +5,7 @@ use bitcoin::{block::Header, CompactTarget, Target};
 use std::time::Duration;
 
 /// Expected number of blocks for 2 weeks in Bitcoin (2_016).
-pub const DIFFICULTY_ADJUSTMENT_INTERVAL: BlockHeight = 6 * 24 * 14;
+pub const DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN: BlockHeight = 6 * 24 * 14;
 
 pub struct BitcoinHeaderValidator<T> {
     store: T,
@@ -81,10 +81,10 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
             }
         };
 
-        self.is_timestamp_valid(header, current_time)?;
+        is_timestamp_valid(self.store, header, current_time)?;
 
         let header_target = header.target();
-        if header_target > max_target(&self.network) {
+        if header_target > self.max_target() {
             return Err(ValidateHeaderError::TargetDifficultyAboveMax);
         }
 
@@ -110,18 +110,18 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
         prev_height: BlockHeight,
         timestamp: u32,
     ) -> Target {
-        match self.network {
+        match self.network() {
             BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
-                if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL != 0 {
+                if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 {
                     // This if statements is reached only for Regtest and Testnet networks
                     // Here is the quote from "https://en.bitcoin.it/wiki/Testnet"
                     // "If no block has been found in 20 minutes, the difficulty automatically
                     // resets back to the minimum for a single block, after which it
                     // returns to its previous value."
-                    if timestamp > prev_header.time + TEN_MINUTES * 2 {
+                    if timestamp > prev_header.time + (self.pow_target_spacing() * 2).as_secs() as u32 {
                         // If no block has been found in 20 minutes, then use the maximum difficulty
                         // target
-                        max_target(&self.network)
+                        self.max_target()
                     } else {
                         // If the block has been found within 20 minutes, then use the previous
                         // difficulty target that is not equal to the maximum difficulty target
@@ -136,6 +136,7 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
             BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => {
                 Target::from_compact(self.compute_next_difficulty(prev_header, prev_height))
             }
+            &other => unreachable!("Unsupported network: {:?}", other)
         }
     }
 
@@ -152,8 +153,8 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
         prev_height: BlockHeight,
     ) -> CompactTarget {
         // This is the maximum difficulty target for the network
-        let pow_limit_bits = pow_limit_bits(&self.network);
-        match self.network {
+        let pow_limit_bits = self.pow_limit_bits();
+        match self.network() {
             BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
                 let mut current_header = *prev_header;
                 let mut current_height = prev_height;
@@ -165,7 +166,7 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
                 loop {
                     // Check if non-limit PoW found or it's time to adjust difficulty.
                     if current_header.bits != pow_limit_bits
-                        || current_height % DIFFICULTY_ADJUSTMENT_INTERVAL == 0
+                        || current_height % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN == 0
                     {
                         return current_header.bits;
                     }
@@ -188,6 +189,7 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
                 pow_limit_bits
             }
             BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => pow_limit_bits,
+            &other => unreachable!("Unsupported network: {:?}", other),
         }
     }
 
@@ -204,15 +206,15 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
         // regtest, simply return the previous difficulty target.
 
         let height = prev_height + 1;
-        if height % DIFFICULTY_ADJUSTMENT_INTERVAL != 0 || no_pow_retargeting(&self.network) {
+        if height % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 || self.no_pow_retargeting() {
             return prev_header.bits;
         }
         // Computing the `last_adjustment_header`.
         // `last_adjustment_header` is the last header with height multiple of 2016
-        let last_adjustment_height = if height < DIFFICULTY_ADJUSTMENT_INTERVAL {
+        let last_adjustment_height = if height < DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN {
             0
         } else {
-            height - DIFFICULTY_ADJUSTMENT_INTERVAL
+            height - DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN
         };
         let last_adjustment_header = self
             .store
@@ -224,8 +226,8 @@ impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
         // to the last block of the previous difficulty period. Instead,
         // the first block of the difficulty period is used as the base.
         // See https://github.com/bitcoin/bips/blob/master/bip-0094.mediawiki#block-storm-fix
-        let last = match self.network {
-            Network::Testnet4 => last_adjustment_header.bits,
+        let last = match self.network() {
+            BitcoinNetwork::Testnet4 => last_adjustment_header.bits,
             _ => prev_header.bits,
         };
 
