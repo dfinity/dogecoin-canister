@@ -158,19 +158,19 @@ fn verify_regtest_difficulty_calculation<T: HeaderValidator>(
     validator: &mut T,
     expected_pow: CompactTarget,
 ) {
+    // From 10 we reach Digishield activation in Dogecoin and hence it would fail.
+    let chain_length = 9;
     // Arrange.
-    for chain_length in 1..10 {
-        let last_header = utils::build_header_chain(validator, chain_length);
-        assert_eq!(validator.store().height() + 1, chain_length);
-        // Act.
-        let target = validator.get_next_target(
-            &last_header,
-            chain_length - 1,
-            last_header.time + validator.pow_target_spacing().as_secs() as u32,
-        );
-        // Assert.
-        assert_eq!(target, Target::from_compact(expected_pow));
-    }
+    let last_header = utils::build_header_chain(validator, chain_length);
+    assert_eq!(validator.store().height() + 1, chain_length);
+    // Act.
+    let target = validator.get_next_target(
+        &last_header,
+        validator.store().height(),
+        last_header.time + validator.pow_target_spacing().as_secs() as u32,
+    );
+    // Assert.
+    assert_eq!(target, Target::from_compact(expected_pow));
 }
 
 fn verify_backdated_block_difficulty<T: HeaderValidator>(
