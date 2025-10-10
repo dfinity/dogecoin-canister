@@ -94,6 +94,10 @@ impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
         &self.network
     }
 
+    fn store(&self) -> &Self::Store {
+        &self.store
+    }
+
     fn store_mut(&mut self) -> &mut Self::Store {
         &mut self.store
     }

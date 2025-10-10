@@ -144,6 +144,9 @@ pub trait HeaderValidator {
 
     fn network(&self) -> &Self::Network;
 
+    /// Returns a reference to the header store.
+    fn store(&self) -> &Self::Store;
+
     /// Returns a mutable reference to the header store.
     fn store_mut(&mut self) -> &mut Self::Store;
 
