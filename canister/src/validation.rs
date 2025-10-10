@@ -101,6 +101,12 @@ impl HeaderStore for ValidationContext<'_> {
             None
         }
     }
+
+    fn add(&mut self, _header: Header) {
+        // ValidationContext is read-only during validation.
+        // This method is required by the HeaderStore trait but should not be called.
+        panic!("ValidationContext::add() should not be called - ValidationContext is read-only")
+    }
 }
 
 #[cfg(test)]

@@ -88,9 +88,14 @@ impl<T: HeaderStore> DogecoinHeaderValidator<T> {
 
 impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
     type Network = DogecoinNetwork;
+    type Store = T;
 
     fn network(&self) -> &Self::Network {
         &self.network
+    }
+
+    fn store_mut(&mut self) -> &mut Self::Store {
+        &mut self.store
     }
 
     fn max_target(&self) -> Target {

@@ -32,9 +32,14 @@ impl<T> BitcoinHeaderValidator<T> {
 
 impl<T: HeaderStore>  HeaderValidator for BitcoinHeaderValidator<T> {
     type Network = BitcoinNetwork;
+    type Store = T;
 
     fn network(&self) -> &Self::Network {
         &self.network
+    }
+
+    fn store_mut(&mut self) -> &mut Self::Store {
+        &mut self.store
     }
 
     fn max_target(&self) -> Target {
