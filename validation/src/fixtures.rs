@@ -40,9 +40,16 @@ impl SimpleHeaderStore {
         }
     }
 
-    pub fn new_with_genesis(network: bitcoin::Network) -> Self {
+    #[cfg(feature = "btc")]
+    pub fn new_with_genesis_bitcoin(network: bitcoin::Network) -> Self {
         let genesis = bitcoin::constants::genesis_block(network);
         Self::new(genesis.header, 0)
+    }
+
+    #[cfg(feature = "doge")]
+    pub fn new_with_genesis_dogecoin(network: bitcoin::dogecoin::Network) -> Self {
+        let genesis = bitcoin::dogecoin::constants::genesis_block(network);
+        Self::new(*genesis.header, 0)
     }
 
     pub fn add(&mut self, header: Header) {
