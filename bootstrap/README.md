@@ -124,12 +124,8 @@ canister in Docker.
 # Go back to root repo directory
 $ cd ..
 
-# Build all, specifying the path to chunk_hashes.txt
-$ docker build --build-arg CHUNK_HASHES_PATH=/bootstrap/chunk_hashes.txt  -t canisters .
-
-# Extract canister's WASM
-$ docker run --rm canisters cat /uploader.wasm.gz > uploader.wasm.gz
-$ docker run --rm canisters cat /ic-doge-canister.wasm.gz > ic-doge-canister.wasm.gz
+# Specify the path to chunk_hashes.txt for building the uploader canister.
+$ ./scripts/docker-build ic-doge-canister uploader --chunk-hashes ./bootstrap/chunk_hashes.txt
 
 # Verify SHA-256 of the canister's WASM.
 $ sha256sum *.wasm.gz
@@ -181,7 +177,7 @@ In the `output.secret` file find and save system subnet IPv6 and links to grafan
   "grafana": "Grafana at http://grafana.XXX", # <- YOU NEED THIS URL
 ```
 
-Update your `dfx.json` with IPv6 from the above:
+Update the `dfx.json` file (under `deployment/mainnet` or `deployment/testnet`) with the IPv6 address provided above:
 
 ```json
     "testnet": {
@@ -192,13 +188,9 @@ Update your `dfx.json` with IPv6 from the above:
 }
 ```
 
-If you want to deploy both `testnet` and `mainnet` canisters via dfx you might want to clone their setups in `dfx.json`,
-so instead of having `dogecoin` you have `dogecoin_t` and `dogecoin_m`, same for `watchdog` (`watchdog_t`,
-`watchdog_m`).
-
 ```shell
 # Helper constants
-NETWORK=testnet; \
+NETWORK=<mainnet or testnet>; \
   STABILITY_THRESHOLD=144; \
   TESTNET_DOGECOIN_CANISTER_ID="g4xu7-jiaaa-aaaan-aaaaq-cai"; \
   TESTNET_WATCHDOG_CANISTER_ID="gjqfs-iaaaa-aaaan-aaada-cai"; \
@@ -209,10 +201,10 @@ NETWORK=testnet; \
 Create corresponding canister
 
 ```shell
-# (Optional) remove current canister ids. 
-$ rm canister_ids.json
+$ cd deployment/<mainnet or testnet>
 
-$ dfx canister create dogecoin_t --no-wallet \
+# Choose $MAINNET_DOGECOIN_CANISTER_ID or $TESTNET_DOGECOIN_CANISTER_ID
+$ dfx canister create dogecoin --no-wallet \
     --network testnet \
     --subnet-type system \
     --specified-id $TESTNET_DOGECOIN_CANISTER_ID \
@@ -223,43 +215,39 @@ $ dfx canister create dogecoin_t --no-wallet \
 ## 8. Install Uploader Canister & Upload Chunks
 
 Prepare install arguments
-
 ```shell
 # Get canister state size
-$ wc -c < ./bootstrap/output/canister_state.bin
+$ wc -c < ../../bootstrap/output/canister_state.bin
 1149304832
 ```
 
 Calculate required number of pages, page is `64 * 1024` bytes
-
 ```txt
 ceil(1149304832 / (64 * 1024)) = 17537
 ```
 
 Calculate args hash
-
 ```shell
 $ didc encode -t '(nat64)' "(17537)" | xxd -r -p | sha256sum
 e299fbe18558a3646ab33e5d28eec04e474339f235cf4f22dd452c98f831a249  -
 ```
 
 Install uploader canister
-
 ```shell
 $ dfx canister install \
-    --network testnet $TESTNET_DOGECOIN_CANISTER_ID \
+    --network testnet dogecoin \
     --mode reinstall \
-    --wasm ./uploader.wasm.gz \
+    --wasm ../../uploader.wasm.gz \
     --argument "(17537 : nat64)"  # Use calculated number of pages.
 ```
 
 Upload chunks
-
 ```shell
 # USE IPv6 FROM THE ABOVE
+# Choose $MAINNET_BITCOIN_CANISTER_ID or $TESTNET_BITCOIN_CANISTER_ID
 $ cargo run --example upload -- \
     --canister-id $TESTNET_DOGECOIN_CANISTER_ID \
-    --state ./bootstrap/output/canister_state.bin \
+    --state ../../bootstrap/output/canister_state.bin \
     --ic-network http://\[2602:xx:xx:xx:xx:xx:xx:df47\]:8080 \
     --fetch-root-key
 ```
@@ -267,7 +255,6 @@ $ cargo run --example upload -- \
 ## 9. Upgrade Dogecoin Canister
 
 Prepare upgrade arguments
-
 ```shell
 # https://internetcomputer.org/docs/references/bitcoin-how-it-works#api-fees-and-pricing
 $ CUSTOM_FEES="record { 
@@ -289,6 +276,7 @@ $ CUSTOM_FEES="record {
 # This config optionally updates settings after canister upgrade.
 # Fields not set will keep their current values (which is default after uploader canister).
 # Make sure to use correct Candid syntax for `nat` values: https://internetcomputer.org/docs/references/candid-ref#textual-syntax-4
+# Choose $MAINNET_WATCHDOG_CANISTER_ID or $TESTNET_WATCHDOG_CANISTER_ID
 $ POST_UPGRADE_ARG="(opt record {
     network = opt variant { $NETWORK };
     stability_threshold = opt ($STABILITY_THRESHOLD : nat);
@@ -300,20 +288,20 @@ $ POST_UPGRADE_ARG="(opt record {
 ```
 
 ```shell
-$ didc encode -d ./canister/candid.did -t '(opt set_config_request)' "$POST_UPGRADE_ARG" | xxd -r -p | sha256sum
+$ didc encode -d ../../canister/candid.did -t '(opt set_config_request)' "$POST_UPGRADE_ARG" | xxd -r -p | sha256sum
 6d3bcdfdefaf3dd444a218735277f6d1cba15196d09b9544b7a04dbc3c36642f  -
 ```
 
-Upgrade dogecoin canister
+Upgrade bitcoin canister
 
 ```shell
-$ dfx canister stop --network testnet $TESTNET_DOGECOIN_CANISTER_ID
+$ dfx canister stop --network testnet dogecoin
 
 $ dfx canister install \
-    --network testnet $TESTNET_DOGECOIN_CANISTER_ID \
+    --network testnet dogecoin \
     --mode upgrade \
-    --wasm ./ic-doge-canister.wasm.gz \
-    --argument "$ARG"
+    --wasm ../../ic-doge-canister.wasm.gz \
+    --argument "$POST_UPGRADE_ARG"
 
-$ dfx canister start --network testnet $TESTNET_DOGECOIN_CANISTER_ID
+$ dfx canister start --network testnet dogecoin
 ```

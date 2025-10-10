@@ -1971,8 +1971,10 @@ name = "ic-doge-validation"
 version = "0.1.0"
 dependencies = [
  "bitcoin",
+ "canbench-rs",
  "csv",
  "hex",
+ "hex_lit",
  "ic-doge-test-utils",
  "proptest 0.9.6",
 ]
