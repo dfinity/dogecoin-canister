@@ -27,8 +27,8 @@ Options:
   -h, --help          : Show this help message
 
 Arguments:
-  canister1 canister2 ... : Optional list of canister names to extract (e.g., ic-btc-canister, watchdog, uploader)
-                           If no arguments are provided, ic-btc-canister and watchdog are extracted by default
+  canister1 canister2 ... : Optional list of canister names to extract (e.g., ic-doge-canister, watchdog, uploader)
+                           If no arguments are provided, ic-doge-canister and watchdog are extracted by default
 
 This will create (and override) the corresponding ".wasm.gz" files in the current directory.
 EOF
@@ -74,13 +74,13 @@ do
                 exit 1
             fi
             ;;
-        uploader|ic-btc-canister|watchdog)
+        uploader|ic-doge-canister|watchdog)
             CANISTERS+=("$1")
             shift
             ;;
         *)
             echo "ERROR: unknown argument '$1'"
-            echo "Valid canisters are: uploader, ic-btc-canister, watchdog"
+            echo "Valid canisters are: uploader, ic-doge-canister, watchdog"
             usage
             echo
             echo "Use '$0 --help' for more information"
@@ -95,7 +95,7 @@ if [ -n "$CHUNK_HASHES_PATH" ] && [ ! -f "$CHUNK_HASHES_PATH" ]; then
 fi
 
 if [ ${#CANISTERS[@]} -eq 0 ]; then
-    CANISTERS=("ic-btc-canister" "watchdog")
+    CANISTERS=("ic-doge-canister" "watchdog")
 fi
 
 # Validate that chunk-hashes is provided if uploader is requested
@@ -110,7 +110,7 @@ do
     fi
 done
 
-image_name="bitcoin-docker-build"
+image_name="dogecoin-docker-build"
 docker_build_args=(--tag "$image_name")
 temp_chunk_file=""
 
