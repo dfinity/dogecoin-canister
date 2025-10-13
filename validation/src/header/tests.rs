@@ -103,7 +103,7 @@ fn verify_with_invalid_pow_with_computed_target<T: HeaderValidator>(
 
 fn verify_with_excessive_target<T: HeaderValidator>(validator_mainnet: &T, header: &mut Header) {
     header.bits = CompactTarget::from_hex("0x207fffff").unwrap(); // Target exceeds what is allowed on mainnet
-    let result = validator_mainnet.validate_header(&header, MOCK_CURRENT_TIME);
+    let result = validator_mainnet.validate_header(header, MOCK_CURRENT_TIME);
     assert!(matches!(
         result,
         Err(ValidateHeaderError::TargetDifficultyAboveMax)
