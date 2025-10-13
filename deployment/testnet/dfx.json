@@ -1,11 +1,11 @@
 {
   "dfx": "0.23.0",
   "canisters": {
-    "bitcoin": {
+    "dogecoin": {
       "type": "custom",
       "candid": "../../canister/candid.did",
-      "build": "../../scripts/build-canister.sh ic-btc-canister",
-      "wasm": "../../target/wasm32-unknown-unknown/release/ic-btc-canister.wasm.gz"
+      "build": "../../scripts/build-canister.sh ic-doge-canister",
+      "wasm": "../../target/wasm32-unknown-unknown/release/ic-doge-canister.wasm.gz"
     },
     "watchdog": {
       "type": "custom",
