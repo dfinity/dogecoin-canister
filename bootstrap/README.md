@@ -190,24 +190,20 @@ Update the `dfx.json` file (under `deployment/mainnet` or `deployment/testnet`) 
 
 ```shell
 # Helper constants
-NETWORK=<mainnet or testnet>; \
-  STABILITY_THRESHOLD=144; \
-  TESTNET_DOGECOIN_CANISTER_ID="g4xu7-jiaaa-aaaan-aaaaq-cai"; \
-  TESTNET_WATCHDOG_CANISTER_ID="gjqfs-iaaaa-aaaan-aaada-cai"; \
-  MAINNET_DOGECOIN_CANISTER_ID="ghsi2-tqaaa-aaaan-aaaca-cai"; \
-  MAINNET_WATCHDOG_CANISTER_ID="gatoo-6iaaa-aaaan-aaacq-cai"
+NETWORK=mainnet; \
+  STABILITY_THRESHOLD=1440; \
+  MAINNET_DOGECOIN_CANISTER_ID="gordg-fyaaa-aaaan-aaadq-cai"; \
 ```
 
 Create corresponding canister
 
 ```shell
-$ cd deployment/<mainnet or testnet>
+$ cd deployment/mainnet
 
-# Choose $MAINNET_DOGECOIN_CANISTER_ID or $TESTNET_DOGECOIN_CANISTER_ID
 $ dfx canister create dogecoin --no-wallet \
     --network testnet \
     --subnet-type system \
-    --specified-id $TESTNET_DOGECOIN_CANISTER_ID \
+    --specified-id $MAINNET_DOGECOIN_CANISTER_ID \
     --provisional-create-canister-effective-canister-id "5v3p4-iyaaa-aaaaa-qaaaa-cai" \
     --with-cycles 1000000000000000000
 ```
@@ -244,9 +240,8 @@ $ dfx canister install \
 Upload chunks
 ```shell
 # USE IPv6 FROM THE ABOVE
-# Choose $MAINNET_BITCOIN_CANISTER_ID or $TESTNET_BITCOIN_CANISTER_ID
 $ cargo run --example upload -- \
-    --canister-id $TESTNET_DOGECOIN_CANISTER_ID \
+    --canister-id $MAINNET_DOGECOIN_CANISTER_ID \
     --state ../../bootstrap/output/canister_state.bin \
     --ic-network http://\[2602:xx:xx:xx:xx:xx:xx:df47\]:8080 \
     --fetch-root-key
@@ -276,13 +271,11 @@ $ CUSTOM_FEES="record {
 # This config optionally updates settings after canister upgrade.
 # Fields not set will keep their current values (which is default after uploader canister).
 # Make sure to use correct Candid syntax for `nat` values: https://internetcomputer.org/docs/references/candid-ref#textual-syntax-4
-# Choose $MAINNET_WATCHDOG_CANISTER_ID or $TESTNET_WATCHDOG_CANISTER_ID
 $ POST_UPGRADE_ARG="(opt record {
     network = opt variant { $NETWORK };
     stability_threshold = opt ($STABILITY_THRESHOLD : nat);
     syncing = opt variant { enabled };
     api_access = opt variant { disabled };
-    watchdog_canister = opt opt principal \"$TESTNET_WATCHDOG_CANISTER_ID\";
     fees = opt $CUSTOM_FEES;
 })"
 ```
@@ -292,7 +285,7 @@ $ didc encode -d ../../canister/candid.did -t '(opt set_config_request)' "$POST_
 6d3bcdfdefaf3dd444a218735277f6d1cba15196d09b9544b7a04dbc3c36642f  -
 ```
 
-Upgrade bitcoin canister
+Upgrade Dogecoin canister
 
 ```shell
 $ dfx canister stop --network testnet dogecoin
