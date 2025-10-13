@@ -16,7 +16,9 @@ use bitcoin::{consensus::Decodable, dogecoin::Header};
 use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillikoinuPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
-use ic_doge_validation::{BlockValidator, DogecoinHeaderValidator, HeaderValidator, ValidateBlockError};
+use ic_doge_validation::{
+    BlockValidator, DogecoinHeaderValidator, HeaderValidator, ValidateBlockError,
+};
 use serde::{Deserialize, Serialize};
 
 /// A structure used to maintain the entire state.
