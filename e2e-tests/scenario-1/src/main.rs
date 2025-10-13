@@ -95,7 +95,7 @@ fn init() {
         txs.try_into().unwrap()
     };
 
-    // Block 1: A single transaction that gives ADDRESS_1 50 BTC split over 10k inputs.
+    // Block 1: A single transaction that gives ADDRESS_1 50 DOGE split over 10k inputs.
     let mut tx_1 = TransactionBuilder::new();
     for _ in 0..10_000 {
         tx_1 = tx_1.with_output(
