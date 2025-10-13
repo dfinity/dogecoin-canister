@@ -1,10 +1,10 @@
-use bitcoin::BlockHash;
 use crate::fixtures::{SimpleHeaderStore, MOCK_CURRENT_TIME};
 use crate::ValidateBlockError::InvalidBlockHeader;
 use crate::{BlockValidator, ValidateBlockError, ValidateHeaderError};
 use bitcoin::consensus::deserialize;
 use bitcoin::dogecoin::{Block, Network};
 use bitcoin::hashes::Hash;
+use bitcoin::BlockHash;
 use hex_lit::hex;
 
 // Tests taken from
@@ -16,8 +16,8 @@ mod bitcoin_tests {
     use bitcoin::dogecoin::{Block, Header};
     use bitcoin::hashes::Hash;
     use bitcoin::{
-        absolute, dogecoin::Network, transaction, Amount, OutPoint, ScriptBuf,
-        Sequence, Transaction, TxIn, TxOut, Txid, Witness,
+        absolute, dogecoin::Network, transaction, Amount, OutPoint, ScriptBuf, Sequence,
+        Transaction, TxIn, TxOut, Txid, Witness,
     };
     use hex_lit::hex;
 
@@ -149,8 +149,7 @@ fn should_prevent_merkle_tree_collision() {
     forged_block.txdata.push(forged_block.txdata[4].clone());
     assert!(forged_block.check_merkle_root());
 
-    let store =
-        SimpleHeaderStore::new(deserialize(&hex!(BLOCK_HEADER_3106_HEX)).unwrap(), 3106);
+    let store = SimpleHeaderStore::new(deserialize(&hex!(BLOCK_HEADER_3106_HEX)).unwrap(), 3106);
     let validator = BlockValidator::new(store, Network::Dogecoin);
 
     assert_eq!(
