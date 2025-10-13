@@ -776,7 +776,7 @@ mod test {
             if let Some(prev) = chain.last() {
                 prop_assert_eq!(
                     prev.block_hash(),
-                    ic_btc_types::BlockHash::from(tip.header().prev_blockhash)
+                    ic_doge_types::BlockHash::from(tip.header().prev_blockhash)
                 );
             }
         }

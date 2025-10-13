@@ -551,7 +551,7 @@ mod test {
         let num_blocks = 3;
         let num_transactions_per_block = 10;
         let network = Network::Regtest;
-        let blocks = build_chain(network, num_blocks, num_transactions_per_block);
+        let blocks = build_chain(network, num_blocks, num_transactions_per_block, false);
 
         let mut state = State::new(stability_threshold, network, blocks[0].clone());
         insert_block(&mut state, blocks[1].clone()).unwrap();

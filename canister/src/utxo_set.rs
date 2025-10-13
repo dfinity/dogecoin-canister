@@ -589,7 +589,6 @@ mod test {
     };
     use ic_doge_interface::Network;
     use ic_doge_test_utils::random_p2pkh_address;
-    use ic_doge_types::into_dogecoin_network;
     use maplit::btreeset;
     use proptest::prelude::*;
     use std::collections::BTreeSet;
@@ -1184,7 +1183,7 @@ mod test {
             // Finished ingesting block 1. Assert that the balances, addresses outpoints, and
             // UTXOs are updated accordingly.
             prop_assert_eq!(utxo_set.get_balance(&address_1), 0);
-            prop_assert_eq!(utxo_set.get_balance(&address_miner), mining_reward);
+            prop_assert_eq!(utxo_set.get_balance(&address_miner) as u64, mining_reward);
             prop_assert_eq!(utxo_set.get_balance(&address_2), 0);
             prop_assert_eq!(utxo_set.get_balance(&address_3), tx_cardinality as u128);
             prop_assert_eq!(
