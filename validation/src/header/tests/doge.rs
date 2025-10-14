@@ -163,7 +163,7 @@ fn test_invalid_pow_mainnet() {
 fn test_invalid_pow_with_computed_target_regtest() {
     let dogecoin_genesis_header = dogecoin_genesis_header(
         &DogecoinNetwork::Regtest,
-        CompactTarget::from_consensus(0x000ffff0), // Put a low target
+        CompactTarget::from_consensus(0x1701ddb2), // Put a low target
     );
     let store = SimpleHeaderStore::new(dogecoin_genesis_header, 0);
     let mut header_validator = DogecoinHeaderValidator::regtest(store);

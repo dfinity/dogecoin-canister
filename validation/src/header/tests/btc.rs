@@ -91,7 +91,7 @@ fn test_invalid_pow_mainnet() {
 fn test_invalid_pow_with_computed_target_regtest() {
     let bitcoin_genesis_header = bitcoin_genesis_header(
         BitcoinNetwork::Regtest,
-        CompactTarget::from_consensus(0x000ffff2), // Put a low target
+        CompactTarget::from_consensus(0x1701ddb2), // Put a low target
     );
     let store = SimpleHeaderStore::new(bitcoin_genesis_header, 0);
     let mut header_validator = BitcoinHeaderValidator::regtest(store);
