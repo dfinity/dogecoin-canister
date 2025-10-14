@@ -1,8 +1,8 @@
+use flate2::read::GzDecoder;
 use std::fs::{self, File};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use flate2::read::GzDecoder;
 use tar::Archive;
 use tempfile::TempDir;
 
@@ -32,14 +32,22 @@ fn test_canister_state_hash_consistency() {
     let precomputed_state_archive = test_data_dir.join("precomputed_canister_state_22559.tar.gz");
 
     // Extract both compressed files
-    let canister_state_path = extract_canister_state(&canister_state_archive, temp_path, "canister_state")
-        .expect("Failed to extract canister_state_22559.tar.gz");
-    let precomputed_state_path = extract_canister_state(&precomputed_state_archive, temp_path, "precomputed_state")
-        .expect("Failed to extract precomputed_canister_state_22559.tar.gz");
+    let canister_state_path =
+        extract_canister_state(&canister_state_archive, temp_path, "canister_state")
+            .expect("Failed to extract canister_state_22559.tar.gz");
+    let precomputed_state_path =
+        extract_canister_state(&precomputed_state_archive, temp_path, "precomputed_state")
+            .expect("Failed to extract precomputed_canister_state_22559.tar.gz");
 
     // Verify both files exist
-    assert!(canister_state_path.exists(), "Extracted canister_state.bin does not exist");
-    assert!(precomputed_state_path.exists(), "Extracted precomputed canister_state.bin does not exist");
+    assert!(
+        canister_state_path.exists(),
+        "Extracted canister_state.bin does not exist"
+    );
+    assert!(
+        precomputed_state_path.exists(),
+        "Extracted precomputed canister_state.bin does not exist"
+    );
 
     // Run state-reader on both files in quiet mode
     let hash1 = run_state_reader(&canister_state_path)
@@ -48,29 +56,33 @@ fn test_canister_state_hash_consistency() {
         .expect("Failed to run state-reader on precomputed_canister_state");
 
     println!("Hash from canister_state_22559.tar.gz: {}", hash1);
-    println!("Hash from precomputed_canister_state_22559.tar.gz: {}", hash2);
-
-    assert_eq!(
-        hash1, hash2,
-        "Combined hashes do not match."
+    println!(
+        "Hash from precomputed_canister_state_22559.tar.gz: {}",
+        hash2
     );
+
+    assert_eq!(hash1, hash2, "Combined hashes do not match.");
 }
 
 /// Extracts a .tar.gz file and locates the canister state file within it
-fn extract_canister_state(archive_path: &Path, extract_dir: &Path, subfolder: &str) -> io::Result<PathBuf> {
+fn extract_canister_state(
+    archive_path: &Path,
+    extract_dir: &Path,
+    subfolder: &str,
+) -> io::Result<PathBuf> {
     let file = File::open(archive_path)?;
     let gz_decoder = GzDecoder::new(file);
     let mut tar = Archive::new(gz_decoder);
-    
+
     let extract_path = extract_dir.join(subfolder);
     fs::create_dir_all(&extract_path)?;
-    
+
     // Extract the archive
     tar.unpack(&extract_path)?;
-    
+
     // Find the canister_state.bin file (it might be in a subdirectory)
     let canister_state_path = find_canister_state_file(&extract_path)?;
-    
+
     Ok(canister_state_path)
 }
 
@@ -79,7 +91,7 @@ fn find_canister_state_file(dir: &Path) -> io::Result<PathBuf> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
-        
+
         if path.is_file() {
             if let Some(filename) = path.file_name() {
                 if let Some(filename_str) = filename.to_str() {
@@ -95,30 +107,30 @@ fn find_canister_state_file(dir: &Path) -> io::Result<PathBuf> {
             }
         }
     }
-    
+
     Err(io::Error::new(
         io::ErrorKind::NotFound,
-        "No .bin file found in extracted archive"
+        "No .bin file found in extracted archive",
     ))
 }
 
 /// Runs state-reader using cargo run
 fn run_state_reader(input_path: &Path) -> io::Result<String> {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-    
+
     let output = Command::new("cargo")
         .args(&[
-            "run", 
-            "--bin", 
-            "state-reader", 
-            "--", 
-            "--input", 
-            input_path.to_str().unwrap(), 
-            "--quiet"
+            "run",
+            "--bin",
+            "state-reader",
+            "--",
+            "--input",
+            input_path.to_str().unwrap(),
+            "--quiet",
         ])
         .current_dir(manifest_dir)
         .output()?;
-    
+
     if !output.status.success() {
         return Err(io::Error::new(
             io::ErrorKind::Other,
@@ -129,19 +141,16 @@ fn run_state_reader(input_path: &Path) -> io::Result<String> {
             ),
         ));
     }
-    
+
     let full_output = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    
+
     // Extract the hash from the output
     let hash = full_output
         .lines()
         .rev() // Start from the end
-        .find(|line| {
-            line.trim().len() == 64 && line.trim().chars().all(|c| c.is_ascii_hexdigit())
-        })
+        .find(|line| line.trim().len() == 64 && line.trim().chars().all(|c| c.is_ascii_hexdigit()))
         .map(|line| line.trim().to_string())
         .unwrap();
-    
+
     Ok(hash)
 }
-

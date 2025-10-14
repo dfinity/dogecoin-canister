@@ -1,16 +1,14 @@
+use ic_doge_canister::state::{
+    UTXO_KEY_SIZE, UTXO_VALUE_MAX_SIZE_MEDIUM, UTXO_VALUE_MAX_SIZE_SMALL,
+};
+use ic_doge_canister::types::{Address, AddressUtxo, BlockHeaderBlob, Storable, TxOut};
 use ic_doge_interface::Height;
-use ic_doge_types::{OutPoint, BlockHash};
-use ic_doge_canister::types::{Storable, TxOut, Address, AddressUtxo, BlockHeaderBlob};
-use ic_doge_canister::state::{UTXO_KEY_SIZE, UTXO_VALUE_MAX_SIZE_SMALL, UTXO_VALUE_MAX_SIZE_MEDIUM};
+use ic_doge_types::{BlockHash, OutPoint};
 use ic_stable_structures::{
-    memory_manager::MemoryManager,
-    storable::Blob,
-    FileMemory, StableBTreeMap, Storable as StableStorable
+    memory_manager::MemoryManager, storable::Blob, FileMemory, StableBTreeMap,
+    Storable as StableStorable,
 };
-use std::{
-    fs::File,
-    path::Path,
-};
+use std::{fs::File, path::Path};
 
 use std::cell::RefCell;
 
@@ -65,7 +63,8 @@ impl PartialOrd for Utxo {
 
 impl Ord for Utxo {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.height.cmp(&other.height)
+        self.height
+            .cmp(&other.height)
             .then(self.outpoint.txid.cmp(&other.outpoint.txid))
             .then(self.outpoint.vout.cmp(&other.outpoint.vout))
     }
@@ -92,12 +91,17 @@ impl UtxoReader {
         let file = File::open(canister_state_path)?;
         let memory = FileMemory::new(file);
         let memory_manager = MemoryManager::init(memory);
-        
+
         Ok(Self { memory_manager })
     }
 
     /// Read data from stable memory
-    pub fn read_data(&self, process_utxos: bool, process_balances: bool, process_headers: bool) -> CanisterData {
+    pub fn read_data(
+        &self,
+        process_utxos: bool,
+        process_balances: bool,
+        process_headers: bool,
+    ) -> CanisterData {
         log!("Reading canister data from stable memory...");
 
         let utxos = if process_utxos {
@@ -106,14 +110,14 @@ impl UtxoReader {
             log!("Skipping UTXOs");
             Vec::new()
         };
-        
+
         let (address_utxos, balances) = if process_balances {
             (self.read_address_utxos(), self.read_balances())
         } else {
             log!("Skipping address-utxos and balances");
             (Vec::new(), Vec::new())
         };
-        
+
         let (block_headers, block_heights) = if process_headers {
             (self.read_block_headers(), self.read_block_heights())
         } else {
@@ -153,28 +157,32 @@ impl UtxoReader {
     fn read_small_utxos(&self) -> Vec<Utxo> {
         log!("  Reading small UTXOs...");
         let small_memory = self.memory_manager.get(memory_ids::SMALL_UTXOS);
-        let small_utxos_map: StableBTreeMap<Blob<UTXO_KEY_SIZE>, Blob<UTXO_VALUE_MAX_SIZE_SMALL>, _>
-            = StableBTreeMap::init(small_memory);
-        
+        let small_utxos_map: StableBTreeMap<
+            Blob<UTXO_KEY_SIZE>,
+            Blob<UTXO_VALUE_MAX_SIZE_SMALL>,
+            _,
+        > = StableBTreeMap::init(small_memory);
+
         let mut utxos = Vec::new();
         let mut count = 0;
-        
+
         for (key_blob, value_blob) in small_utxos_map.iter() {
-            let outpoint = StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
+            let outpoint =
+                StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
             let (txout, height) = <(TxOut, Height)>::from_bytes(value_blob.as_slice().to_vec());
-            
+
             utxos.push(Utxo {
                 outpoint,
                 txout,
                 height,
             });
-            
+
             count += 1;
             if count % 1_000_000 == 0 {
                 log!("    Processed {} small UTXOs...", count);
             }
         }
-        
+
         utxos
     }
 
@@ -182,28 +190,32 @@ impl UtxoReader {
     fn extract_medium_utxos(&self) -> Vec<Utxo> {
         log!("  Reading medium UTXOs...");
         let medium_memory = self.memory_manager.get(memory_ids::MEDIUM_UTXOS);
-        let medium_utxos_map: StableBTreeMap<Blob<UTXO_KEY_SIZE>, Blob<UTXO_VALUE_MAX_SIZE_MEDIUM>, _> 
-            = StableBTreeMap::init(medium_memory);
-        
+        let medium_utxos_map: StableBTreeMap<
+            Blob<UTXO_KEY_SIZE>,
+            Blob<UTXO_VALUE_MAX_SIZE_MEDIUM>,
+            _,
+        > = StableBTreeMap::init(medium_memory);
+
         let mut utxos = Vec::new();
         let mut count = 0;
-        
+
         for (key_blob, value_blob) in medium_utxos_map.iter() {
-            let outpoint = StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
+            let outpoint =
+                StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
             let (txout, height) = <(TxOut, Height)>::from_bytes(value_blob.as_slice().to_vec());
-            
+
             utxos.push(Utxo {
                 outpoint,
                 txout,
                 height,
             });
-            
+
             count += 1;
             if count % 1_000_000 == 0 {
                 log!("    Processed {} medium UTXOs...", count);
             }
         }
-        
+
         utxos
     }
 
@@ -211,16 +223,20 @@ impl UtxoReader {
     fn read_address_utxos(&self) -> Vec<AddressUtxo> {
         log!("Reading address UTXOs from stable memory...");
         let address_utxos_memory = self.memory_manager.get(memory_ids::ADDRESS_UTXOS);
-        let address_utxos_map: StableBTreeMap<Blob<{ AddressUtxo::BOUND.max_size() as usize }>, (), _>
-            = StableBTreeMap::init(address_utxos_memory);
-        
+        let address_utxos_map: StableBTreeMap<
+            Blob<{ AddressUtxo::BOUND.max_size() as usize }>,
+            (),
+            _,
+        > = StableBTreeMap::init(address_utxos_memory);
+
         let mut address_utxos = Vec::new();
         let mut count = 0;
-        
+
         for (key_blob, _) in address_utxos_map.iter() {
-            let address_utxo = StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
+            let address_utxo =
+                StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
             address_utxos.push(address_utxo);
-            
+
             count += 1;
             if count % 1_000_000 == 0 {
                 log!("  Processed {} address UTXOs...", count);
@@ -235,19 +251,19 @@ impl UtxoReader {
         log!("Reading address balances from stable memory...");
         let balances_memory = self.memory_manager.get(memory_ids::BALANCES);
         let balances_map: StableBTreeMap<Address, u128, _> = StableBTreeMap::init(balances_memory);
-        
+
         let mut balances = Vec::new();
         let mut count = 0;
-        
+
         for (address, balance) in balances_map.iter() {
             balances.push((address, balance));
-            
+
             count += 1;
             if count % 1_000_000 == 0 {
                 log!("  Processed {} address balances...", count);
             }
         }
-        
+
         balances
     }
 
@@ -255,21 +271,21 @@ impl UtxoReader {
     fn read_block_headers(&self) -> Vec<(BlockHash, BlockHeaderBlob)> {
         log!("Reading block headers from stable memory...");
         let block_headers_memory = self.memory_manager.get(memory_ids::BLOCK_HEADERS);
-        let block_headers_map: StableBTreeMap<BlockHash, BlockHeaderBlob, _> 
-            = StableBTreeMap::init(block_headers_memory);
-        
+        let block_headers_map: StableBTreeMap<BlockHash, BlockHeaderBlob, _> =
+            StableBTreeMap::init(block_headers_memory);
+
         let mut block_headers = Vec::new();
         let mut count = 0;
-        
+
         for (block_hash, header_blob) in block_headers_map.iter() {
             block_headers.push((block_hash, header_blob));
-            
+
             count += 1;
             if count % 1_000_000 == 0 {
                 log!("  Processed {} block headers...", count);
             }
         }
-        
+
         block_headers
     }
 
@@ -277,23 +293,21 @@ impl UtxoReader {
     fn read_block_heights(&self) -> Vec<(Height, BlockHash)> {
         log!("Reading block heights from stable memory...");
         let block_heights_memory = self.memory_manager.get(memory_ids::BLOCK_HEIGHTS);
-        let block_heights_map: StableBTreeMap<Height, BlockHash, _> 
-            = StableBTreeMap::init(block_heights_memory);
-        
+        let block_heights_map: StableBTreeMap<Height, BlockHash, _> =
+            StableBTreeMap::init(block_heights_memory);
+
         let mut block_heights = Vec::new();
         let mut count = 0;
-        
+
         for (height, block_hash) in block_heights_map.iter() {
             block_heights.push((height, block_hash));
-            
+
             count += 1;
             if count % 1_000_000 == 0 {
                 log!("  Processed {} block heights...", count);
             }
         }
-        
+
         block_heights
     }
-
 }
-
