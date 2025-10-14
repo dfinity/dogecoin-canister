@@ -1,7 +1,6 @@
 mod blockchain;
 mod chainstate;
 mod serialization;
-#[cfg(target_os = "macos")]
 mod utils;
 
 use bitcoin::{dogecoin::Network as DogeNetwork, Network as BtcNetwork};
@@ -15,8 +14,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use crate::serialization::read_varint;
-#[cfg(target_os = "macos")]
-use crate::utils::set_macos_rlimit;
+use crate::utils::set_unix_rlimit;
 use anyhow::{Context, Result};
 use clap::{Parser, ValueEnum};
 use rusty_leveldb::{LdbIterator, Options, DB};
@@ -98,8 +96,8 @@ impl Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    #[cfg(target_os = "macos")]
-    set_macos_rlimit(&args)?;
+    // Set rlimit to 16384 for both macOS and Linux to prevent silent data loss
+    set_unix_rlimit(&args)?;
 
     if !Path::new(&args.chainstate).exists() {
         anyhow::bail!("Couldn't find {}", args.chainstate.display());
@@ -183,6 +181,10 @@ fn main() -> Result<()> {
              Cannot process UTXO values without the obfuscation key."
         );
     };
+
+    // This may be unnecessary since `reset()` already positions the iterator before the first key,
+    // but it is included as an extra precaution.
+    db_iter.seek_to_first();
 
     while db_iter.valid() {
         if !running.load(Ordering::SeqCst) {

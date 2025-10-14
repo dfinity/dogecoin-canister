@@ -211,7 +211,7 @@ impl UnstableBlocks {
         chain
     }
 
-    /// Returns block headers of all unstable blocks in height range `heights`.
+    /// Returns block headers (without AuxPow information) of all unstable blocks in height range `heights`.
     pub fn get_block_headers_in_range(
         &self,
         stable_height: Height,

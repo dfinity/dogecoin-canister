@@ -7,7 +7,7 @@ computed offline much more quickly with the help of `dogecoind`.
 
 * A linux machine
 * \>= 16GiB RAM
-* \>= 100GB of disk space
+* \>= 200GB of disk space
 
 ## 1. Download Dogecoin Core
 
@@ -33,14 +33,14 @@ tar -xvf dogecoin-1.14.9-x86_64-linux-gnu.tar.gz
 
 ```shell
 DOGECOIN_DIR=./dogecoin-1.14.9
-NETWORK=<mainnet or testnet>
+NETWORK=mainnet
 HEIGHT=<height of the state you want to compute>
 STABILITY_THRESHOLD=<desired stability threshold>
 ```
 
 ## 3. Download the Dogecoin state
 
-Run `1_download_state.sh`, which downloads the dogecoin state. This can several hours.
+Run `1_download_state.sh`, which downloads the dogecoin state. This can take several hours.
 
 ```shell
 ./1_download_state.sh $DOGECOIN_DIR $NETWORK $HEIGHT
