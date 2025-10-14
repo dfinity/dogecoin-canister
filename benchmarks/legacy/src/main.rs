@@ -1,12 +1,14 @@
 use bitcoin::consensus::Decodable;
-use bitcoin::{block::Header, consensus::Encodable, dogecoin::Block as DogecoinBlock};
+use bitcoin::{block::Header, consensus::Encodable, dogecoin, dogecoin::Block as DogecoinBlock};
 use canbench_rs::{bench, bench_fn, BenchResult};
 use ic_cdk_macros::init;
 use ic_doge_canister::{types::BlockHeaderBlob, with_state, with_state_mut};
 use ic_doge_interface::{InitConfig, Network};
-use ic_doge_test_utils::build_regtest_chain;
+use ic_doge_test_utils::{build_regtest_chain, BlockBuilder, TransactionBuilder};
 use ic_doge_types::Block;
 use std::cell::RefCell;
+use std::str::FromStr;
+use bitcoin::dogecoin::constants::genesis_block;
 
 thread_local! {
     static TESTNET_BLOCKS: RefCell<Vec<Block>> =  const { RefCell::new(vec![])};
@@ -190,6 +192,16 @@ fn insert_block_headers_multiple_times() -> BenchResult {
 }
 
 #[bench(raw)]
+fn insert_block_with_10k_transactions() -> BenchResult {
+    bench_insert_block(10_000)
+}
+
+#[bench(raw)]
+fn insert_block_with_1k_transactions() -> BenchResult {
+    bench_insert_block(1_000)
+}
+
+#[bench(raw)]
 fn pre_upgrade_with_many_unstable_blocks() -> BenchResult {
     let blocks = build_regtest_chain(3000, 100, false);
 
@@ -207,6 +219,79 @@ fn pre_upgrade_with_many_unstable_blocks() -> BenchResult {
 
     bench_fn(|| {
         ic_doge_canister::pre_upgrade();
+    })
+}
+
+fn bench_insert_block(num_transactions: u32) -> BenchResult {
+    /// Create a chain of 2 blocks after genesis.
+    ///
+    /// 1st block:
+    /// * 1 coinbase transaction with `tx_cardinality` outputs
+    ///
+    /// 2nd block:
+    /// * `tx_cardinality` transactions consuming the previous outputs
+    fn mini_chain(tx_cardinality: u32) -> [Block; 2] {
+        const ADDRESS_1: &str = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
+        const ADDRESS_2: &str = "mwoouFKeAiPoLi2oVpiEVYeNZAiE81abto";
+
+        let address_1 = dogecoin::Address::from_str(ADDRESS_1)
+            .unwrap()
+            .assume_checked();
+        let address_2 = dogecoin::Address::from_str(ADDRESS_2)
+            .unwrap()
+            .assume_checked();
+
+        // Transaction 1: A coinbase tx with `tx_cardinality` inputs, each giving 1 Koinu to
+        // address 1.
+        let mut tx_1 = TransactionBuilder::coinbase();
+        for i in 0..tx_cardinality {
+            tx_1 = tx_1.with_output(&address_1, 1).with_lock_time(i)
+        }
+        let tx_1 = tx_1.build();
+        let tx_1_id: bitcoin::Txid = tx_1.compute_txid();
+
+        // Transaction 2: Consume all the outputs of transaction 1 *in reverse order* and create
+        // similar outputs for address 2.
+        let mut tx_2 = TransactionBuilder::new();
+        for i in (0..tx_cardinality).rev() {
+            tx_2 = tx_2.with_input(
+                bitcoin::OutPoint {
+                    vout: i,
+                    txid: tx_1_id,
+                },
+                None,
+            );
+        }
+        for i in 0..tx_cardinality {
+            tx_2 = tx_2.with_output(&address_2, 1).with_lock_time(i);
+        }
+        let tx_2 = tx_2.build();
+
+        let genesis = genesis_block(dogecoin::Network::Regtest);
+        let block_1 = BlockBuilder::default().with_prev_header(*genesis.header)
+            .with_transaction(tx_1)
+            .build();
+        let block_2 = BlockBuilder::default().with_prev_header(*block_1.header)
+            .with_transaction(TransactionBuilder::coinbase().build())
+            .with_transaction(tx_2)
+            .build();
+        [Block::new(block_1), Block::new(block_2)]
+    }
+    let [block_1, block_2] = mini_chain(num_transactions);
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        ..Default::default()
+    });
+
+    with_state_mut(|s| {
+        ic_doge_canister::state::insert_block(s, block_1).unwrap();
+    });
+
+    bench_fn(|| {
+        with_state_mut(|s| {
+            ic_doge_canister::state::insert_block(s, block_2).unwrap();
+        });
     })
 }
 
@@ -240,7 +325,7 @@ fn insert_block_headers_regtest_without_auxpow() -> BenchResult {
     let mut next_block_headers = vec![];
     for block in chain.iter().skip(blocks_to_insert as usize) {
         let mut block_header_blob = vec![];
-        bitcoin::dogecoin::Header::consensus_encode(block.auxpow_header(), &mut block_header_blob)
+        dogecoin::Header::consensus_encode(block.auxpow_header(), &mut block_header_blob)
             .unwrap();
         next_block_headers.push(BlockHeaderBlob::from(block_header_blob));
     }
@@ -284,7 +369,7 @@ fn insert_block_headers_multiple_times_regtest_without_auxpow() -> BenchResult {
     let mut next_block_headers = vec![];
     for i in 1..block_headers_to_insert {
         let mut block_header_blob = vec![];
-        bitcoin::dogecoin::Header::consensus_encode(
+        dogecoin::Header::consensus_encode(
             chain[i as usize].auxpow_header(),
             &mut block_header_blob,
         )

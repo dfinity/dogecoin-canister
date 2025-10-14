@@ -2,65 +2,139 @@ benches:
   get_metrics:
     total:
       calls: 1
-      instructions: 6814097
+      instructions: 7691076
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   insert_300_blocks:
     total:
       calls: 1
-      instructions: 4406765375
-      heap_increase: 15
+      instructions: 4427033797
+      heap_increase: 18
       stable_memory_increase: 0
-    scopes: {}
+    scopes:
+      validate:
+        calls: 300
+        instructions: 4288861616
+        heap_increase: 18
+        stable_memory_increase: 0
+      validate_block:
+        calls: 300
+        instructions: 20768773
+        heap_increase: 0
+        stable_memory_increase: 0
+      validate_block/check_merkle_root:
+        calls: 300
+        instructions: 9149379
+        heap_increase: 0
+        stable_memory_increase: 0
+      validate_block/ensure_unique_transactions:
+        calls: 300
+        instructions: 9669941
+        heap_increase: 0
+        stable_memory_increase: 0
   insert_block_headers:
     total:
       calls: 1
-      instructions: 1587314553
+      instructions: 1600162407
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_multiple_times:
     total:
       calls: 1
-      instructions: 15680149132
+      instructions: 15692179160
       heap_increase: 9
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_multiple_times_regtest_without_auxpow:
     total:
       calls: 1
-      instructions: 3676695508
+      instructions: 3680712666
       heap_increase: 3
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_regtest_without_auxpow:
     total:
       calls: 1
-      instructions: 3663943002
+      instructions: 3668935733
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
+  insert_block_with_10k_transactions:
+    total:
+      calls: 1
+      instructions: 2083902247
+      heap_increase: 73
+      stable_memory_increase: 0
+    scopes:
+      validate:
+        calls: 1
+        instructions: 173058921
+        heap_increase: 20
+        stable_memory_increase: 0
+      validate_block:
+        calls: 1
+        instructions: 159047998
+        heap_increase: 17
+        stable_memory_increase: 0
+      validate_block/check_merkle_root:
+        calls: 1
+        instructions: 75391950
+        heap_increase: 0
+        stable_memory_increase: 0
+      validate_block/ensure_unique_transactions:
+        calls: 1
+        instructions: 83652679
+        heap_increase: 17
+        stable_memory_increase: 0
+  insert_block_with_1k_transactions:
+    total:
+      calls: 1
+      instructions: 199581077
+      heap_increase: 7
+      stable_memory_increase: 0
+    scopes:
+      validate:
+        calls: 1
+        instructions: 30002033
+        heap_increase: 3
+        stable_memory_increase: 0
+      validate_block:
+        calls: 1
+        instructions: 15990983
+        heap_increase: 0
+        stable_memory_increase: 0
+      validate_block/check_merkle_root:
+        calls: 1
+        instructions: 7589620
+        heap_increase: 0
+        stable_memory_increase: 0
+      validate_block/ensure_unique_transactions:
+        calls: 1
+        instructions: 8397963
+        heap_increase: 0
+        stable_memory_increase: 0
   pre_upgrade_with_many_unstable_blocks:
     total:
       calls: 1
-      instructions: 6195875444
+      instructions: 6197621466
       heap_increase: 4071
       stable_memory_increase: 1920
     scopes:
       serialize_blocktree:
         calls: 1
-        instructions: 2435996402
+        instructions: 2437733071
         heap_increase: 2022
         stable_memory_increase: 0
       serialize_blocktree_flatten:
         calls: 1
-        instructions: 185774
+        instructions: 253752
         heap_increase: 0
         stable_memory_increase: 0
       serialize_blocktree_serialize_seq:
         calls: 1
-        instructions: 2435807907
+        instructions: 2437476624
         heap_increase: 2022
         stable_memory_increase: 0
 version: 0.2.0
