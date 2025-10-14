@@ -1,9 +1,11 @@
+#[cfg(feature = "doge")]
 mod block;
 mod header;
 
 #[cfg(test)]
 mod fixtures;
 
+#[cfg(feature = "doge")]
 pub use crate::block::{BlockValidator, ValidateBlockError};
 pub use crate::header::{HeaderStore, HeaderValidator, ValidateHeaderError};
 

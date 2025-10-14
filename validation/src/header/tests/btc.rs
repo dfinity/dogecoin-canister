@@ -1,5 +1,5 @@
 use crate::fixtures::SimpleHeaderStore;
-use crate::header::btc::{DIFFICULTY_ADJUSTMENT_INTERVAL, DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN};
+use crate::header::btc::DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN;
 use crate::header::tests::utils::{bitcoin_genesis_header, btc_files, deserialize_header};
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
@@ -8,7 +8,7 @@ use crate::header::tests::{
     verify_with_invalid_pow_with_computed_target, verify_with_missing_parent,
 };
 use crate::header::HeaderValidator;
-use crate::{BitcoinHeaderValidator, DogecoinHeaderValidator};
+use crate::BitcoinHeaderValidator;
 use bitcoin::constants::genesis_block as bitcoin_genesis_block;
 use bitcoin::network::Network as BitcoinNetwork;
 use bitcoin::CompactTarget;

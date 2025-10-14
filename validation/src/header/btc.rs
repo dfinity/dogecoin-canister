@@ -90,7 +90,7 @@ impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
             }
         };
 
-        is_timestamp_valid(self.store, header, current_time)?;
+        is_timestamp_valid(&self.store, header, current_time)?;
 
         let header_target = header.target();
         if header_target > self.max_target() {
