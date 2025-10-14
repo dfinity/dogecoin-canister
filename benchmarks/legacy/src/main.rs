@@ -1,4 +1,5 @@
 use bitcoin::consensus::Decodable;
+use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::{block::Header, consensus::Encodable, dogecoin, dogecoin::Block as DogecoinBlock};
 use canbench_rs::{bench, bench_fn, BenchResult};
 use ic_cdk_macros::init;
@@ -8,7 +9,6 @@ use ic_doge_test_utils::{build_regtest_chain, BlockBuilder, TransactionBuilder};
 use ic_doge_types::Block;
 use std::cell::RefCell;
 use std::str::FromStr;
-use bitcoin::dogecoin::constants::genesis_block;
 
 thread_local! {
     static TESTNET_BLOCKS: RefCell<Vec<Block>> =  const { RefCell::new(vec![])};
@@ -268,10 +268,12 @@ fn bench_insert_block(num_transactions: u32) -> BenchResult {
         let tx_2 = tx_2.build();
 
         let genesis = genesis_block(dogecoin::Network::Regtest);
-        let block_1 = BlockBuilder::default().with_prev_header(*genesis.header)
+        let block_1 = BlockBuilder::default()
+            .with_prev_header(*genesis.header)
             .with_transaction(tx_1)
             .build();
-        let block_2 = BlockBuilder::default().with_prev_header(*block_1.header)
+        let block_2 = BlockBuilder::default()
+            .with_prev_header(*block_1.header)
             .with_transaction(TransactionBuilder::coinbase().build())
             .with_transaction(tx_2)
             .build();
@@ -325,8 +327,7 @@ fn insert_block_headers_regtest_without_auxpow() -> BenchResult {
     let mut next_block_headers = vec![];
     for block in chain.iter().skip(blocks_to_insert as usize) {
         let mut block_header_blob = vec![];
-        dogecoin::Header::consensus_encode(block.auxpow_header(), &mut block_header_blob)
-            .unwrap();
+        dogecoin::Header::consensus_encode(block.auxpow_header(), &mut block_header_blob).unwrap();
         next_block_headers.push(BlockHeaderBlob::from(block_header_blob));
     }
 
