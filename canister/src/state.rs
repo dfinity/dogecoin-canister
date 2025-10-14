@@ -17,7 +17,7 @@ use candid::Principal;
 use ic_doge_interface::{Fees, Flag, Height, MillikoinuPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{
-    BlockValidator, DogecoinHeaderValidator, HeaderValidator, ValidateBlockError,
+    AuxPowHeaderValidator, BlockValidator, DogecoinHeaderValidator, ValidateBlockError,
 };
 use serde::{Deserialize, Serialize};
 
@@ -255,7 +255,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
                     let validator =
                         DogecoinHeaderValidator::new(store, into_dogecoin_network(state.network()));
                     validator
-                        .validate_header(&block_header, duration_since_epoch())
+                        .validate_auxpow_header(&block_header, duration_since_epoch())
                         .map_err(|e| format!("{:?}", e))
                 });
 

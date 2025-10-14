@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::{DogecoinHeaderValidator, HeaderStore, HeaderValidator, ValidateHeaderError};
+use crate::{AuxPowHeaderValidator, DogecoinHeaderValidator, HeaderStore, ValidateHeaderError};
 use bitcoin::{dogecoin, dogecoin::Network, Transaction};
 use std::collections::BTreeSet;
 use std::time::Duration;
@@ -43,7 +43,7 @@ impl<T: HeaderStore> BlockValidator<T> {
         let _p = canbench_rs::bench_scope("validate");
 
         self.header_validator
-            .validate_header(&block.header, current_time)
+            .validate_auxpow_header(&block.header, current_time)
             .map_err(ValidateBlockError::InvalidBlockHeader)
             .and_then(|()| validate_block(block))
     }
