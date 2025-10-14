@@ -1,9 +1,18 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use separator::Separatable;
 use std::{fs::File, path::PathBuf, collections::HashMap};
 use std::collections::HashSet;
 use state_reader::{CanisterData, Utxo, UtxoReader, hash, set_logging_quiet, log};
 use ic_doge_types::BlockHash;
+use ic_stable_structures::Storable;
+
+#[derive(Debug, Clone, ValueEnum, PartialEq)]
+pub enum DataType {
+    Utxos,
+    Balances,
+    Headers,
+}
+
 
 #[derive(Parser, Debug)]
 #[command(name = "state-reader")]
@@ -16,19 +25,31 @@ struct Args {
     /// Only output the combined canister state hash
     #[arg(short, long)]
     quiet: bool,
+
+    /// Select which data types to process (default: all)
+    #[arg(long, value_enum, value_delimiter = ',')]
+    data: Option<Vec<DataType>>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     set_logging_quiet(args.quiet);
+    
+    // Determine which data types to process (default: all)
+    let data_types = args.data.unwrap_or_else(|| vec![DataType::Utxos, DataType::Balances, DataType::Headers]);
+    let process_utxos = data_types.contains(&DataType::Utxos);
+    let process_balances = data_types.contains(&DataType::Balances);
+    let process_headers = data_types.contains(&DataType::Headers);
+    
+    log!("Processing data types: {:?}", data_types);
 
     if !args.input.exists() {
         eprintln!("Error: Input file '{}' does not exist", args.input.display());
         std::process::exit(1);
     }
 
-    log!( "Reading canister state from: {}", args.input.display());
+    log!("Reading canister state from: {}", args.input.display());
 
     // Set up access to the canister memory region from the state file
     ic_doge_canister::memory::set_memory(ic_stable_structures::FileMemory::new(
@@ -43,46 +64,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let reader = UtxoReader::new(&args.input)?;
 
-    log!( "Extracting data from stable memory...");
+    log!("Extracting data from stable memory...");
 
-    let mut canister_data = reader.read_state_data();
+    let mut canister_data = reader.read_data(process_utxos, process_balances, process_headers);
 
-    // Extract large UTXOs from the deserialized canister state
-    log!( "Extracting large UTXOs from canister state...");
+    // Extract large UTXOs from the deserialized canister state (only if processing UTXOs)
     let mut utxos = canister_data.utxos.clone();
-    let large_utxos = ic_doge_canister::with_state(|state| {
-        state.utxos.utxos.large_utxos.clone()
-    });
-    let large_utxo_count = large_utxos.len();
-    for (outpoint, (txout, height)) in large_utxos {
-        utxos.push(Utxo {
-            outpoint,
-            txout,
-            height,
+    if process_utxos {
+        log!("Extracting large UTXOs from canister state...");
+        let large_utxos = ic_doge_canister::with_state(|state| {
+            state.utxos.utxos.large_utxos.clone()
         });
+        let large_utxo_count = large_utxos.len();
+        for (outpoint, (txout, height)) in large_utxos {
+            utxos.push(Utxo {
+                outpoint,
+                txout,
+                height,
+            });
+        }
+        log!("Extracted {} large UTXOs from canister state", large_utxo_count);
     }
-    log!( "Extracted {} large UTXOs from canister state", large_utxo_count);
 
     // TODO(XC-501): temporary workaround to remove unspendable UTXO from Genesis block.
     // Note that we don't need to remove the corresponding entry from the balance map and
     // address UTXOs map because the script is P2PK and is never translated into an address.
-    log!( "Removing unspendable UTXO from Genesis block...");
-    utxos.retain(|utxo| utxo.height != 0);
+    if process_utxos {
+        log!("Removing unspendable UTXO from Genesis block...");
+        utxos.retain(|utxo| utxo.height != 0);
+    }
 
     // TODO(XC-505): there is a discrepancy between addresses and UTXOs for 0-amount UTXOs. Ignore addresses with 0 balance for now.
-    log!( "Filtering out addresses with 0 balance...");
-    let initial_balance_count = canister_data.balances.len();
-    canister_data.balances.retain(|(_address, balance)| *balance != 0);
-    log!( "Filtered out {} addresses with 0 balance (kept {})", 
-                          initial_balance_count - canister_data.balances.len(), 
-                          canister_data.balances.len());
+    if process_balances {
+        log!("Filtering out addresses with 0 balance...");
+        let initial_balance_count = canister_data.balances.len();
+        canister_data.balances.retain(|(_address, balance)| *balance != 0);
+        log!("Filtered out {} addresses with 0 balance (kept {})", 
+                              initial_balance_count - canister_data.balances.len(), 
+                              canister_data.balances.len());
+    }
 
     // Sort the data for deterministic hashing
-    log!( "Sorting data for deterministic hashing...");
-    log!( "  Sorting {} UTXOs...", utxos.len());
+    log!("Sorting data for deterministic hashing...");
+    log!("  Sorting {} UTXOs...", utxos.len());
     utxos.sort();
     
-    log!( "  Sorting {} address UTXOs...", canister_data.address_utxos.len());
+    log!("  Sorting {} address UTXOs...", canister_data.address_utxos.len());
     canister_data.address_utxos.sort_by(|a, b| {
         a.address.to_string()
             .cmp(&b.address.to_string())
@@ -90,23 +117,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .then(a.outpoint.cmp(&b.outpoint))
     });
     
-    log!( "  Sorting {} address balances...", canister_data.balances.len());
+    log!("  Sorting {} address balances...", canister_data.balances.len());
     canister_data.balances.sort_by(|a, b| {
         a.0.cmp(&b.0).then(a.1.cmp(&b.1))
     });
     
-    log!( "  Sorting {} block headers...", canister_data.block_headers.len());
+    log!("  Sorting {} block headers...", canister_data.block_headers.len());
     canister_data.block_headers.sort_by(|a, b| {
         a.0.cmp(&b.0)
     });
     
-    log!( "  Sorting {} block heights...", canister_data.block_heights.len());
+    log!("  Sorting {} block heights...", canister_data.block_heights.len());
     canister_data.block_heights.sort_by(|a, b| {
         a.0.cmp(&b.0)
     });
     
 
-    log!( "Validating data consistency...");
+    log!("Validating data consistency...");
     if let Err(error) = check_invariants(&canister_data, &utxos) {
         eprintln!("Data consistency check failed: {}", error);
         std::process::exit(1);
@@ -116,24 +143,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print_statistics(&canister_data, &utxos);
     }
 
-    log!( "Computing data hashes...");
-    log!( "  Computing UTXO set hash ({} UTXOs)...", utxos.len());
+    log!("Computing data hashes...");
+    
+    let utxo_hash = if process_utxos {
+        log!("  Computing UTXO set hash ({} entries)...", utxos.len());
+        hash::compute_utxo_set_hash(&utxos)
+    } else {
+        "0".repeat(64)  // Empty hash for skipped data
+    };
+    
+    let (address_utxos_hash, address_balance_hash) = if process_balances {
+        log!("  Computing address UTXOs hash ({} entries)...", canister_data.address_utxos.len());
+        let addr_utxos_hash = hash::compute_address_utxos_hash(&canister_data.address_utxos);
+        
+        log!("  Computing address balances hash ({} entries)...", canister_data.balances.len());
+        let addr_balance_hash = hash::compute_address_balances_hash(&canister_data.balances);
+        
+        (addr_utxos_hash, addr_balance_hash)
+    } else {
+        ("0".repeat(64), "0".repeat(64))  // Empty hashes for skipped data
+    };
+    
+    let (block_headers_hash, block_heights_hash) = if process_headers {
+        log!("  Computing block headers hash ({} entries)...", canister_data.block_headers.len());
+        let headers_hash = hash::compute_block_headers_hash(&canister_data.block_headers);
+        
+        log!("  Computing block heights hash ({} entries)...", canister_data.block_heights.len());
+        let heights_hash = hash::compute_block_heights_hash(&canister_data.block_heights);
+        
+        (headers_hash, heights_hash)
+    } else {
+        ("0".repeat(64), "0".repeat(64))  // Empty hashes for skipped data
+    };
 
-    let utxo_hash = hash::compute_utxo_set_hash(&utxos);
-    
-    log!( "  Computing address UTXOs hash ({} entries)...", canister_data.address_utxos.len());
-    let address_utxos_hash = hash::compute_address_utxos_hash(&canister_data.address_utxos);
-    
-    log!( "  Computing address balances hash ({} addresses)...", canister_data.balances.len());
-    let address_balance_hash = hash::compute_address_balances_hash(&canister_data.balances);
-    
-    log!( "  Computing block headers hash ({} headers)...", canister_data.block_headers.len());
-    let block_headers_hash = hash::compute_block_headers_hash(&canister_data.block_headers);
-    
-    log!( "  Computing block heights hash ({} heights)...", canister_data.block_heights.len());
-    let block_heights_hash = hash::compute_block_heights_hash(&canister_data.block_heights);
-
-    log!( "  Computing combined hash...");
+    log!("  Computing combined hash...");
     let hash_data = hash::compute_combined_hash(&[
         &utxo_hash,
         &address_utxos_hash,
@@ -184,6 +227,7 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
     if utxo_height_zero_count > 0 {
         return Err(format!("Found {} UTXOs at height 0, expected none", utxo_height_zero_count));
     }
+    log!("  ✓ No UTXOs at height 0");
 
     // Check for undersized block headers
     let header_sizes: Vec<usize> = data.block_headers.iter()
@@ -193,6 +237,7 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
     if undersized_count > 0 {
         return Err(format!("Found {} block headers smaller than 80 bytes, expected none", undersized_count));
     }
+    log!("  ✓ All block headers are properly sized");
 
     // Check for zero block headers
     let zero_hash = BlockHash::from(vec![0u8; 32]);
@@ -202,6 +247,7 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
     if zero_header_count > 0 {
         return Err(format!("Found {} zero block headers, expected none", zero_header_count));
     }
+    log!("  ✓ No all-zeros block headers found");
 
     // Check header/height consistency
     let headers_count = data.block_headers.len();
@@ -213,6 +259,7 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
             headers_count, heights_count
         ));
     }
+    log!("  ✓ Header and height counts match ({} entries)", headers_count);
 
     let mut heights: Vec<u32> = data.block_heights.iter().map(|(height, _)| *height).collect();
     heights.sort_unstable();
@@ -223,6 +270,7 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
         return Err(format!("Found {} duplicate block heights",
                            heights.len() - unique_heights.len()));
     }
+    log!("  ✓ No duplicate block heights found");
 
     // Check duplicate block headers entries
     let unique_hashes: HashSet<&BlockHash> = data.block_headers.iter().map(|(blockhash, _)| blockhash).collect();
@@ -230,6 +278,7 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
         return Err(format!("Found {} duplicate block hashes",
                            data.block_headers.len() - unique_hashes.len()));
     }
+    log!("  ✓ No duplicate block headers found");
 
     // Check block height continuity
     let min_height = *heights.first().unwrap();
@@ -240,7 +289,10 @@ fn check_invariants(data: &CanisterData, utxos: &[Utxo]) -> Result<(), String> {
         return Err(format!("Missing blocks: expected {} blocks from {} to {}, found {}",
                            height_span, min_height, max_height, heights.len()));
     }
+    log!("  ✓ Block height continuity verified ({} to {} = {} blocks)",
+         min_height, max_height, height_span);
 
+    log!("All data consistency checks passed ✓");
     Ok(())
 }
 
@@ -631,6 +683,28 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
             println!("      90th percentile: {} bytes", p90_auxpow.separated_string());
             println!("      95th percentile: {} bytes", p95_auxpow.separated_string());
             println!("      99th percentile: {} bytes", p99_auxpow.separated_string());
+        }
+        
+        // Show last 5 block headers
+        println!("\n  Last {} Block Headers Details:", std::cmp::min(5, data.block_headers.len()));
+        println!("{:<64} {}",
+                 "Block Hash", "Height");
+        println!("{}", "-".repeat(100));
+
+        for h in heights.iter().rev().take(5) {
+            let hash: BlockHash = data.block_heights.iter()
+                .find(|(height, _)| height == h)
+                .map(|(_ , hash)| hash.clone())
+                .unwrap();
+            let hash_hex = {
+                let mut hash_bytes = hash.to_bytes().to_vec();
+                hash_bytes.reverse();
+                hex::encode(hash_bytes)
+            };
+            println!("{:<64} {}",
+                     hash_hex,
+                     h.separated_string(),
+            );
         }
     }
 

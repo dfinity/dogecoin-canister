@@ -96,15 +96,30 @@ impl UtxoReader {
         Ok(Self { memory_manager })
     }
 
-    /// Read all data from stable memory
-    pub fn read_state_data(&self) -> CanisterData {
+    /// Read data from stable memory
+    pub fn read_data(&self, process_utxos: bool, process_balances: bool, process_headers: bool) -> CanisterData {
         log!("Reading canister data from stable memory...");
+
+        let utxos = if process_utxos {
+            self.read_utxos()
+        } else {
+            log!("Skipping UTXOs");
+            Vec::new()
+        };
         
-        let utxos = self.read_utxos();
-        let address_utxos = self.read_address_utxos();
-        let balances = self.read_balances();
-        let block_headers = self.read_block_headers();
-        let block_heights = self.read_block_heights();
+        let (address_utxos, balances) = if process_balances {
+            (self.read_address_utxos(), self.read_balances())
+        } else {
+            log!("Skipping address-utxos and balances");
+            (Vec::new(), Vec::new())
+        };
+        
+        let (block_headers, block_heights) = if process_headers {
+            (self.read_block_headers(), self.read_block_heights())
+        } else {
+            log!("Skipping block headers and heights");
+            (Vec::new(), Vec::new())
+        };
 
         CanisterData {
             utxos,
@@ -228,7 +243,7 @@ impl UtxoReader {
             balances.push((address, balance));
             
             count += 1;
-            if count % 100_000 == 0 {
+            if count % 1_000_000 == 0 {
                 log!("  Processed {} address balances...", count);
             }
         }
@@ -250,7 +265,7 @@ impl UtxoReader {
             block_headers.push((block_hash, header_blob));
             
             count += 1;
-            if count % 100_000 == 0 {
+            if count % 1_000_000 == 0 {
                 log!("  Processed {} block headers...", count);
             }
         }
@@ -272,7 +287,7 @@ impl UtxoReader {
             block_heights.push((height, block_hash));
             
             count += 1;
-            if count % 100_000 == 0 {
+            if count % 1_000_000 == 0 {
                 log!("  Processed {} block heights...", count);
             }
         }
