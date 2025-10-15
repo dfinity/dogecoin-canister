@@ -138,8 +138,8 @@ impl Sub for DifficultyBasedDepth {
 /// Maintains a tree of connected blocks.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BlockTree {
-    pub root: Block,
-    pub children: Vec<BlockTree>,
+    root: Block,
+    children: Vec<BlockTree>,
 }
 
 impl BlockTree {
@@ -149,6 +149,22 @@ impl BlockTree {
             root,
             children: vec![],
         }
+    }
+
+    pub fn root(&self) -> Block {
+        self.root.clone()
+    }
+
+    pub fn children(&self) -> impl Iterator<Item = &BlockTree> {
+        self.children.iter()
+    }
+
+    pub fn get_child(&self, idx: usize) -> &Self {
+        &self.children[idx]
+    }
+
+    pub fn remove_child(&mut self, idx: usize) -> Self {
+        self.children.swap_remove(idx)
     }
 
     /// Returns all blocks in the tree with their depths

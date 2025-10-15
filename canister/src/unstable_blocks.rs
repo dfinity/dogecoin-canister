@@ -114,7 +114,7 @@ impl UnstableBlocks {
     }
 
     pub fn anchor_difficulty(&self) -> u128 {
-        self.tree.root.difficulty(self.network)
+        self.tree.root().difficulty(self.network)
     }
 
     pub fn normalized_stability_threshold(&self) -> u128 {
@@ -239,8 +239,8 @@ impl UnstableBlocks {
 }
 
 /// Returns a reference to the `anchor` block iff ∃ a child `C` of `anchor` that is stable.
-pub fn peek(blocks: &UnstableBlocks) -> Option<&Block> {
-    get_stable_child(blocks).map(|_| &blocks.tree.root)
+pub fn peek(blocks: &UnstableBlocks) -> Option<Block> {
+    get_stable_child(blocks).map(|_| blocks.tree.root())
 }
 
 /// Pops the `anchor` block iff ∃ a child `C` of the `anchor` block that
@@ -249,13 +249,12 @@ pub fn peek(blocks: &UnstableBlocks) -> Option<&Block> {
 pub fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<Block> {
     let stable_child_idx = get_stable_child(blocks)?;
 
-    let old_anchor = blocks.tree.root.clone();
+    let old_anchor = blocks.tree.root().clone();
 
     // Remove the outpoints of obsolete blocks from the cache.
     let obsolete_blocks: Vec<_> = blocks
         .tree
-        .children
-        .iter()
+        .children()
         .enumerate()
         .filter(|(idx, _)| *idx != stable_child_idx)
         .flat_map(|(_, obsolete_child)| obsolete_child.blocks())
@@ -266,7 +265,7 @@ pub fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<Block> 
     }
 
     // Replace the unstable block tree with that of the stable child.
-    blocks.tree = blocks.tree.children.swap_remove(stable_child_idx);
+    blocks.tree = blocks.tree.remove_child(stable_child_idx);
 
     blocks.next_block_headers.remove_until_height(stable_height);
 
@@ -383,8 +382,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
     // Compute and sort children by difficulty-based depth.
     let mut difficulty_based_depths: Vec<_> = blocks
         .tree
-        .children
-        .iter()
+        .children()
         .enumerate()
         .map(|(idx, child)| (child.difficulty_based_depth(network), idx))
         .collect();
@@ -420,7 +418,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
         //
         // This scenario is only relevant for testnets, so this addition is safe and
         // has no impact on the behavior of the mainnet canister.
-        let deepest_depth = blocks.tree.children[*child_idx].depth();
+        let deepest_depth = blocks.tree.get_child(*child_idx).depth();
         if deepest_depth >= max_depth_difference {
             // Ensure the second-longest chain is far enough behind.
             let second_deepest_depth = difficulty_based_depths
@@ -428,7 +426,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
                 .checked_sub(2)
                 .map(|idx| {
                     let (_, second_child_idx) = difficulty_based_depths[idx];
-                    blocks.tree.children[second_child_idx].depth()
+                    blocks.tree.get_child(second_child_idx).depth()
                 })
                 .unwrap_or(Depth::new(0));
 
@@ -502,7 +500,7 @@ mod test {
 
         // Block 0 (the anchor) now has one stable child (Block 1).
         // Block 0 should be returned when calling `pop`.
-        assert_eq!(peek(&forest), Some(&block_0));
+        assert_eq!(peek(&forest).as_ref(), Some(&block_0));
         assert_eq!(pop(&mut forest, 0), Some(block_0));
 
         // Block 1 is now the anchor. It doesn't have stable
@@ -536,16 +534,16 @@ mod test {
         // normalized_stability_threshold is 20 * 7 = 140 and it does not have
         // any siblings. Hence, block_0 should be returned when calling `pop`.
         assert_eq!(
-            forest.tree.children[0].difficulty_based_depth(network),
+            forest.tree.get_child(0).difficulty_based_depth(network),
             DifficultyBasedDepth::new(145)
         );
 
-        assert_eq!(peek(&forest), Some(&block_0));
+        assert_eq!(peek(&forest).as_ref(), Some(&block_0));
         assert_eq!(pop(&mut forest, 0), Some(block_0));
 
         // block_1 (the anchor) now has one stable child (block_2).
         // block_1 should be returned when calling `pop`.
-        assert_eq!(peek(&forest), Some(&block_1));
+        assert_eq!(peek(&forest).as_ref(), Some(&block_1));
         assert_eq!(pop(&mut forest, 0), Some(block_1));
 
         // block_2 is now the anchor. It doesn't have stable
@@ -585,14 +583,14 @@ mod test {
         push(&mut forest, &utxos, block_2).unwrap();
         //Now, fork2 has a difficulty_based_depth of 3, while fork1 has a difficulty_based_depth of 1,
         //hence we can get a stable child.
-        assert_eq!(peek(&forest), Some(&genesis_block));
+        assert_eq!(peek(&forest).as_ref(), Some(&genesis_block));
         assert_eq!(pop(&mut forest, 0), Some(genesis_block));
-        assert_eq!(forest.tree.root, forked_block);
+        assert_eq!(forest.tree.root(), forked_block);
 
         //fork2 is still stable, hence we can get a stable child.
-        assert_eq!(peek(&forest), Some(&forked_block));
+        assert_eq!(peek(&forest).as_ref(), Some(&forked_block));
         assert_eq!(pop(&mut forest, 0), Some(forked_block));
-        assert_eq!(forest.tree.root, block_1);
+        assert_eq!(forest.tree.root(), block_1);
 
         // No stable children for fork2.
         assert_eq!(peek(&forest), None);
@@ -618,11 +616,11 @@ mod test {
         // while fork2 has difficulty_based_depth 5, while normalized_stability_threshold
         // is 3 * 4 = 12. Hence, we shouldn't get anything.
         assert_eq!(
-            forest.tree.children[0].difficulty_based_depth(network),
+            forest.tree.get_child(0).difficulty_based_depth(network),
             DifficultyBasedDepth::new(10)
         );
         assert_eq!(
-            forest.tree.children[1].difficulty_based_depth(network),
+            forest.tree.get_child(1).difficulty_based_depth(network),
             DifficultyBasedDepth::new(5)
         );
 
@@ -646,28 +644,28 @@ mod test {
         // 30 - 11 > normalized_stability_threshold. So we can get a
         // stable child, and fork2_block should be a new anchor.
         assert_eq!(
-            forest.tree.children[0].difficulty_based_depth(network),
+            forest.tree.get_child(0).difficulty_based_depth(network),
             DifficultyBasedDepth::new(11)
         );
         assert_eq!(
-            forest.tree.children[1].difficulty_based_depth(network),
+            forest.tree.get_child(1).difficulty_based_depth(network),
             DifficultyBasedDepth::new(30)
         );
 
-        assert_eq!(peek(&forest), Some(&genesis_block));
+        assert_eq!(peek(&forest).as_ref(), Some(&genesis_block));
         assert_eq!(pop(&mut forest, 0), Some(genesis_block));
-        assert_eq!(forest.tree.root, fork2_block);
+        assert_eq!(forest.tree.root(), fork2_block);
 
         // fork2_block should have a stable child block_2, because
         // its difficulty_based_depth is 25,
         // normalized_stability_threshold is 3 * 5 = 15,
         // and it does not have any siblings.
         assert_eq!(
-            forest.tree.children[0].difficulty_based_depth(network),
+            forest.tree.get_child(0).difficulty_based_depth(network),
             DifficultyBasedDepth::new(25)
         );
 
-        assert_eq!(peek(&forest), Some(&fork2_block));
+        assert_eq!(peek(&forest).as_ref(), Some(&fork2_block));
         assert_eq!(pop(&mut forest, 0), Some(fork2_block));
 
         // No stable child for block_2, because it does not have any children.
@@ -684,13 +682,13 @@ mod test {
         // normalized_stability_threshold is 3 * 25 = 75,
         // hence difficulty_based_depth >= normalized_stability_threshold.
         assert_eq!(
-            forest.tree.children[0].difficulty_based_depth(network),
+            forest.tree.get_child(0).difficulty_based_depth(network),
             DifficultyBasedDepth::new(75)
         );
 
-        assert_eq!(peek(&forest), Some(&block_2));
+        assert_eq!(peek(&forest).as_ref(), Some(&block_2));
         assert_eq!(pop(&mut forest, 0), Some(block_2));
-        assert_eq!(forest.tree.root, block_3);
+        assert_eq!(forest.tree.root(), block_3);
 
         // No stable child for block_3, because it does not have any children.
         assert_eq!(peek(&forest), None);
@@ -709,9 +707,9 @@ mod test {
         push(&mut forest, &utxos, block_1.clone()).unwrap();
         push(&mut forest, &utxos, block_2).unwrap();
 
-        assert_eq!(peek(&forest), Some(&block_0));
+        assert_eq!(peek(&forest).as_ref(), Some(&block_0));
         assert_eq!(pop(&mut forest, 0), Some(block_0));
-        assert_eq!(peek(&forest), Some(&block_1));
+        assert_eq!(peek(&forest).as_ref(), Some(&block_1));
         assert_eq!(pop(&mut forest, 0), Some(block_1));
         assert_eq!(peek(&forest), None);
         assert_eq!(pop(&mut forest, 0), None);
@@ -1025,7 +1023,7 @@ mod test {
         // Even though the chain's difficulty-based depth doesn't exceed the normalized stability
         // threshold, the anchor block can now be popped because the chain's length has exceeded
         // the maximum allowed.
-        assert_eq!(peek(&unstable_blocks), Some(&chain[0]));
+        assert_eq!(peek(&unstable_blocks).as_ref(), Some(&chain[0]));
     }
 
     #[test]
@@ -1093,7 +1091,7 @@ mod test {
         assert!(new_depth_difference >= initial_depth_diff);
 
         // Since the depth condition is now met, `chain_a[0]` should be stable.
-        assert_eq!(peek(&unstable_blocks), Some(&chain_a[0]));
+        assert_eq!(peek(&unstable_blocks).as_ref(), Some(&chain_a[0]));
 
         // Extend `B` by one block.
         let new_block = BlockBuilder::with_prev_header(chain_b.last().unwrap().header()).build();
