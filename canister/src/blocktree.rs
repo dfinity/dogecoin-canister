@@ -151,8 +151,8 @@ impl BlockTree {
         }
     }
 
-    pub fn root(&self) -> Block {
-        self.root.clone()
+    pub fn root(&self) -> &Block {
+        &self.root
     }
 
     pub fn children(&self) -> impl Iterator<Item = &BlockTree> {
