@@ -4,6 +4,7 @@ mod btc;
 mod doge;
 mod utils;
 
+use crate::fixtures::SimpleHeaderStore;
 use crate::header::tests::utils::test_data_file;
 use crate::header::timestamp_is_at_most_2h_in_future;
 use crate::header::{is_timestamp_valid, HeaderValidator, ONE_HOUR};
@@ -20,6 +21,11 @@ use std::str::FromStr;
 use std::time::Duration;
 use utils::{get_headers, next_block_header, MOCK_CURRENT_TIME};
 
+trait HeaderValidatorExt<SimpleHeaderStore> {
+    fn store(&self) -> &SimpleHeaderStore;
+    fn store_mut(&mut self) -> &mut SimpleHeaderStore;
+}
+
 fn verify_consecutive_headers<T: HeaderValidator>(validator: &T, header: Header) {
     let result = validator.validate_header(&header, MOCK_CURRENT_TIME);
     assert!(result.is_ok());
@@ -31,7 +37,10 @@ fn verify_consecutive_headers_auxpow<T: AuxPowHeaderValidator>(validator: T, hea
     assert!(result.is_ok());
 }
 
-fn verify_header_sequence<T: HeaderValidator>(mut validator: T, file: &str) {
+fn verify_header_sequence<T: HeaderValidator + HeaderValidatorExt<SimpleHeaderStore>>(
+    mut validator: T,
+    file: &str,
+) {
     let headers = get_headers(file);
     for (i, header) in headers.iter().enumerate() {
         let result = validator.validate_header(header, MOCK_CURRENT_TIME);
@@ -47,7 +56,12 @@ fn verify_header_sequence<T: HeaderValidator>(mut validator: T, file: &str) {
 }
 
 #[cfg(feature = "doge")]
-fn verify_header_sequence_auxpow<T: AuxPowHeaderValidator>(mut validator: T, file: &str) {
+fn verify_header_sequence_auxpow<
+    T: AuxPowHeaderValidator + HeaderValidatorExt<SimpleHeaderStore>,
+>(
+    mut validator: T,
+    file: &str,
+) {
     let headers = get_auxpow_headers(file);
     for (i, header) in headers.iter().enumerate() {
         let result = validator.validate_auxpow_header(header, MOCK_CURRENT_TIME);
@@ -80,7 +94,9 @@ fn verify_with_invalid_pow<T: HeaderValidator>(validator: &T, mut header: Header
     ));
 }
 
-fn verify_with_invalid_pow_with_computed_target<T: HeaderValidator>(
+fn verify_with_invalid_pow_with_computed_target<
+    T: HeaderValidator + HeaderValidatorExt<SimpleHeaderStore>,
+>(
     validator_regtest: &mut T,
     genesis_header: Header,
 ) {
@@ -109,7 +125,7 @@ fn verify_with_excessive_target<T: HeaderValidator>(validator_mainnet: &T, heade
     ));
 }
 
-fn verify_difficulty_adjustment<T: HeaderValidator>(
+fn verify_difficulty_adjustment<T: HeaderValidator + HeaderValidatorExt<SimpleHeaderStore>>(
     validator: &mut T,
     headers_path: &str,
     up_to_height: usize,
@@ -153,7 +169,9 @@ fn verify_difficulty_adjustment<T: HeaderValidator>(
 // with non-limit PoW in the first block header and PoW limit
 // in all the other headers.
 // Expect difficulty to be equal to the non-limit PoW.
-fn verify_regtest_difficulty_calculation<T: HeaderValidator>(
+fn verify_regtest_difficulty_calculation<
+    T: HeaderValidator + HeaderValidatorExt<SimpleHeaderStore>,
+>(
     validator: &mut T,
     expected_pow: CompactTarget,
 ) {
@@ -172,7 +190,7 @@ fn verify_regtest_difficulty_calculation<T: HeaderValidator>(
     assert_eq!(target, Target::from_compact(expected_pow));
 }
 
-fn verify_backdated_block_difficulty<T: HeaderValidator>(
+fn verify_backdated_block_difficulty<T: HeaderValidator + HeaderValidatorExt<SimpleHeaderStore>>(
     validator: &mut T,
     difficulty_adjustment_interval: u32,
     expected_target: CompactTarget,
@@ -198,11 +216,14 @@ fn verify_backdated_block_difficulty<T: HeaderValidator>(
     assert_eq!(difficulty, expected_target);
 }
 
-fn verify_timestamp_rules<T: HeaderValidator>(validator: &T, height_start_header: u32) {
+fn verify_timestamp_rules<T: HeaderValidator + HeaderValidatorExt<SimpleHeaderStore>>(
+    validator: &T,
+    height_start_header: u32,
+) {
+    let store = validator.store();
     let mut header = Header {
         version: Version::from_consensus(0x20800004),
-        prev_blockhash: validator
-            .store()
+        prev_blockhash: store
             .get_with_height(height_start_header + 2)
             .unwrap()
             .block_hash(),
@@ -210,21 +231,16 @@ fn verify_timestamp_rules<T: HeaderValidator>(validator: &T, height_start_header
             "c120ff2ae1363593a0b92e0d281ec341a0cc989b4ee836dc3405c9f4215242a6",
         )
         .unwrap(),
-        time: validator
-            .store()
-            .get_with_height(height_start_header + 1)
-            .unwrap()
-            .time
-            + 1, // Larger than median time past
+        time: store.get_with_height(height_start_header + 1).unwrap().time + 1, // Larger than median time past
         bits: CompactTarget::from_consensus(0x170e0408),
         nonce: 0xb48e8b0a,
     };
-    assert!(is_timestamp_valid(validator.store(), &header, MOCK_CURRENT_TIME).is_ok());
+    assert!(is_timestamp_valid(store, &header, MOCK_CURRENT_TIME).is_ok());
 
     // Mon Apr 16 2012 15:06:40
     header.time = 1334588800;
     assert!(matches!(
-        is_timestamp_valid(validator.store(), &header, MOCK_CURRENT_TIME),
+        is_timestamp_valid(store, &header, MOCK_CURRENT_TIME),
         Err(ValidateHeaderError::HeaderIsOld)
     ));
 
@@ -233,11 +249,11 @@ fn verify_timestamp_rules<T: HeaderValidator>(validator: &T, height_start_header
 
     header.time = (MOCK_CURRENT_TIME - ONE_HOUR).as_secs() as u32;
 
-    assert!(is_timestamp_valid(validator.store(), &header, MOCK_CURRENT_TIME).is_ok());
+    assert!(is_timestamp_valid(store, &header, MOCK_CURRENT_TIME).is_ok());
 
     header.time = (MOCK_CURRENT_TIME + 2 * ONE_HOUR + Duration::from_secs(10)).as_secs() as u32;
     assert_eq!(
-        is_timestamp_valid(validator.store(), &header, MOCK_CURRENT_TIME),
+        is_timestamp_valid(store, &header, MOCK_CURRENT_TIME),
         Err(ValidateHeaderError::HeaderIsTooFarInFuture {
             block_time: header.time as u64,
             max_allowed_time: (MOCK_CURRENT_TIME + 2 * ONE_HOUR).as_secs()

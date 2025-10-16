@@ -5,10 +5,11 @@ use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
     verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,
     verify_with_excessive_target, verify_with_invalid_pow,
-    verify_with_invalid_pow_with_computed_target, verify_with_missing_parent,
+    verify_with_invalid_pow_with_computed_target, verify_with_missing_parent, HeaderValidatorExt,
 };
 use crate::header::HeaderValidator;
 use crate::BitcoinHeaderValidator;
+use bitcoin::block::Header;
 use bitcoin::constants::genesis_block as bitcoin_genesis_block;
 use bitcoin::network::Network as BitcoinNetwork;
 use bitcoin::CompactTarget;
@@ -26,6 +27,16 @@ const MAINNET_HEADER_705602: &str = "0400202075ab0008e3295faa81a07225ff4cd079a90
 const TESTNET_HEADER_2132555: &str = "004000200e1ff99438666c67c649def743fb82117537c2017bcc6ad617000000000000007fa40cf82bf224909e3174281a57af2eb3a4a2a961d33f50ec0772c1221c9e61ddfdc061ffff001a64526636";
 /// Testnet 00000000383cd7fff4692410ccd9bd6201790043bb41b93bacb21e9b85620767
 const TESTNET_HEADER_2132556: &str = "00000020974f55e77dff100bc252a01aa7b00d16736c6e04a091b03be200000000000000c44f2d69fc200c4a2211885000b6b67512f42c1bec550f3754e103b6c4046e05a202c161ffff001d09ec1bc4";
+
+impl HeaderValidatorExt<SimpleHeaderStore> for BitcoinHeaderValidator<SimpleHeaderStore> {
+    fn store(&self) -> &SimpleHeaderStore {
+        &self.store
+    }
+
+    fn store_mut(&mut self) -> &mut SimpleHeaderStore {
+        &mut self.store
+    }
+}
 
 #[test]
 fn test_basic_header_validation_mainnet() {
@@ -104,10 +115,7 @@ fn test_target_exceeds_maximum_mainnet() {
     let store = SimpleHeaderStore::new(start_header, 705_600);
     let mut header = deserialize_header(MAINNET_HEADER_705601);
     header.bits = CompactTarget::from_hex("0x207fffff").unwrap(); // Target exceeds what is allowed on mainnet
-    verify_with_excessive_target(
-        &BitcoinHeaderValidator::mainnet(store),
-        &header,
-    );
+    verify_with_excessive_target(&BitcoinHeaderValidator::mainnet(store), &header);
 }
 
 #[test]

@@ -68,7 +68,7 @@ impl SimpleHeaderStore {
     }
 }
 
-impl<T: AsRef<SimpleHeaderStore> + AsMut<SimpleHeaderStore>> HeaderStore for T {
+impl<T: AsRef<SimpleHeaderStore>> HeaderStore for T {
     fn get_with_block_hash(&self, hash: &BlockHash) -> Option<Header> {
         self.as_ref().headers.get(hash).map(|stored| stored.header)
     }
@@ -98,16 +98,6 @@ impl<T: AsRef<SimpleHeaderStore> + AsMut<SimpleHeaderStore>> HeaderStore for T {
 
     fn get_initial_hash(&self) -> BlockHash {
         self.as_ref().initial_hash
-    }
-
-    fn add(&mut self, header: Header) {
-        self.as_mut().add(header)
-    }
-}
-
-impl AsRef<SimpleHeaderStore> for SimpleHeaderStore {
-    fn as_ref(&self) -> &SimpleHeaderStore {
-        self
     }
 }
 

@@ -85,9 +85,6 @@ pub trait HeaderStore {
             .expect("genesis block header not found")
             .block_hash()
     }
-
-    /// Adds a header to the store.
-    fn add(&mut self, header: Header);
 }
 
 fn timestamp_is_at_most_2h_in_future(
@@ -140,15 +137,8 @@ fn is_timestamp_valid(
 
 pub trait HeaderValidator {
     type Network;
-    type Store: HeaderStore;
 
     fn network(&self) -> &Self::Network;
-
-    /// Returns a reference to the header store.
-    fn store(&self) -> &Self::Store;
-
-    /// Returns a mutable reference to the header store.
-    fn store_mut(&mut self) -> &mut Self::Store;
 
     /// Returns the maximum difficulty target depending on the network
     fn max_target(&self) -> Target;

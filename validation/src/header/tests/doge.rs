@@ -10,12 +10,22 @@ use crate::header::tests::{
     verify_consecutive_headers_auxpow, verify_difficulty_adjustment, verify_header_sequence,
     verify_header_sequence_auxpow, verify_regtest_difficulty_calculation, verify_timestamp_rules,
     verify_with_excessive_target, verify_with_invalid_pow,
-    verify_with_invalid_pow_with_computed_target, verify_with_missing_parent,
+    verify_with_invalid_pow_with_computed_target, verify_with_missing_parent, HeaderValidatorExt,
 };
 use crate::{DogecoinHeaderValidator, HeaderValidator};
 use bitcoin::dogecoin::constants::genesis_block as dogecoin_genesis_block;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
 use bitcoin::{CompactTarget, Target};
+
+impl HeaderValidatorExt<SimpleHeaderStore> for DogecoinHeaderValidator<SimpleHeaderStore> {
+    fn store(&self) -> &SimpleHeaderStore {
+        &self.store
+    }
+
+    fn store_mut(&mut self) -> &mut SimpleHeaderStore {
+        &mut self.store
+    }
+}
 
 /// Mainnet 0c120ab190655673a709bc92ad86f80dc1cd9f11f9e0f09ebc5e6a3058b73002
 const MAINNET_HEADER_DOGE_17: &str = "01000000fbc172c83b7e535390cfd7807118a7fc799cdbda9da0cbd390f4b70c0f62c2fb155fa2e0ad11cfd91cd0f47049c0fcf5dfabd2fe1a3a406c0350e89f14618bb1f4eda352f0ff0f1e00067505";
@@ -176,10 +186,7 @@ fn test_target_exceeds_maximum_mainnet() {
     let store = SimpleHeaderStore::new(start_header, 151_556);
     let mut header = deserialize_header(MAINNET_HEADER_DOGE_151557);
     header.bits = CompactTarget::from_hex("0x207fffff").unwrap(); // Target exceeds what is allowed on mainnet
-    verify_with_excessive_target(
-        &DogecoinHeaderValidator::mainnet(store),
-        &header,
-    );
+    verify_with_excessive_target(&DogecoinHeaderValidator::mainnet(store), &header);
 }
 
 #[test]

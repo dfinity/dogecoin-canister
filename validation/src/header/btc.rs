@@ -8,7 +8,7 @@ use std::time::Duration;
 pub const DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN: BlockHeight = 6 * 24 * 14;
 
 pub struct BitcoinHeaderValidator<T> {
-    store: T,
+    pub(crate) store: T,
     network: BitcoinNetwork,
 }
 
@@ -32,18 +32,9 @@ impl<T> BitcoinHeaderValidator<T> {
 
 impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
     type Network = BitcoinNetwork;
-    type Store = T;
 
     fn network(&self) -> &Self::Network {
         &self.network
-    }
-
-    fn store(&self) -> &Self::Store {
-        &self.store
-    }
-
-    fn store_mut(&mut self) -> &mut Self::Store {
-        &mut self.store
     }
 
     fn max_target(&self) -> Target {

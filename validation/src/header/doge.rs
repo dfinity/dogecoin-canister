@@ -14,7 +14,7 @@ use std::time::Duration;
 pub(crate) const ALLOW_DIGISHIELD_MIN_DIFFICULTY_HEIGHT: u32 = 157_500;
 
 pub struct DogecoinHeaderValidator<T> {
-    store: T,
+    pub(crate) store: T,
     network: DogecoinNetwork,
 }
 
@@ -88,18 +88,9 @@ impl<T: HeaderStore> DogecoinHeaderValidator<T> {
 
 impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
     type Network = DogecoinNetwork;
-    type Store = T;
 
     fn network(&self) -> &Self::Network {
         &self.network
-    }
-
-    fn store(&self) -> &Self::Store {
-        &self.store
-    }
-
-    fn store_mut(&mut self) -> &mut Self::Store {
-        &mut self.store
     }
 
     fn max_target(&self) -> Target {

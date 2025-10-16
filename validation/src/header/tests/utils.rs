@@ -1,3 +1,5 @@
+use crate::fixtures::SimpleHeaderStore;
+use crate::header::tests::HeaderValidatorExt;
 use crate::header::HeaderValidator;
 use crate::HeaderStore;
 use bitcoin::block::{Header, Version};
@@ -166,7 +168,10 @@ pub fn next_block_header<T: HeaderValidator>(
 
 /// Creates a chain of headers with the given length and
 /// proof of work for the first header.
-pub fn build_header_chain<T: HeaderValidator>(validator: &mut T, chain_length: u32) -> Header {
+pub fn build_header_chain<T: HeaderValidator + HeaderValidatorExt<SimpleHeaderStore>>(
+    validator: &mut T,
+    chain_length: u32,
+) -> Header {
     let pow_limit = validator.pow_limit_bits();
 
     let current_height = validator.store().height();
