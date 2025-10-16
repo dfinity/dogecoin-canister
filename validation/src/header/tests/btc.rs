@@ -102,9 +102,11 @@ fn test_invalid_pow_with_computed_target_regtest() {
 fn test_target_exceeds_maximum_mainnet() {
     let start_header = deserialize_header(MAINNET_HEADER_705600);
     let store = SimpleHeaderStore::new(start_header, 705_600);
+    let mut header = deserialize_header(MAINNET_HEADER_705601);
+    header.bits = CompactTarget::from_hex("0x207fffff").unwrap(); // Target exceeds what is allowed on mainnet
     verify_with_excessive_target(
         &BitcoinHeaderValidator::mainnet(store),
-        &mut deserialize_header(MAINNET_HEADER_705601),
+        &header,
     );
 }
 
