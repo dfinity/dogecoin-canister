@@ -262,7 +262,7 @@ pub fn peek(blocks: &UnstableBlocks) -> Option<&CachedBlock> {
 /// Pops the `anchor` block iff ∃ a child `C` of the `anchor` block that
 /// is stable. The child `C` becomes the new `anchor` block, and all its
 /// siblings are discarded.
-pub fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<CachedBlock> {
+pub fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<Block> {
     let stable_child_idx = get_stable_child(blocks)?;
 
     // Replace the unstable block tree with that of the stable child.
@@ -270,13 +270,14 @@ pub fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<CachedB
     std::mem::swap(&mut tree, &mut blocks.tree);
 
     // Remove the outpoints of obsolete blocks from the cache.
-    for block in tree.blocks() {
+    // Skip the first element (root).
+    for block in &tree.blocks()[1..] {
         blocks.outpoints_cache.remove(&block.block());
     }
 
     blocks.next_block_headers.remove_until_height(stable_height);
 
-    Some(tree.into_root_and_remove_children_from_cache())
+    Some(tree.into_root_and_remove_from_cache())
 }
 
 /// Pushes a new block into the store.
@@ -483,10 +484,6 @@ mod test {
 
     fn peek(blocks: &UnstableBlocks) -> Option<Block> {
         super::peek(blocks).map(|block| block.block())
-    }
-
-    fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<Block> {
-        super::pop(blocks, stable_height).map(|block| block.block())
     }
 
     #[test]

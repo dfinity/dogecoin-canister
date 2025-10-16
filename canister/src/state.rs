@@ -166,7 +166,7 @@ pub fn ingest_stable_blocks_into_utxoset(state: &mut State) -> bool {
         let popped_block = unstable_blocks::pop(&mut state.unstable_blocks, stable_height);
 
         // Sanity check that we just popped the same block that was ingested.
-        assert_eq!(popped_block.unwrap().block_hash(), &ingested_block_hash);
+        assert_eq!(popped_block.unwrap().block_hash(), ingested_block_hash);
     }
 
     let prev_state = (

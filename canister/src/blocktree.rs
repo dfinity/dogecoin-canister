@@ -220,11 +220,10 @@ impl BlockTree {
         &self.root
     }
 
-    pub fn into_root_and_remove_children_from_cache(self) -> CachedBlock {
-        for child in self.children.into_iter() {
-            child.remove_from_cache()
-        }
-        self.root
+    pub fn into_root_and_remove_from_cache(self) -> Block {
+        let block = self.root.block();
+        self.remove_from_cache();
+        block
     }
 
     pub fn children(&self) -> impl Iterator<Item = &BlockTree> {
@@ -637,6 +636,18 @@ mod test {
 
             blocks = vec![blocks[0].clone()];
         }
+
+        // Also test remove_child and remove_from_cache
+        assert_eq!(block_tree.blocks_count(), 46);
+        assert_eq!(block_tree.cache().borrow().len(), 46);
+        let tree = block_tree.remove_child(3);
+        let tree_blocks_count = tree.blocks_count();
+        assert_eq!(tree_blocks_count + block_tree.blocks_count(), 46);
+        let _ = tree.into_root_and_remove_from_cache();
+        let cache = block_tree.cache();
+        assert_eq!(cache.borrow().len() as usize, 46 - tree_blocks_count);
+        let _ = block_tree.into_root_and_remove_from_cache();
+        assert_eq!(cache.borrow().len() as usize, 0);
     }
 
     #[test]
