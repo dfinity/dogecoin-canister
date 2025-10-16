@@ -132,6 +132,7 @@ type Cache = Rc<RefCell<Box<dyn BlocksCache>>>;
 /// Represent a block stored in a shared cache.
 pub struct CachedBlock {
     cache: Cache,
+    difficulty: u128,
     block_hash: BlockHash,
 }
 
@@ -151,13 +152,22 @@ impl Eq for CachedBlock {}
 
 impl CachedBlock {
     fn new_cached(cache: Cache, block: Block) -> CachedBlock {
+        let difficulty = block.difficulty(cache.borrow().network());
         let block_hash = block.block_hash();
         cache.borrow_mut().insert(block_hash.clone(), block);
-        CachedBlock { cache, block_hash }
+        CachedBlock {
+            cache,
+            difficulty,
+            block_hash,
+        }
     }
 
     pub fn block_hash(&self) -> &BlockHash {
         &self.block_hash
+    }
+
+    pub fn difficulty(&self) -> u128 {
+        self.difficulty
     }
 
     pub fn header(&self) -> Header {
@@ -203,8 +213,16 @@ impl BlockTree {
         }
     }
 
-    fn new_with_shared_cache_and_hash(cache: Cache, block_hash: BlockHash) -> Self {
-        let root = CachedBlock { cache, block_hash };
+    fn new_with_shared_cache_and_hash(
+        cache: Cache,
+        difficulty: u128,
+        block_hash: BlockHash,
+    ) -> Self {
+        let root = CachedBlock {
+            cache,
+            difficulty,
+            block_hash,
+        };
         Self {
             root,
             children: vec![],
@@ -388,12 +406,12 @@ impl BlockTree {
     }
 
     // Returns the maximum sum of block difficulties from the root to a leaf inclusive.
-    pub fn difficulty_based_depth(&self, network: Network) -> DifficultyBasedDepth {
+    pub fn difficulty_based_depth(&self) -> DifficultyBasedDepth {
         let mut res = DifficultyBasedDepth::new(0);
         for child in self.children.iter() {
-            res = std::cmp::max(res, child.difficulty_based_depth(network));
+            res = std::cmp::max(res, child.difficulty_based_depth());
         }
-        res = res + DifficultyBasedDepth::new(self.root.block().difficulty(network));
+        res = res + DifficultyBasedDepth::new(self.root.difficulty());
         res
     }
 

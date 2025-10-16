@@ -20,8 +20,15 @@ impl Serialize for BlockTree {
         let _p = canbench_rs::bench_scope("serialize_blocktree");
 
         // Flatten a block tree into a list.
-        fn flatten<'a>(tree: &'a BlockTree, flattened_tree: &mut Vec<(&'a BlockHash, usize)>) {
-            flattened_tree.push((tree.root.block_hash(), tree.children.len()));
+        fn flatten<'a>(
+            tree: &'a BlockTree,
+            flattened_tree: &mut Vec<(&'a BlockHash, u128, usize)>,
+        ) {
+            flattened_tree.push((
+                tree.root.block_hash(),
+                tree.root.difficulty(),
+                tree.children.len(),
+            ));
 
             for child in &tree.children {
                 flatten(child, flattened_tree);
@@ -66,8 +73,8 @@ impl<'de> Visitor<'de> for BlockTreeDeserializer {
     }
 
     fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-        fn next<'de, A: SeqAccess<'de>>(seq: &mut A) -> Option<(BlockHash, usize)> {
-            seq.next_element::<(BlockHash, usize)>()
+        fn next<'de, A: SeqAccess<'de>>(seq: &mut A) -> Option<(BlockHash, u128, usize)> {
+            seq.next_element::<(BlockHash, u128, usize)>()
                 .expect("reading next element must succeed")
         }
 
@@ -75,9 +82,9 @@ impl<'de> Visitor<'de> for BlockTreeDeserializer {
         let mut stack: Vec<(BlockTree, usize)> = Vec::new();
 
         // Read the root and add it to the stack.
-        let (root, children_to_add) = next(&mut seq).unwrap();
+        let (root, difficulty, children_to_add) = next(&mut seq).unwrap();
         stack.push((
-            BlockTree::new_with_shared_cache_and_hash(self.0.clone(), root),
+            BlockTree::new_with_shared_cache_and_hash(self.0.clone(), difficulty, root),
             children_to_add,
         ));
 
@@ -99,9 +106,9 @@ impl<'de> Visitor<'de> for BlockTreeDeserializer {
                 stack.push((tree, children_to_add - 1));
 
                 // Add the child to the stack.
-                let (child, grand_children_to_add) = next(&mut seq).unwrap();
+                let (child, difficulty, grand_children_to_add) = next(&mut seq).unwrap();
                 stack.push((
-                    BlockTree::new_with_shared_cache_and_hash(self.0.clone(), child),
+                    BlockTree::new_with_shared_cache_and_hash(self.0.clone(), difficulty, child),
                     grand_children_to_add,
                 ));
             }

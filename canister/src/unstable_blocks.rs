@@ -1,7 +1,7 @@
 mod blocks_cache;
 mod outpoints_cache;
 
-pub use blocks_cache::BlocksCache;
+pub use blocks_cache::{BTreeCache, BlocksCache, StableBTreeCache};
 
 use crate::{
     blocktree::{
@@ -164,7 +164,7 @@ impl UnstableBlocks {
 
     /// Returns the difficulty-based depth of the unstable block tree.
     pub fn blocks_difficulty_based_depth(&self) -> DifficultyBasedDepth {
-        self.tree.difficulty_based_depth(self.network)
+        self.tree.difficulty_based_depth()
     }
 
     /// Returns depth in BlockTree of Block with given BlockHash.
@@ -391,7 +391,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
         .tree
         .children()
         .enumerate()
-        .map(|(idx, child)| (child.difficulty_based_depth(network), idx))
+        .map(|(idx, child)| (child.difficulty_based_depth(), idx))
         .collect();
     difficulty_based_depths.sort_by_key(|(difficulty_based_depth, _)| *difficulty_based_depth);
 

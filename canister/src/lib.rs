@@ -92,8 +92,10 @@ pub fn init(init_config: InitConfig) {
     print("Running init...");
 
     let config = Config::from(init_config);
-    let cache =
-        ic_stable_structures::StableBTreeMap::init(crate::memory::get_unstable_blocks_memory());
+    let cache = unstable_blocks::StableBTreeCache::new(
+        config.network,
+        memory::get_unstable_blocks_memory(),
+    );
     set_state(State::new(
         cache,
         config
@@ -215,8 +217,10 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
     let mut state: State =
         ciborium::de::from_reader(&*state_bytes).expect("failed to decode state");
     // Reset cache to stable memory
-    let cache =
-        ic_stable_structures::StableBTreeMap::init(crate::memory::get_unstable_blocks_memory());
+    let cache = unstable_blocks::StableBTreeCache::new(
+        state.network(),
+        memory::get_unstable_blocks_memory(),
+    );
     state.replace_unstable_blocks_cache(cache);
 
     set_state(state);
