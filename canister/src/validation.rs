@@ -41,7 +41,7 @@ impl<'a> ValidationContext<'a> {
         } else {
             let mut context = Self::new(state, next_block_headers_chain[0].0)?;
             for (header, hash) in next_block_headers_chain.into_iter() {
-                context.chain.push((header.clone(), hash))
+                context.chain.push((*header, hash))
             }
             Ok(context)
         }
@@ -127,10 +127,10 @@ mod test {
         assert_eq!(
             validation_context.chain,
             vec![
-                (genesis.header().clone(), genesis.block_hash()),
-                (block_0.header().clone(), block_0.block_hash()),
-                (block_1.header().clone(), block_1.block_hash()),
-                (block_2.header().clone(), block_2.block_hash()),
+                (*genesis.header(), genesis.block_hash()),
+                (*block_0.header(), block_0.block_hash()),
+                (*block_1.header(), block_1.block_hash()),
+                (*block_2.header(), block_2.block_hash()),
             ]
         );
 

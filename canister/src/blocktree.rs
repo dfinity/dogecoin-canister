@@ -152,7 +152,7 @@ impl Eq for CachedBlock {}
 impl CachedBlock {
     fn new_cached(cache: Cache, block: Block) -> CachedBlock {
         let block_hash = block.block_hash();
-        cache.borrow_mut().insert(block_hash.clone(), block.into());
+        cache.borrow_mut().insert(block_hash.clone(), block);
         CachedBlock { cache, block_hash }
     }
 
@@ -162,7 +162,7 @@ impl CachedBlock {
 
     pub fn header(&self) -> Header {
         let block = self.cache.borrow().get(&self.block_hash).unwrap();
-        block.header().clone()
+        *block.header()
     }
 
     pub fn block(&self) -> Block {
