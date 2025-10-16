@@ -270,8 +270,7 @@ pub fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<Block> 
     std::mem::swap(&mut tree, &mut blocks.tree);
 
     // Remove the outpoints of obsolete blocks from the cache.
-    // Skip the first element (root).
-    for block in &tree.blocks()[1..] {
+    for block in tree.blocks() {
         blocks.outpoints_cache.remove(&block.block());
     }
 
