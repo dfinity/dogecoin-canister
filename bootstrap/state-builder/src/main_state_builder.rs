@@ -117,6 +117,7 @@ fn main() {
 
         // Ingest the blocks.
         s.unstable_blocks = UnstableBlocks::new(
+            BTreeMap::new(),
             &s.utxos,
             args.stability_threshold as u32,
             anchor_block,
