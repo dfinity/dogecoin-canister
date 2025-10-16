@@ -40,6 +40,9 @@ use serde_bytes::ByteBuf;
 use state::main_chain_height;
 use std::convert::TryInto;
 use std::{cell::RefCell, cmp::max};
+use std::io::Write;
+use ic_stable_structures::reader::{BufferedReader, Reader};
+use ic_stable_structures::writer::{BufferedWriter, Writer};
 use utxo_set::UtxoSet;
 
 /// The maximum number of blocks the canister can be behind the tip to be considered synced.
@@ -172,26 +175,28 @@ pub fn get_config() -> Config {
     })
 }
 
+// We use 8MiB buffer
+const BUFFER_SIZE: usize = 8388608;
+
 pub fn pre_upgrade() {
     print("Running pre_upgrade...");
 
+    let mut memory = memory::get_upgrades_memory();
+
+    let writer = Writer::new(&mut memory, 0);
+    let mut buffered_writer = BufferedWriter::new(BUFFER_SIZE, writer);
+
     // Serialize the state.
-    let mut state_bytes = vec![];
     with_state_mut(|state| {
         // Reset syncing state to ensure the canister
         // is not locked in a fetching blocks state after the upgrade.
         reset_syncing_state(state);
 
-        ciborium::ser::into_writer(state, &mut state_bytes)
+        ciborium::ser::into_writer(state, &mut buffered_writer)
     })
-    .expect("failed to encode state");
+    .expect("failed to encode state in stable memory");
 
-    // Write the length of the serialized bytes to memory, followed by the
-    // by the bytes themselves.
-    let len = state_bytes.len() as u32;
-    let memory = memory::get_upgrades_memory();
-    crate::memory::write(&memory, 0, &len.to_le_bytes());
-    crate::memory::write(&memory, 4, &state_bytes);
+    buffered_writer.flush().expect("failed to flush state to stable memory");
 }
 
 pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
@@ -199,17 +204,11 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
 
     let memory = memory::get_upgrades_memory();
 
-    // Read the length of the state bytes.
-    let mut state_len_bytes = [0; 4];
-    memory.read(0, &mut state_len_bytes);
-    let state_len = u32::from_le_bytes(state_len_bytes) as usize;
-
-    // Read the bytes
-    let mut state_bytes = vec![0; state_len];
-    memory.read(4, &mut state_bytes);
+    let reader = Reader::new(&memory, 0);
+    let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
 
     // Deserialize and set the state.
-    let state: State = ciborium::de::from_reader(&*state_bytes).expect("failed to decode state");
+    let state: State = ciborium::de::from_reader(&mut buffered_reader).expect("failed to decode state from stable memory");
 
     set_state(state);
 
