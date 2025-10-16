@@ -34,15 +34,14 @@ use ic_doge_interface::{
     GetUtxosResponse, InitConfig, MillikoinuPerByte, Network, SetConfigRequest,
 };
 use ic_doge_types::Block;
-use ic_stable_structures::Memory;
+use ic_stable_structures::reader::{BufferedReader, Reader};
+use ic_stable_structures::writer::{BufferedWriter, Writer};
 pub use memory::get_memory;
 use serde_bytes::ByteBuf;
 use state::main_chain_height;
 use std::convert::TryInto;
-use std::{cell::RefCell, cmp::max};
 use std::io::Write;
-use ic_stable_structures::reader::{BufferedReader, Reader};
-use ic_stable_structures::writer::{BufferedWriter, Writer};
+use std::{cell::RefCell, cmp::max};
 use utxo_set::UtxoSet;
 
 /// The maximum number of blocks the canister can be behind the tip to be considered synced.
@@ -196,7 +195,9 @@ pub fn pre_upgrade() {
     })
     .expect("failed to encode state in stable memory");
 
-    buffered_writer.flush().expect("failed to flush state to stable memory");
+    buffered_writer
+        .flush()
+        .expect("failed to flush state to stable memory");
 }
 
 pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
@@ -208,7 +209,8 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
     let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
 
     // Deserialize and set the state.
-    let state: State = ciborium::de::from_reader(&mut buffered_reader).expect("failed to decode state from stable memory");
+    let state: State = ciborium::de::from_reader(&mut buffered_reader)
+        .expect("failed to decode state from stable memory");
 
     set_state(state);
 
