@@ -4,7 +4,7 @@ use crate::{
     unstable_blocks::UnstableBlocks,
     UtxoSet,
 };
-use ic_doge_types::{Block, OutPoint};
+use ic_doge_types::{BlockHash, OutPoint};
 use std::{collections::BTreeSet, sync::Arc};
 
 /// A struct that tracks the UTXO set of a given address.
@@ -44,17 +44,17 @@ impl<'a> AddressUtxoSet<'a> {
         }
     }
 
-    pub fn apply_block(&mut self, block: &Block) {
+    pub fn apply_block(&mut self, block_hash: &BlockHash) {
         for outpoint in self
             .unstable_blocks
-            .get_removed_outpoints(&block.block_hash(), &self.address)
+            .get_removed_outpoints(block_hash, &self.address)
         {
             self.removed_outpoints.insert(outpoint.clone());
         }
 
         for outpoint in self
             .unstable_blocks
-            .get_added_outpoints(&block.block_hash(), &self.address)
+            .get_added_outpoints(block_hash, &self.address)
         {
             let (txout, height) = self
                 .unstable_blocks

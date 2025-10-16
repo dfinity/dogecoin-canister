@@ -92,7 +92,10 @@ pub fn init(init_config: InitConfig) {
     print("Running init...");
 
     let config = Config::from(init_config);
+    let cache =
+        ic_stable_structures::StableBTreeMap::init(crate::memory::get_unstable_blocks_memory());
     set_state(State::new(
+        cache,
         config
             .stability_threshold
             .try_into()
@@ -209,7 +212,12 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
     memory.read(4, &mut state_bytes);
 
     // Deserialize and set the state.
-    let state: State = ciborium::de::from_reader(&*state_bytes).expect("failed to decode state");
+    let mut state: State =
+        ciborium::de::from_reader(&*state_bytes).expect("failed to decode state");
+    // Reset cache to stable memory
+    let cache =
+        ic_stable_structures::StableBTreeMap::init(crate::memory::get_unstable_blocks_memory());
+    state.replace_unstable_blocks_cache(cache);
 
     set_state(state);
 
@@ -340,12 +348,22 @@ mod test {
                 ..Default::default()
             });
 
+           let cache = ic_stable_structures::StableBTreeMap::init(crate::memory::get_unstable_blocks_memory());
+
             with_state(|state| {
                 assert!(
-                    *state == State::new(stability_threshold as u32, network, genesis_block(network))
+                    *state == State::new(cache, stability_threshold as u32, network, genesis_block(network))
                 );
             });
         }
+    }
+
+    fn get_main_chain(blocks: &unstable_blocks::UnstableBlocks) -> Vec<Block> {
+        unstable_blocks::get_main_chain(blocks)
+            .into_chain()
+            .into_iter()
+            .map(|block| block.block())
+            .collect()
     }
 
     #[test_strategy::proptest(ProptestConfig::with_cases(10))]

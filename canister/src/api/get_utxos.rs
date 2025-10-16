@@ -6,7 +6,7 @@ use crate::{
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut, State,
 };
 use ic_doge_interface::{GetUtxosError, GetUtxosResponse, Utxo as PublicUtxo, UtxosFilter};
-use ic_doge_types::{Block, BlockHash, OutPoint, Txid};
+use ic_doge_types::{BlockHash, OutPoint, Txid};
 use serde_bytes::ByteBuf;
 use std::str::FromStr;
 
@@ -175,13 +175,13 @@ fn get_utxos_internal(
 //    stability_count(b) = d(b) if |D(b)| = 0 and d(b) - max_{b' ∈ D(b)} d(b') otherwise.
 // ```
 fn get_stability_count(
-    blocks_with_depths_on_the_same_height: &[(&Block, u32)],
-    target_block: BlockHash,
+    blocks_with_depths_on_the_same_height: &[(&BlockHash, u32)],
+    target_block: &BlockHash,
 ) -> i32 {
     let mut max_depth_of_the_other_blocks = 0;
     let mut target_block_depth = 0;
-    for (block, depth) in blocks_with_depths_on_the_same_height.iter() {
-        if block.block_hash() != target_block {
+    for (block_hash, depth) in blocks_with_depths_on_the_same_height.iter() {
+        if block_hash != &target_block {
             max_depth_of_the_other_blocks = std::cmp::max(max_depth_of_the_other_blocks, *depth);
         } else {
             target_block_depth = *depth;
@@ -228,7 +228,7 @@ fn get_utxos_from_chain(
         }
         tip_block_hash = block.block_hash();
         tip_block_height = state.utxos.next_height() + (i as u32);
-        address_utxos.apply_block(block);
+        address_utxos.apply_block(block.block_hash());
     }
     stats.ins_apply_unstable_blocks = performance_counter() - ins_start;
 
@@ -274,7 +274,7 @@ fn get_utxos_from_chain(
     Ok((
         GetUtxosResponse {
             utxos,
-            tip_block_hash: tip_block_hash.to_vec(),
+            tip_block_hash: tip_block_hash.clone().to_vec(),
             tip_height: tip_block_height,
             next_page: next_page.map(ByteBuf::from),
         },

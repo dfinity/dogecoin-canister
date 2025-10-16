@@ -7,7 +7,7 @@ pub struct ValidationContext<'a> {
     state: &'a State,
     // BlockHash is stored in order to avoid repeatedly calling to
     // Header::block_hash() which is expensive.
-    chain: Vec<(&'a Header, ic_doge_types::BlockHash)>,
+    chain: Vec<(Header, ic_doge_types::BlockHash)>,
 }
 
 impl<'a> ValidationContext<'a> {
@@ -20,7 +20,7 @@ impl<'a> ValidationContext<'a> {
             .ok_or_else(|| BlockDoesNotExtendTree(header.block_hash().into()))?
             .into_chain()
             .iter()
-            .map(|block| (block.header(), block.block_hash()))
+            .map(|block| (block.header(), block.block_hash().clone()))
             .collect();
 
         Ok(Self { state, chain })
@@ -40,8 +40,8 @@ impl<'a> ValidationContext<'a> {
             Self::new(state, header)
         } else {
             let mut context = Self::new(state, next_block_headers_chain[0].0)?;
-            for item in next_block_headers_chain.iter() {
-                context.chain.push(item.clone())
+            for (header, hash) in next_block_headers_chain.into_iter() {
+                context.chain.push((header.clone(), hash))
             }
             Ok(context)
         }
@@ -55,7 +55,7 @@ impl HeaderStore for ValidationContext<'_> {
         let hash = ic_doge_types::BlockHash::from(hash.as_raw_hash().as_byte_array().to_vec());
         for item in self.chain.iter() {
             if item.1 == hash {
-                return Some(*item.0);
+                return Some(item.0);
             }
         }
 
@@ -77,7 +77,7 @@ impl HeaderStore for ValidationContext<'_> {
         } else if height <= self.height() {
             // The height requested is for an unstable block.
             // Retrieve the block header from the chain.
-            Some(*self.chain[(height - self.state.utxos.next_height()) as usize].0)
+            Some(self.chain[(height - self.state.utxos.next_height()) as usize].0)
         } else {
             // The height requested is higher than the tip.
             None

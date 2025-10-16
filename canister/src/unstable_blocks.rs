@@ -1,7 +1,12 @@
+mod blocks_cache;
 mod outpoints_cache;
 
+pub use blocks_cache::BlocksCache;
+
 use crate::{
-    blocktree::{BlockChain, BlockDoesNotExtendTree, BlockTree, Depth, DifficultyBasedDepth},
+    blocktree::{
+        BlockChain, BlockDoesNotExtendTree, BlockTree, CachedBlock, Depth, DifficultyBasedDepth,
+    },
     runtime::print,
     types::{Address, TxOut},
     UtxoSet,
@@ -61,7 +66,7 @@ pub fn testnet_unstable_max_depth_difference(
 /// A block `b` is considered stable if:
 ///   depth(block) ≥ stability_threshold
 ///   ∀ b', height(b') = height(b): depth(b) - depth(b’) ≥ stability_threshold
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct UnstableBlocks {
     stability_threshold: u32,
     tree: BlockTree,
@@ -72,7 +77,13 @@ pub struct UnstableBlocks {
 }
 
 impl UnstableBlocks {
-    pub fn new(utxos: &UtxoSet, stability_threshold: u32, anchor: Block, network: Network) -> Self {
+    pub fn new<Cache: blocks_cache::BlocksCache + 'static>(
+        blocks_cache: Cache,
+        utxos: &UtxoSet,
+        stability_threshold: u32,
+        anchor: Block,
+        network: Network,
+    ) -> Self {
         // Create a cache of the transaction outputs, starting with the given anchor block.
         let mut outpoints_cache = OutPointsCache::new();
         outpoints_cache
@@ -81,11 +92,16 @@ impl UnstableBlocks {
 
         Self {
             stability_threshold,
-            tree: BlockTree::new(anchor.clone()),
+            tree: BlockTree::new(blocks_cache, anchor.clone()),
             outpoints_cache,
             network,
             next_block_headers: NextBlockHeaders::default(),
         }
+    }
+
+    /// Replace the blocks cache with the given one
+    pub fn replace_blocks_cache<Cache: BlocksCache + 'static>(&mut self, blocks_cache: Cache) {
+        self.tree.replace_blocks_cache(blocks_cache)
     }
 
     /// Retrieves the `TxOut` associated with the given `outpoint`, along with its height.
@@ -114,7 +130,7 @@ impl UnstableBlocks {
     }
 
     pub fn anchor_difficulty(&self) -> u128 {
-        self.tree.root().difficulty(self.network)
+        self.tree.root().block().difficulty(self.network)
     }
 
     pub fn normalized_stability_threshold(&self) -> u128 {
@@ -137,7 +153,7 @@ impl UnstableBlocks {
 
     /// Returns all blocks in the tree with their respective depths
     /// separated by heights.
-    pub fn blocks_with_depths_by_heights(&self) -> Vec<Vec<(&Block, u32)>> {
+    pub fn blocks_with_depths_by_heights(&self) -> Vec<Vec<(&BlockHash, u32)>> {
         self.tree.blocks_with_depths_by_heights()
     }
 
@@ -216,7 +232,7 @@ impl UnstableBlocks {
         &self,
         stable_height: Height,
         heights: std::ops::RangeInclusive<Height>,
-    ) -> impl Iterator<Item = &Header> {
+    ) -> impl Iterator<Item = Header> {
         if *heights.end() < stable_height {
             // `stable_height` is larger than any height from the range, which implies none of the requested
             // blocks are in unstable blocks, hence the result should be an empty iterator.
@@ -239,37 +255,28 @@ impl UnstableBlocks {
 }
 
 /// Returns a reference to the `anchor` block iff ∃ a child `C` of `anchor` that is stable.
-pub fn peek(blocks: &UnstableBlocks) -> Option<&Block> {
+pub fn peek(blocks: &UnstableBlocks) -> Option<&CachedBlock> {
     get_stable_child(blocks).map(|_| blocks.tree.root())
 }
 
 /// Pops the `anchor` block iff ∃ a child `C` of the `anchor` block that
 /// is stable. The child `C` becomes the new `anchor` block, and all its
 /// siblings are discarded.
-pub fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<Block> {
+pub fn pop(blocks: &mut UnstableBlocks, stable_height: Height) -> Option<CachedBlock> {
     let stable_child_idx = get_stable_child(blocks)?;
 
-    let old_anchor = blocks.tree.root().clone();
+    // Replace the unstable block tree with that of the stable child.
+    let mut tree = blocks.tree.remove_child(stable_child_idx);
+    std::mem::swap(&mut tree, &mut blocks.tree);
 
     // Remove the outpoints of obsolete blocks from the cache.
-    let obsolete_blocks: Vec<_> = blocks
-        .tree
-        .children()
-        .enumerate()
-        .filter(|(idx, _)| *idx != stable_child_idx)
-        .flat_map(|(_, obsolete_child)| obsolete_child.blocks())
-        .chain(std::iter::once(old_anchor.clone()))
-        .collect();
-    for block in obsolete_blocks {
-        blocks.outpoints_cache.remove(&block);
+    for block in tree.blocks() {
+        blocks.outpoints_cache.remove(&block.block());
     }
-
-    // Replace the unstable block tree with that of the stable child.
-    blocks.tree = blocks.tree.remove_child(stable_child_idx);
 
     blocks.next_block_headers.remove_until_height(stable_height);
 
-    Some(old_anchor)
+    Some(tree.into_root_and_remove_children_from_cache())
 }
 
 /// Pushes a new block into the store.
@@ -304,7 +311,7 @@ pub fn push(
 /// The most likely chain to be "main", we hypothesize, is the longest
 /// chain of blocks with an "uncontested" tip. As in, there exists no other
 /// block at the same height as the tip.
-pub fn get_main_chain(blocks: &UnstableBlocks) -> BlockChain {
+pub fn get_main_chain(blocks: &UnstableBlocks) -> BlockChain<'_> {
     // Get all the blockchains that extend the anchor.
     let blockchains: Vec<BlockChain> = blocks.tree.blockchains();
 
@@ -315,7 +322,7 @@ pub fn get_main_chain(blocks: &UnstableBlocks) -> BlockChain {
     }
 
     // Get all the longest blockchains.
-    let longest_blockchains: Vec<Vec<&'_ Block>> = blockchains
+    let longest_blockchains: Vec<Vec<&'_ CachedBlock>> = blockchains
         .into_iter()
         .filter(|bc| bc.len() == longest_blockchain_len)
         .map(|bc| bc.into_chain())

@@ -1,4 +1,5 @@
 use crate::{
+    blocktree::CachedBlock,
     charge_cycles,
     runtime::{performance_counter, print},
     state::{FeePercentilesCache, State},
@@ -6,7 +7,7 @@ use crate::{
     verify_has_enough_cycles, with_state, with_state_mut,
 };
 use ic_doge_interface::MillikoinuPerByte;
-use ic_doge_types::{Block, Transaction};
+use ic_doge_types::Transaction;
 
 /// The number of transactions to include in the percentiles calculation.
 const NUM_TRANSACTIONS: u32 = 10_000;
@@ -47,7 +48,7 @@ fn get_current_fee_percentiles_with_number_of_transactions(
 
     // If fee percentiles were already cached, then return the cached results.
     if let Some(cache) = &state.fee_percentiles_cache {
-        if cache.tip_block_hash == tip_block_hash {
+        if &cache.tip_block_hash == tip_block_hash {
             return cache.fee_percentiles.clone();
         }
     }
@@ -71,7 +72,7 @@ fn get_current_fee_percentiles_with_number_of_transactions(
     let fee_percentiles = percentiles(fees_per_byte);
 
     state.fee_percentiles_cache = Some(FeePercentilesCache {
-        tip_block_hash,
+        tip_block_hash: tip_block_hash.clone(),
         fee_percentiles: fee_percentiles.clone(),
     });
 
@@ -82,7 +83,7 @@ fn get_current_fee_percentiles_with_number_of_transactions(
 /// Fees are returned in a reversed order, starting with the most recent ones, followed by the older ones.
 /// Eg. for transactions [..., Tn-2, Tn-1, Tn] fees would be [Fn, Fn-1, Fn-2, ...].
 fn get_fees_per_byte(
-    main_chain: Vec<&Block>,
+    main_chain: Vec<&CachedBlock>,
     unstable_blocks: &UnstableBlocks,
     number_of_transactions: u32,
 ) -> Vec<MillikoinuPerByte> {
@@ -92,7 +93,7 @@ fn get_fees_per_byte(
         if tx_i >= number_of_transactions {
             break;
         }
-        for tx in block.txdata() {
+        for tx in block.block().txdata() {
             if tx_i >= number_of_transactions {
                 break;
             }

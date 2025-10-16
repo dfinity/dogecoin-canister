@@ -7,7 +7,7 @@ use crate::{
         into_dogecoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
         GetSuccessorsPartialResponse, Slicing,
     },
-    unstable_blocks::{self, UnstableBlocks},
+    unstable_blocks::{self, BlocksCache, UnstableBlocks},
     validation::ValidationContext,
     UtxoSet,
 };
@@ -81,10 +81,15 @@ impl State {
     /// The `stability_threshold` parameter specifies how many confirmations a
     /// block needs before it is considered stable. Stable blocks are assumed
     /// to be final and are never removed.
-    pub fn new(stability_threshold: u32, network: Network, genesis_block: Block) -> Self {
+    pub fn new<Cache: BlocksCache + 'static>(
+        cache: Cache,
+        stability_threshold: u32,
+        network: Network,
+        genesis_block: Block,
+    ) -> Self {
         let utxos = UtxoSet::new(network);
         let unstable_blocks =
-            UnstableBlocks::new(&utxos, stability_threshold, genesis_block, network);
+            UnstableBlocks::new(cache, &utxos, stability_threshold, genesis_block, network);
 
         let fees = match network {
             Network::Mainnet => Fees::mainnet(),
@@ -122,6 +127,10 @@ impl State {
     pub fn get_utxos(&self, address: Address) -> AddressUtxoSet<'_> {
         AddressUtxoSet::new(address, &self.utxos, &self.unstable_blocks)
     }
+
+    pub fn replace_unstable_blocks_cache<Cache: BlocksCache + 'static>(&mut self, cache: Cache) {
+        self.unstable_blocks.replace_blocks_cache(cache)
+    }
 }
 
 /// Inserts a block into the state.
@@ -157,7 +166,7 @@ pub fn ingest_stable_blocks_into_utxoset(state: &mut State) -> bool {
         let popped_block = unstable_blocks::pop(&mut state.unstable_blocks, stable_height);
 
         // Sanity check that we just popped the same block that was ingested.
-        assert_eq!(popped_block.unwrap().block_hash(), ingested_block_hash);
+        assert_eq!(popped_block.unwrap().block_hash(), &ingested_block_hash);
     }
 
     let prev_state = (
@@ -187,12 +196,14 @@ pub fn ingest_stable_blocks_into_utxoset(state: &mut State) -> bool {
             new_stable_block.block_hash()
         ));
 
+        let block = new_stable_block.block();
+
         // Store the block's header.
         state
             .stable_block_headers
-            .insert_block(&new_stable_block, state.utxos.next_height());
+            .insert_block(&block, state.utxos.next_height());
 
-        match state.utxos.ingest_block(new_stable_block.clone()) {
+        match state.utxos.ingest_block(block) {
             Slicing::Paused(()) => return has_state_changed(state),
             Slicing::Done((ingested_block_hash, stats)) => {
                 state.metrics.block_ingestion_stats = stats;
