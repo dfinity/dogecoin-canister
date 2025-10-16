@@ -6,6 +6,7 @@ pub trait BlocksCache {
     fn insert(&mut self, block_hash: BlockHash, block: Block) -> bool;
     fn remove(&mut self, block_hash: &BlockHash) -> bool;
     fn get(&self, block_hash: &BlockHash) -> Option<Block>;
+    fn is_empty(&self) -> bool;
     fn len(&self) -> u64;
 }
 
@@ -18,6 +19,9 @@ impl BlocksCache for () {
         unimplemented!()
     }
     fn get(&self, _block_hash: &BlockHash) -> Option<Block> {
+        unimplemented!()
+    }
+    fn is_empty(&self) -> bool {
         unimplemented!()
     }
     fn len(&self) -> u64 {
@@ -40,6 +44,9 @@ impl BlocksCache for StableBTreeMap<BlockHash, Vec<u8>, crate::memory::Memory> {
         let block = bitcoin::dogecoin::Block::consensus_decode(&mut bytes.as_slice()).ok()?;
         Some(Block::new(block))
     }
+    fn is_empty(&self) -> bool {
+        StableBTreeMap::is_empty(self)
+    }
     fn len(&self) -> u64 {
         StableBTreeMap::len(self)
     }
@@ -54,6 +61,9 @@ impl BlocksCache for BTreeMap<BlockHash, Block> {
     }
     fn get(&self, block_hash: &BlockHash) -> Option<Block> {
         BTreeMap::get(self, block_hash).cloned()
+    }
+    fn is_empty(&self) -> bool {
+        BTreeMap::is_empty(self)
     }
     fn len(&self) -> u64 {
         BTreeMap::len(self) as u64
