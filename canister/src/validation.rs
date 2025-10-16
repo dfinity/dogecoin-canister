@@ -94,6 +94,7 @@ mod test {
     };
     use ic_doge_interface::Network;
     use proptest::prelude::*;
+    use std::collections::BTreeMap;
     use std::str::FromStr;
 
     #[test]
@@ -101,7 +102,7 @@ mod test {
         let genesis = BlockBuilder::genesis().build();
         let network = Network::Mainnet;
 
-        let mut state = State::new(2, network, genesis.clone());
+        let mut state = State::new(BTreeMap::new(), 2, network, genesis.clone());
         let block_0 = BlockBuilder::with_prev_header(genesis.header()).build();
         let block_1 = BlockBuilder::with_prev_header(block_0.header()).build();
         let block_2 = BlockBuilder::with_prev_header(block_1.header()).build();
@@ -126,10 +127,10 @@ mod test {
         assert_eq!(
             validation_context.chain,
             vec![
-                (genesis.header(), genesis.block_hash()),
-                (block_0.header(), block_0.block_hash()),
-                (block_1.header(), block_1.block_hash()),
-                (block_2.header(), block_2.block_hash()),
+                (genesis.header().clone(), genesis.block_hash()),
+                (block_0.header().clone(), block_0.block_hash()),
+                (block_1.header().clone(), block_1.block_hash()),
+                (block_2.header().clone(), block_2.block_hash()),
             ]
         );
 
@@ -157,7 +158,7 @@ mod test {
             let network = Network::Regtest;
             let blocks = build_chain(network, num_blocks, num_transactions_in_block, with_auxpow);
 
-            let mut state = State::new(stability_threshold, network, blocks[0].clone());
+            let mut state = State::new(BTreeMap::new(), stability_threshold, network, blocks[0].clone());
 
             // Insert all the blocks except the last block.
             for block in blocks[1..blocks.len() - 1].iter() {

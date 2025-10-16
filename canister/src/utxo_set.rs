@@ -590,6 +590,7 @@ mod test {
     use ic_doge_interface::Network;
     use ic_doge_test_utils::random_p2pkh_address;
     use proptest::prelude::*;
+    use std::collections::BTreeMap;
     use std::collections::BTreeSet;
 
     // A succinct wrapper around `ingest_tx_with_slicing` for tests that don't need slicing.
@@ -685,7 +686,13 @@ mod test {
             .build();
         ingest_tx(&mut utxo, &coinbase_tx);
 
-        let unstable_blocks = UnstableBlocks::new(&utxo, 2, crate::genesis_block(network), network);
+        let unstable_blocks = UnstableBlocks::new(
+            BTreeMap::new(),
+            &utxo,
+            2,
+            crate::genesis_block(network),
+            network,
+        );
 
         let expected = vec![Utxo {
             outpoint: OutPoint {

@@ -394,6 +394,8 @@ mod test {
             });
         }
 
+        let main_chain_before = with_state(|state| get_main_chain(&state.unstable_blocks));
+
         // Run the preupgrade hook.
         pre_upgrade();
 
@@ -403,8 +405,11 @@ mod test {
         // Run the postupgrade hook.
         post_upgrade(None);
 
+        let main_chain_after = with_state(|state| get_main_chain(&state.unstable_blocks));
+
         // The new and old states should be equivalent.
         with_state(|new_state| assert!(new_state == &old_state));
+        assert_eq!(main_chain_before, main_chain_after);
     }
 
     #[test_strategy::proptest(ProptestConfig::with_cases(1))]

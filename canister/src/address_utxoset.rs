@@ -124,6 +124,7 @@ mod test {
     use ic_doge_interface::Network;
     use ic_doge_test_utils::random_p2pkh_address;
     use ic_doge_types::OutPoint;
+    use std::collections::BTreeMap;
 
     #[test]
     fn add_tx_to_empty_utxo() {
@@ -143,11 +144,12 @@ mod test {
             .with_transaction(coinbase_tx.clone())
             .build();
 
-        let unstable_blocks = UnstableBlocks::new(&utxo_set, 2, block_0.clone(), network);
+        let unstable_blocks =
+            UnstableBlocks::new(BTreeMap::new(), &utxo_set, 2, block_0.clone(), network);
 
         let mut address_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);
 
-        address_utxo_set.apply_block(&block_0);
+        address_utxo_set.apply_block(&block_0.block_hash());
 
         // Address should have that data.
         assert_eq!(
@@ -190,18 +192,19 @@ mod test {
             .with_transaction(tx.clone())
             .build();
 
-        let mut unstable_blocks = UnstableBlocks::new(&utxo_set, 2, block_0.clone(), network);
+        let mut unstable_blocks =
+            UnstableBlocks::new(BTreeMap::new(), &utxo_set, 2, block_0.clone(), network);
         unstable_blocks::push(&mut unstable_blocks, &utxo_set, block_1.clone()).unwrap();
 
         let mut address_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);
-        address_utxo_set.apply_block(&block_0);
-        address_utxo_set.apply_block(&block_1);
+        address_utxo_set.apply_block(&block_0.block_hash());
+        address_utxo_set.apply_block(&block_1.block_hash());
 
         assert_eq!(address_utxo_set.into_iter(None).collect::<Vec<_>>(), vec![]);
 
         let mut address_2_utxo_set = AddressUtxoSet::new(address_2, &utxo_set, &unstable_blocks);
-        address_2_utxo_set.apply_block(&block_0);
-        address_2_utxo_set.apply_block(&block_1);
+        address_2_utxo_set.apply_block(&block_0.block_hash());
+        address_2_utxo_set.apply_block(&block_1.block_hash());
 
         assert_eq!(
             address_2_utxo_set.into_iter(None).collect::<Vec<_>>(),
@@ -248,16 +251,17 @@ mod test {
 
         // Process the blocks.
         let utxo_set = UtxoSet::new(Network::Mainnet);
-        let mut unstable_blocks = UnstableBlocks::new(&utxo_set, 2, block_0.clone(), network);
+        let mut unstable_blocks =
+            UnstableBlocks::new(BTreeMap::new(), &utxo_set, 2, block_0.clone(), network);
         unstable_blocks::push(&mut unstable_blocks, &utxo_set, block_1.clone()).unwrap();
 
         let mut address_1_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);
-        address_1_utxo_set.apply_block(&block_0);
-        address_1_utxo_set.apply_block(&block_1);
+        address_1_utxo_set.apply_block(&block_0.block_hash());
+        address_1_utxo_set.apply_block(&block_1.block_hash());
 
         let mut address_2_utxo_set = AddressUtxoSet::new(address_2, &utxo_set, &unstable_blocks);
-        address_2_utxo_set.apply_block(&block_0);
-        address_2_utxo_set.apply_block(&block_1);
+        address_2_utxo_set.apply_block(&block_0.block_hash());
+        address_2_utxo_set.apply_block(&block_1.block_hash());
 
         // Address 1 should have one UTXO corresponding to the remaining amount
         // it gave back to itself.

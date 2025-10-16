@@ -175,7 +175,7 @@ mod test {
     use bitcoin::Witness;
     use ic_doge_interface::{Fees, InitConfig, Koinu, Network};
     use ic_doge_test_utils::random_p2pkh_address;
-    use ic_doge_types::OutPoint;
+    use ic_doge_types::{Block, OutPoint};
     use std::iter::FromIterator;
 
     /// Covers an inclusive range of `[0, 100]` percentiles.

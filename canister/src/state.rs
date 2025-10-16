@@ -464,6 +464,7 @@ mod test {
     use super::*;
     use crate::test_utils::build_chain;
     use proptest::prelude::*;
+    use std::collections::BTreeMap;
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(10))]
@@ -480,7 +481,7 @@ mod test {
             let network = Network::Regtest;
             let blocks = build_chain(network, num_blocks, num_transactions_in_block, with_auxpow);
 
-            let mut state = State::new(stability_threshold, network, blocks[0].clone());
+            let mut state = State::new(BTreeMap::new(), stability_threshold, network, blocks[0].clone());
 
             for block in blocks[1..].iter() {
                 insert_block(&mut state, block.clone()).unwrap();
@@ -504,7 +505,12 @@ mod test {
         let network = Network::Regtest;
         let blocks = build_chain(network, num_blocks, num_transactions_per_block, false);
 
-        let mut state = State::new(stability_threshold, network, blocks[0].clone());
+        let mut state = State::new(
+            BTreeMap::new(),
+            stability_threshold,
+            network,
+            blocks[0].clone(),
+        );
 
         assert_eq!(state.stable_height(), 0);
         insert_block(&mut state, blocks[1].clone()).unwrap();
