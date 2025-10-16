@@ -460,12 +460,18 @@ impl BlockTree {
             .sum::<usize>()
     }
 
+    fn fill_blocks<'a>(&'a self, blocks: &mut Vec<&'a CachedBlock>) {
+        blocks.push(&self.root);
+        for child in self.children.iter() {
+            child.fill_blocks(blocks)
+        }
+    }
+
     /// Returns all blocks in the tree.
-    pub fn blocks<'a>(&'a self) -> Box<dyn Iterator<Item = &'a CachedBlock> + 'a> {
-        let iter = Box::new(std::iter::once(&self.root));
-        self.children
-            .iter()
-            .fold(iter, |iter, child| Box::new(iter.chain(child.blocks())))
+    pub fn blocks(&self) -> Vec<&CachedBlock> {
+        let mut blocks = Vec::new();
+        self.fill_blocks(&mut blocks);
+        blocks
     }
 }
 
