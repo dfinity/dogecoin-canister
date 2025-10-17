@@ -68,41 +68,25 @@ impl SimpleHeaderStore {
     }
 }
 
-impl<T: AsRef<SimpleHeaderStore>> HeaderStore for T {
+impl HeaderStore for SimpleHeaderStore {
     fn get_with_block_hash(&self, hash: &BlockHash) -> Option<Header> {
-        self.as_ref().headers.get(hash).map(|stored| stored.header)
+        self.headers.get(hash).map(|stored| stored.header)
     }
 
     fn get_with_height(&self, height: u32) -> Option<Header> {
-        let blocks_to_traverse = self.as_ref().height - height;
-        let mut header = self
-            .as_ref()
-            .headers
-            .get(&self.as_ref().tip_hash)
-            .unwrap()
-            .header;
+        let blocks_to_traverse = self.height - height;
+        let mut header = self.headers.get(&self.tip_hash).unwrap().header;
         for _ in 0..blocks_to_traverse {
-            header = self
-                .as_ref()
-                .headers
-                .get(&header.prev_blockhash)
-                .unwrap()
-                .header;
+            header = self.headers.get(&header.prev_blockhash).unwrap().header;
         }
         Some(header)
     }
 
     fn height(&self) -> u32 {
-        self.as_ref().height
+        self.height
     }
 
     fn get_initial_hash(&self) -> BlockHash {
-        self.as_ref().initial_hash
-    }
-}
-
-impl AsRef<SimpleHeaderStore> for SimpleHeaderStore {
-    fn as_ref(&self) -> &SimpleHeaderStore {
-        self
+        self.initial_hash
     }
 }

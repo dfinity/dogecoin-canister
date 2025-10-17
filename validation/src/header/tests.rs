@@ -226,12 +226,12 @@ fn verify_timestamp_rules<T: HeaderValidator + HeaderValidatorExt>(
         bits: CompactTarget::from_consensus(0x170e0408),
         nonce: 0xb48e8b0a,
     };
-    assert!(is_timestamp_valid(&store, &header, MOCK_CURRENT_TIME).is_ok());
+    assert!(is_timestamp_valid(store, &header, MOCK_CURRENT_TIME).is_ok());
 
     // Mon Apr 16 2012 15:06:40
     header.time = 1334588800;
     assert!(matches!(
-        is_timestamp_valid(&store, &header, MOCK_CURRENT_TIME),
+        is_timestamp_valid(store, &header, MOCK_CURRENT_TIME),
         Err(ValidateHeaderError::HeaderIsOld)
     ));
 
@@ -240,11 +240,11 @@ fn verify_timestamp_rules<T: HeaderValidator + HeaderValidatorExt>(
 
     header.time = (MOCK_CURRENT_TIME - ONE_HOUR).as_secs() as u32;
 
-    assert!(is_timestamp_valid(&store, &header, MOCK_CURRENT_TIME).is_ok());
+    assert!(is_timestamp_valid(store, &header, MOCK_CURRENT_TIME).is_ok());
 
     header.time = (MOCK_CURRENT_TIME + 2 * ONE_HOUR + Duration::from_secs(10)).as_secs() as u32;
     assert_eq!(
-        is_timestamp_valid(&store, &header, MOCK_CURRENT_TIME),
+        is_timestamp_valid(store, &header, MOCK_CURRENT_TIME),
         Err(ValidateHeaderError::HeaderIsTooFarInFuture {
             block_time: header.time as u64,
             max_allowed_time: (MOCK_CURRENT_TIME + 2 * ONE_HOUR).as_secs()
