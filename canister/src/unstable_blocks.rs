@@ -378,7 +378,7 @@ pub fn blocks_count(blocks: &UnstableBlocks) -> usize {
 pub fn get_chain_with_tip<'a>(
     blocks: &'a UnstableBlocks,
     tip: &BlockHash,
-) -> Option<BlockChain<'a, CachedBlock>> {
+) -> Option<(BlockChain<'a, CachedBlock>, Vec<&'a CachedBlock>)> {
     blocks.tree.get_chain_with_tip(tip)
 }
 
@@ -740,6 +740,22 @@ mod test {
             .collect()
     }
 
+    fn get_chain_with_tip<'a>(
+        blocks: &'a UnstableBlocks,
+        block_hash: &BlockHash,
+    ) -> Option<(Vec<Block>, Vec<Block>)> {
+        super::get_chain_with_tip(blocks, block_hash).map(|(chain, tips)| {
+            (
+                chain
+                    .into_chain()
+                    .into_iter()
+                    .map(|block| block.block())
+                    .collect(),
+                tips.into_iter().map(|tip| tip.block()).collect(),
+            )
+        })
+    }
+
     // Creating a forest that looks like this:
     //
     // * -> 1 -> 2
@@ -758,7 +774,25 @@ mod test {
 
         push(&mut forest, &utxos, block_1.clone()).unwrap();
         push(&mut forest, &utxos, block_2.clone()).unwrap();
-        assert_eq!(get_main_chain(&forest), vec![block_0, block_1, block_2]);
+        assert_eq!(
+            get_main_chain(&forest),
+            vec![block_0.clone(), block_1.clone(), block_2.clone()]
+        );
+        assert_eq!(
+            (vec![block_0.clone()], vec![block_1.clone()]),
+            get_chain_with_tip(&forest, &block_0.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                vec![block_0.clone(), block_1.clone()],
+                vec![block_2.clone()]
+            ),
+            get_chain_with_tip(&forest, &block_1.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (vec![block_0, block_1, block_2.clone()], vec![]),
+            get_chain_with_tip(&forest, &block_2.block_hash()).unwrap()
+        );
     }
 
     // Creating a forest that looks like this:
@@ -778,9 +812,25 @@ mod test {
         let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
-        push(&mut forest, &utxos, block_1).unwrap();
-        push(&mut forest, &utxos, block_2).unwrap();
-        assert_eq!(get_main_chain(&forest), vec![block_0]);
+        push(&mut forest, &utxos, block_1.clone()).unwrap();
+        push(&mut forest, &utxos, block_2.clone()).unwrap();
+        assert_eq!(get_main_chain(&forest), vec![block_0.clone()]);
+
+        assert_eq!(
+            (
+                vec![block_0.clone()],
+                vec![block_1.clone(), block_2.clone()]
+            ),
+            get_chain_with_tip(&forest, &block_0.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (vec![block_0.clone(), block_1.clone()], vec![]),
+            get_chain_with_tip(&forest, &block_1.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (vec![block_0, block_2.clone()], vec![]),
+            get_chain_with_tip(&forest, &block_2.block_hash()).unwrap()
+        );
     }
 
     // Creating the following forest:
@@ -801,10 +851,36 @@ mod test {
         let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
-        push(&mut forest, &utxos, block_1).unwrap();
+        push(&mut forest, &utxos, block_1.clone()).unwrap();
         push(&mut forest, &utxos, block_2.clone()).unwrap();
         push(&mut forest, &utxos, block_3.clone()).unwrap();
-        assert_eq!(get_main_chain(&forest), vec![block_0, block_2, block_3]);
+        assert_eq!(
+            get_main_chain(&forest),
+            vec![block_0.clone(), block_2.clone(), block_3.clone()]
+        );
+
+        assert_eq!(
+            (
+                vec![block_0.clone()],
+                vec![block_1.clone(), block_2.clone()]
+            ),
+            get_chain_with_tip(&forest, &block_0.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (vec![block_0.clone(), block_1.clone()], vec![]),
+            get_chain_with_tip(&forest, &block_1.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                vec![block_0.clone(), block_2.clone()],
+                vec![block_3.clone()]
+            ),
+            get_chain_with_tip(&forest, &block_2.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (vec![block_0, block_2, block_3.clone()], vec![]),
+            get_chain_with_tip(&forest, &block_3.block_hash()).unwrap()
+        );
     }
 
     // Creating the following forest:
@@ -829,11 +905,37 @@ mod test {
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1.clone()).unwrap();
-        push(&mut forest, &utxos, block_2).unwrap();
-        push(&mut forest, &utxos, block_3).unwrap();
-        push(&mut forest, &utxos, block_a).unwrap();
-        push(&mut forest, &utxos, block_b).unwrap();
-        assert_eq!(get_main_chain(&forest), vec![block_0, block_1]);
+        push(&mut forest, &utxos, block_2.clone()).unwrap();
+        push(&mut forest, &utxos, block_3.clone()).unwrap();
+        push(&mut forest, &utxos, block_a.clone()).unwrap();
+        push(&mut forest, &utxos, block_b.clone()).unwrap();
+        assert_eq!(
+            get_main_chain(&forest),
+            vec![block_0.clone(), block_1.clone()]
+        );
+
+        assert_eq!(
+            (vec![block_0.clone()], vec![block_1.clone()]),
+            get_chain_with_tip(&forest, &block_0.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                vec![block_0.clone(), block_1.clone()],
+                vec![block_2.clone(), block_a.clone()]
+            ),
+            get_chain_with_tip(&forest, &block_1.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                vec![block_0.clone(), block_1.clone(), block_2.clone()],
+                vec![block_3]
+            ),
+            get_chain_with_tip(&forest, &block_2.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (vec![block_0, block_1, block_a.clone()], vec![block_b]),
+            get_chain_with_tip(&forest, &block_a.block_hash()).unwrap()
+        );
     }
 
     // Creating the following forest:

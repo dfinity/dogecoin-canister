@@ -113,6 +113,10 @@ impl BlockBuilder {
         let txdata = if self.transactions.is_empty() {
             // Create a default coinbase transaction.
             vec![TransactionBuilder::new().build()]
+        } else if !self.transactions.first().unwrap().is_coinbase() {
+            let mut txs = self.transactions;
+            txs.insert(0, TransactionBuilder::coinbase().build());
+            txs
         } else {
             self.transactions
         };

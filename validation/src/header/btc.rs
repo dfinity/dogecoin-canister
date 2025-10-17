@@ -7,29 +7,30 @@ use std::time::Duration;
 /// Expected number of blocks for 2 weeks in Bitcoin (2_016).
 pub const DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN: BlockHeight = 6 * 24 * 14;
 
-pub struct BitcoinHeaderValidator {
+pub struct BitcoinHeaderValidator<T> {
+    pub(crate) store: T,
     network: BitcoinNetwork,
 }
 
-impl BitcoinHeaderValidator {
-    pub fn new(network: BitcoinNetwork) -> Self {
-        Self { network }
+impl<T> BitcoinHeaderValidator<T> {
+    pub fn new(store: T, network: BitcoinNetwork) -> Self {
+        Self { store, network }
     }
 
-    pub fn mainnet() -> Self {
-        Self::new(BitcoinNetwork::Bitcoin)
+    pub fn mainnet(store: T) -> Self {
+        Self::new(store, BitcoinNetwork::Bitcoin)
     }
 
-    pub fn testnet() -> Self {
-        Self::new(BitcoinNetwork::Testnet)
+    pub fn testnet(store: T) -> Self {
+        Self::new(store, BitcoinNetwork::Testnet)
     }
 
-    pub fn regtest() -> Self {
-        Self::new(BitcoinNetwork::Regtest)
+    pub fn regtest(store: T) -> Self {
+        Self::new(store, BitcoinNetwork::Regtest)
     }
 }
 
-impl HeaderValidator for BitcoinHeaderValidator {
+impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
     type Network = BitcoinNetwork;
 
     fn network(&self) -> &Self::Network {
@@ -66,19 +67,21 @@ impl HeaderValidator for BitcoinHeaderValidator {
 
     fn validate_header(
         &self,
-        store: &impl HeaderStore,
         header: &Header,
-        current_time: u64,
+        current_time: Duration,
     ) -> Result<(), ValidateHeaderError> {
-        let prev_height = store.height();
-        let prev_header = match store.get_with_block_hash(&header.prev_blockhash) {
+        #[cfg(feature = "canbench-rs")]
+        let _p = canbench_rs::bench_scope("validate_header");
+
+        let prev_height = self.store.height();
+        let prev_header = match self.store.get_with_block_hash(&header.prev_blockhash) {
             Some(result) => result,
             None => {
                 return Err(ValidateHeaderError::PrevHeaderNotFound);
             }
         };
 
-        is_timestamp_valid(store, header, current_time)?;
+        is_timestamp_valid(&self.store, header, current_time)?;
 
         let header_target = header.target();
         if header_target > self.max_target() {
@@ -89,7 +92,7 @@ impl HeaderValidator for BitcoinHeaderValidator {
             return Err(ValidateHeaderError::InvalidPoWForHeaderTarget);
         }
 
-        let target = self.get_next_target(store, &prev_header, prev_height, header.time);
+        let target = self.get_next_target(&prev_header, prev_height, header.time);
         if let Err(err) = header.validate_pow(target) {
             match err {
                 bitcoin::block::ValidationError::BadProofOfWork => println!("bad proof of work"),
@@ -98,13 +101,11 @@ impl HeaderValidator for BitcoinHeaderValidator {
             };
             return Err(ValidateHeaderError::InvalidPoWForComputedTarget);
         }
-
         Ok(())
     }
 
     fn get_next_target(
         &self,
-        store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
         timestamp: u32,
@@ -126,22 +127,16 @@ impl HeaderValidator for BitcoinHeaderValidator {
                     } else {
                         // If the block has been found within 20 minutes, then use the previous
                         // difficulty target that is not equal to the maximum difficulty target
-                        Target::from_compact(self.find_next_difficulty_in_chain(
-                            store,
-                            prev_header,
-                            prev_height,
-                        ))
+                        Target::from_compact(
+                            self.find_next_difficulty_in_chain(prev_header, prev_height),
+                        )
                     }
                 } else {
-                    Target::from_compact(self.compute_next_difficulty(
-                        store,
-                        prev_header,
-                        prev_height,
-                    ))
+                    Target::from_compact(self.compute_next_difficulty(prev_header, prev_height))
                 }
             }
             BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => {
-                Target::from_compact(self.compute_next_difficulty(store, prev_header, prev_height))
+                Target::from_compact(self.compute_next_difficulty(prev_header, prev_height))
             }
             &other => unreachable!("Unsupported network: {:?}", other),
         }
@@ -156,7 +151,6 @@ impl HeaderValidator for BitcoinHeaderValidator {
     /// minutes.
     fn find_next_difficulty_in_chain(
         &self,
-        store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
     ) -> CompactTarget {
@@ -167,7 +161,7 @@ impl HeaderValidator for BitcoinHeaderValidator {
                 let mut current_header = *prev_header;
                 let mut current_height = prev_height;
                 let mut current_hash = current_header.block_hash();
-                let initial_header_hash = store.get_initial_hash();
+                let initial_header_hash = self.store.get_initial_hash();
 
                 // Keep traversing the blockchain backwards from the recent block to initial
                 // header hash.
@@ -186,7 +180,8 @@ impl HeaderValidator for BitcoinHeaderValidator {
 
                     // Traverse to the previous header.
                     let prev_blockhash = current_header.prev_blockhash;
-                    current_header = store
+                    current_header = self
+                        .store
                         .get_with_block_hash(&prev_blockhash)
                         .expect("previous header should be in the header store");
                     // Update the current height and hash.
@@ -200,9 +195,10 @@ impl HeaderValidator for BitcoinHeaderValidator {
         }
     }
 
+    /// This function returns the difficulty target to be used for the current
+    /// header given the previous header
     fn compute_next_difficulty(
         &self,
-        store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
     ) -> CompactTarget {
@@ -222,7 +218,8 @@ impl HeaderValidator for BitcoinHeaderValidator {
         } else {
             height - DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN
         };
-        let last_adjustment_header = store
+        let last_adjustment_header = self
+            .store
             .get_with_height(last_adjustment_height)
             .expect("Last adjustment header must exist");
 
