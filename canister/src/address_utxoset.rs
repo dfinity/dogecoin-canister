@@ -120,11 +120,11 @@ mod test {
         test_utils::{BlockBuilder, TransactionBuilder},
         types::into_dogecoin_network,
         unstable_blocks,
+        unstable_blocks::MemBlocksCache,
     };
     use ic_doge_interface::Network;
     use ic_doge_test_utils::random_p2pkh_address;
     use ic_doge_types::OutPoint;
-    use std::collections::BTreeMap;
 
     #[test]
     fn add_tx_to_empty_utxo() {
@@ -144,8 +144,13 @@ mod test {
             .with_transaction(coinbase_tx.clone())
             .build();
 
-        let unstable_blocks =
-            UnstableBlocks::new(BTreeMap::new(), &utxo_set, 2, block_0.clone(), network);
+        let unstable_blocks = UnstableBlocks::new(
+            MemBlocksCache::new(network),
+            &utxo_set,
+            2,
+            block_0.clone(),
+            network,
+        );
 
         let mut address_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);
 
@@ -192,8 +197,13 @@ mod test {
             .with_transaction(tx.clone())
             .build();
 
-        let mut unstable_blocks =
-            UnstableBlocks::new(BTreeMap::new(), &utxo_set, 2, block_0.clone(), network);
+        let mut unstable_blocks = UnstableBlocks::new(
+            MemBlocksCache::new(network),
+            &utxo_set,
+            2,
+            block_0.clone(),
+            network,
+        );
         unstable_blocks::push(&mut unstable_blocks, &utxo_set, block_1.clone()).unwrap();
 
         let mut address_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);
@@ -251,8 +261,13 @@ mod test {
 
         // Process the blocks.
         let utxo_set = UtxoSet::new(Network::Mainnet);
-        let mut unstable_blocks =
-            UnstableBlocks::new(BTreeMap::new(), &utxo_set, 2, block_0.clone(), network);
+        let mut unstable_blocks = UnstableBlocks::new(
+            MemBlocksCache::new(network),
+            &utxo_set,
+            2,
+            block_0.clone(),
+            network,
+        );
         unstable_blocks::push(&mut unstable_blocks, &utxo_set, block_1.clone()).unwrap();
 
         let mut address_1_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);

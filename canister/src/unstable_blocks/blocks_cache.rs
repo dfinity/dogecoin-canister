@@ -34,12 +34,12 @@ impl BlocksCache for () {
     }
 }
 
-pub struct StableBTreeCache {
+pub struct StableBlocksCache {
     pub network: Network,
     map: StableBTreeMap<BlockHash, Vec<u8>, crate::memory::Memory>,
 }
 
-impl StableBTreeCache {
+impl StableBlocksCache {
     pub fn new(network: Network, memory: crate::memory::Memory) -> Self {
         Self {
             network,
@@ -48,7 +48,7 @@ impl StableBTreeCache {
     }
 }
 
-impl BlocksCache for StableBTreeCache {
+impl BlocksCache for StableBlocksCache {
     fn insert(&mut self, block_hash: BlockHash, block: Block) -> bool {
         let mut bytes = Vec::new();
         block.consensus_encode(&mut bytes).unwrap();
@@ -74,12 +74,12 @@ impl BlocksCache for StableBTreeCache {
     }
 }
 
-pub struct BTreeCache {
+pub struct MemBlocksCache {
     pub network: Network,
     map: BTreeMap<BlockHash, Block>,
 }
 
-impl BTreeCache {
+impl MemBlocksCache {
     pub fn new(network: Network) -> Self {
         Self {
             network,
@@ -88,7 +88,7 @@ impl BTreeCache {
     }
 }
 
-impl BlocksCache for BTreeCache {
+impl BlocksCache for MemBlocksCache {
     fn insert(&mut self, block_hash: BlockHash, block: Block) -> bool {
         self.map.insert(block_hash, block).is_none()
     }

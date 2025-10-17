@@ -579,7 +579,7 @@ mod test {
         runtime,
         test_utils::{BlockBuilder, TransactionBuilder},
         types::into_dogecoin_network,
-        unstable_blocks::UnstableBlocks,
+        unstable_blocks::{MemBlocksCache, UnstableBlocks},
     };
     use bitcoin::{
         absolute::LockTime,
@@ -590,7 +590,6 @@ mod test {
     use ic_doge_interface::Network;
     use ic_doge_test_utils::random_p2pkh_address;
     use proptest::prelude::*;
-    use std::collections::BTreeMap;
     use std::collections::BTreeSet;
 
     // A succinct wrapper around `ingest_tx_with_slicing` for tests that don't need slicing.
@@ -687,7 +686,7 @@ mod test {
         ingest_tx(&mut utxo, &coinbase_tx);
 
         let unstable_blocks = UnstableBlocks::new(
-            BTreeMap::new(),
+            MemBlocksCache::new(network),
             &utxo,
             2,
             crate::genesis_block(network),

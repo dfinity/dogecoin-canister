@@ -91,10 +91,10 @@ mod test {
     use crate::{
         state::{ingest_stable_blocks_into_utxoset, insert_block},
         test_utils::{build_chain, BlockBuilder},
+        unstable_blocks::MemBlocksCache,
     };
     use ic_doge_interface::Network;
     use proptest::prelude::*;
-    use std::collections::BTreeMap;
     use std::str::FromStr;
 
     #[test]
@@ -102,7 +102,7 @@ mod test {
         let genesis = BlockBuilder::genesis().build();
         let network = Network::Mainnet;
 
-        let mut state = State::new(BTreeMap::new(), 2, network, genesis.clone());
+        let mut state = State::new(MemBlocksCache::new(network), 2, network, genesis.clone());
         let block_0 = BlockBuilder::with_prev_header(genesis.header()).build();
         let block_1 = BlockBuilder::with_prev_header(block_0.header()).build();
         let block_2 = BlockBuilder::with_prev_header(block_1.header()).build();
@@ -158,7 +158,7 @@ mod test {
             let network = Network::Regtest;
             let blocks = build_chain(network, num_blocks, num_transactions_in_block, with_auxpow);
 
-            let mut state = State::new(BTreeMap::new(), stability_threshold, network, blocks[0].clone());
+            let mut state = State::new(MemBlocksCache::new(network), stability_threshold, network, blocks[0].clone());
 
             // Insert all the blocks except the last block.
             for block in blocks[1..blocks.len() - 1].iter() {
