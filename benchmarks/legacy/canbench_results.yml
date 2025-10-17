@@ -2,57 +2,57 @@ benches:
   get_metrics:
     total:
       calls: 1
-      instructions: 6814097
+      instructions: 6820096
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   insert_300_blocks:
     total:
       calls: 1
-      instructions: 4406765375
+      instructions: 4406608730
       heap_increase: 15
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers:
     total:
       calls: 1
-      instructions: 1587314553
+      instructions: 1587082256
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_multiple_times:
     total:
       calls: 1
-      instructions: 15680149132
+      instructions: 15680213935
       heap_increase: 9
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_multiple_times_regtest_without_auxpow:
     total:
       calls: 1
-      instructions: 3676695508
+      instructions: 3676713439
       heap_increase: 3
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_regtest_without_auxpow:
     total:
       calls: 1
-      instructions: 3663943002
+      instructions: 3663923554
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   pre_upgrade_with_many_unstable_blocks:
     total:
       calls: 1
-      instructions: 6195875444
-      heap_increase: 4071
+      instructions: 9857931439
+      heap_increase: 129
       stable_memory_increase: 1920
     scopes:
       serialize_blocktree:
         calls: 1
-        instructions: 2435996402
-        heap_increase: 2022
-        stable_memory_increase: 0
+        instructions: 3836535139
+        heap_increase: 0
+        stable_memory_increase: 768
       serialize_blocktree_flatten:
         calls: 1
         instructions: 185774
@@ -60,7 +60,7 @@ benches:
         stable_memory_increase: 0
       serialize_blocktree_serialize_seq:
         calls: 1
-        instructions: 2435807907
-        heap_increase: 2022
-        stable_memory_increase: 0
+        instructions: 3836346644
+        heap_increase: 0
+        stable_memory_increase: 768
 version: 0.2.0
