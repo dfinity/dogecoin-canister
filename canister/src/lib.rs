@@ -92,7 +92,7 @@ pub fn init(init_config: InitConfig) {
     print("Running init...");
 
     let config = Config::from(init_config);
-    let cache = unstable_blocks::StableBlocksCache::new(
+    let cache = unstable_blocks::BlocksCacheInStableMem::new(
         config.network,
         memory::get_unstable_blocks_memory(),
     );
@@ -217,7 +217,7 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
     let mut state: State =
         ciborium::de::from_reader(&*state_bytes).expect("failed to decode state");
     // Reset cache to stable memory
-    let cache = unstable_blocks::StableBlocksCache::new(
+    let cache = unstable_blocks::BlocksCacheInStableMem::new(
         state.network(),
         memory::get_unstable_blocks_memory(),
     );
@@ -352,7 +352,7 @@ mod test {
                 ..Default::default()
             });
 
-           let cache = unstable_blocks::StableBlocksCache::new(network, crate::memory::get_unstable_blocks_memory());
+           let cache = unstable_blocks::BlocksCacheInStableMem::new(network, crate::memory::get_unstable_blocks_memory());
 
             with_state(|state| {
                 assert!(

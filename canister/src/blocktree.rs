@@ -502,8 +502,7 @@ pub struct BlockDoesNotExtendTree(pub BlockHash);
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::test_utils::{BlockBuilder, BlockChainBuilder};
-    use crate::unstable_blocks::MemBlocksCache;
+    use crate::test_utils::{BlockBuilder, BlockChainBuilder, TestBlocksCache};
     use ic_doge_interface::Network;
     use proptest::collection::vec as pvec;
     use proptest::prelude::*;
@@ -535,7 +534,7 @@ mod test {
             // Each depth can have up to 3 children, up to a depth of 10.
             (pvec(1..3u8, 0..10), any::<bool>())
                 .prop_map(|(num_children, use_auxpow)| {
-                    let cache = MemBlocksCache::new(Network::Testnet);
+                    let cache = TestBlocksCache::new(Network::Testnet);
                     let mut tree = BlockTree::new(cache, BlockBuilder::genesis().build());
                     build_block_tree(&mut tree, &num_children, use_auxpow);
                     tree
@@ -546,7 +545,7 @@ mod test {
 
     #[test]
     fn tree_single_block() {
-        let cache = MemBlocksCache::new(Network::Testnet);
+        let cache = TestBlocksCache::new(Network::Testnet);
         let block_tree = BlockTree::new(cache, BlockBuilder::genesis().build());
 
         assert_eq!(
@@ -562,7 +561,7 @@ mod test {
     fn tree_multiple_forks() {
         let genesis_block = BlockBuilder::genesis().build();
         let genesis_block_header = *genesis_block.header();
-        let cache = MemBlocksCache::new(Network::Testnet);
+        let cache = TestBlocksCache::new(Network::Testnet);
         let mut block_tree = BlockTree::new(cache, genesis_block);
 
         for i in 1..5 {
@@ -584,7 +583,7 @@ mod test {
             blocks.push(BlockBuilder::with_prev_header(blocks[i - 1].header()).build())
         }
 
-        let cache = MemBlocksCache::new(Network::Testnet);
+        let cache = TestBlocksCache::new(Network::Testnet);
         let mut block_tree = BlockTree::new(cache, blocks[0].clone());
 
         for block in blocks.iter() {
@@ -620,7 +619,7 @@ mod test {
     #[test]
     fn chain_with_tip_multiple_forks() {
         let mut blocks = vec![BlockBuilder::genesis().build()];
-        let cache = MemBlocksCache::new(Network::Testnet);
+        let cache = TestBlocksCache::new(Network::Testnet);
         let mut block_tree = BlockTree::new(cache, blocks[0].clone());
 
         let num_forks = 5;
@@ -676,7 +675,7 @@ mod test {
 
     #[test]
     fn test_difficulty_based_depth_single_block() {
-        let cache = MemBlocksCache::new(Network::Mainnet);
+        let cache = TestBlocksCache::new(Network::Mainnet);
         let block_tree =
             BlockTree::new(cache, BlockBuilder::genesis().build_with_mock_difficulty(5));
 
@@ -690,7 +689,7 @@ mod test {
     fn test_difficulty_based_depth_root_with_children() {
         let genesis_block = BlockBuilder::genesis().build_with_mock_difficulty(5);
         let genesis_block_header = *genesis_block.header();
-        let cache = MemBlocksCache::new(Network::Mainnet);
+        let cache = TestBlocksCache::new(Network::Mainnet);
         let mut block_tree = BlockTree::new(cache, genesis_block);
 
         for i in 1..11 {
@@ -713,7 +712,7 @@ mod test {
     #[test]
     fn test_blocks_with_depths_by_heights_only_root() {
         let genesis_block = BlockBuilder::genesis().build();
-        let cache = MemBlocksCache::new(Network::Testnet);
+        let cache = TestBlocksCache::new(Network::Testnet);
         let block_tree = BlockTree::new(cache, genesis_block.clone());
         let blocks_with_depths_by_heights = block_tree.blocks_with_depths_by_heights();
 
@@ -733,7 +732,7 @@ mod test {
         let chain_len: usize = 10;
         let chain = BlockChainBuilder::new(chain_len as u32).build();
 
-        let cache = MemBlocksCache::new(Network::Testnet);
+        let cache = TestBlocksCache::new(Network::Testnet);
         let mut block_tree = BlockTree::new(cache, chain[0].clone());
 
         let mut expected_blocks_with_depths_by_heights: Vec<Vec<(&Block, u32)>> =
@@ -764,7 +763,7 @@ mod test {
         // Create a fork from the genesis block with length 2.
         let fork = BlockChainBuilder::fork(&chain[0], 2).build();
 
-        let cache = MemBlocksCache::new(Network::Testnet);
+        let cache = TestBlocksCache::new(Network::Testnet);
         let mut block_tree = BlockTree::new(cache, chain[0].clone());
         block_tree.extend(chain[1].clone()).unwrap();
         block_tree.extend(fork[0].clone()).unwrap();
@@ -813,7 +812,7 @@ mod test {
     #[test]
     fn deserialize_very_deep_block_tree() {
         fn grow_tree(chain: Vec<Block>) -> BlockTree {
-            let cache = MemBlocksCache::new(Network::Testnet);
+            let cache = TestBlocksCache::new(Network::Testnet);
             let mut tree = BlockTree::new(cache, chain[0].clone());
             for block in chain.into_iter().skip(1) {
                 tree.extend(block).unwrap();

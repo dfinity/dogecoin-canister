@@ -462,7 +462,7 @@ pub struct FeePercentilesCache {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::test_utils::build_chain;
+    use crate::test_utils::{build_chain, TestBlocksCache};
     use proptest::prelude::*;
 
     proptest! {
@@ -479,7 +479,7 @@ mod test {
 
             let network = Network::Regtest;
             let blocks = build_chain(network, num_blocks, num_transactions_in_block, with_auxpow);
-            let cache = crate::unstable_blocks::MemBlocksCache::new(network);
+            let cache = TestBlocksCache::new(network);
 
             let mut state = State::new(cache, stability_threshold, network, blocks[0].clone());
 
@@ -504,7 +504,7 @@ mod test {
         let num_transactions_per_block = 10;
         let network = Network::Regtest;
         let blocks = build_chain(network, num_blocks, num_transactions_per_block, false);
-        let cache = crate::unstable_blocks::MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
 
         let mut state = State::new(cache, stability_threshold, network, blocks[0].clone());
 

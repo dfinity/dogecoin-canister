@@ -1,7 +1,7 @@
 mod blocks_cache;
 mod outpoints_cache;
 
-pub use blocks_cache::{BlocksCache, MemBlocksCache, StableBlocksCache};
+pub use blocks_cache::{BlocksCache, BlocksCacheInStableMem};
 
 use crate::{
     blocktree::{
@@ -476,7 +476,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::test_utils::{BlockBuilder, BlockChainBuilder};
+    use crate::test_utils::{BlockBuilder, BlockChainBuilder, TestBlocksCache};
     use ic_doge_interface::Network;
     use proptest::proptest;
 
@@ -489,7 +489,7 @@ mod test {
         let anchor = BlockBuilder::genesis().build();
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut unstable_blocks = UnstableBlocks::new(cache, &utxos, 1, anchor, network);
         assert_eq!(peek(&unstable_blocks), None);
         assert_eq!(pop(&mut unstable_blocks, 0), None);
@@ -502,7 +502,7 @@ mod test {
         let block_2 = BlockBuilder::with_prev_header(block_1.header()).build();
         let network = Network::Regtest;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 2, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1).unwrap();
@@ -534,7 +534,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 7, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1.clone()).unwrap();
@@ -574,7 +574,7 @@ mod test {
 
         let network = Network::Regtest;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 2, genesis_block.clone(), network);
 
         push(&mut forest, &utxos, block).unwrap();
@@ -622,7 +622,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 3, genesis_block.clone(), network);
 
         push(&mut forest, &utxos, fork1_block.clone()).unwrap();
@@ -719,7 +719,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 0, block_0.clone(), network);
         push(&mut forest, &utxos, block_1.clone()).unwrap();
         push(&mut forest, &utxos, block_2).unwrap();
@@ -753,7 +753,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1.clone()).unwrap();
@@ -775,7 +775,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1).unwrap();
@@ -798,7 +798,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1).unwrap();
@@ -825,7 +825,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1.clone()).unwrap();
@@ -861,7 +861,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_x).unwrap();
@@ -900,7 +900,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1).unwrap();
@@ -919,7 +919,7 @@ mod test {
         let block_0 = BlockBuilder::genesis().build();
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let forest = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         assert_eq!(get_main_chain(&forest), vec![block_0]);
@@ -930,7 +930,7 @@ mod test {
         let genesis = BlockBuilder::genesis().build();
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut unstable_blocks = UnstableBlocks::new(cache, &utxos, 2, genesis.clone(), network);
 
         let block_0 = BlockBuilder::with_prev_header(genesis.header()).build();
@@ -998,7 +998,7 @@ mod test {
         let remaining_blocks_difficulty = 1;
         let network = Network::Regtest;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
 
         // Assert the chain that will be built exceeds the maximum allowed, so that we can test
         // that case.
@@ -1064,7 +1064,7 @@ mod test {
         let remaining_blocks_difficulty = 1;
         let network = Network::Regtest;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
 
         let fork_depth = 100; // An arbitrary number of blocks.
         let initial_depth_diff =
@@ -1144,7 +1144,7 @@ mod test {
 
         let network = Network::Mainnet;
         let utxos = UtxoSet::new(network);
-        let cache = MemBlocksCache::new(network);
+        let cache = TestBlocksCache::new(network);
         let mut unstable_blocks = UnstableBlocks::new(cache, &utxos, 1, block_0.clone(), network);
 
         for i in 1..block_num {

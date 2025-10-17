@@ -577,9 +577,9 @@ mod test {
     use crate::{
         address_utxoset::AddressUtxoSet,
         runtime,
-        test_utils::{BlockBuilder, TransactionBuilder},
+        test_utils::{BlockBuilder, TestBlocksCache, TransactionBuilder},
         types::into_dogecoin_network,
-        unstable_blocks::{MemBlocksCache, UnstableBlocks},
+        unstable_blocks::UnstableBlocks,
     };
     use bitcoin::{
         absolute::LockTime,
@@ -686,7 +686,7 @@ mod test {
         ingest_tx(&mut utxo, &coinbase_tx);
 
         let unstable_blocks = UnstableBlocks::new(
-            MemBlocksCache::new(network),
+            TestBlocksCache::new(network),
             &utxo,
             2,
             crate::genesis_block(network),

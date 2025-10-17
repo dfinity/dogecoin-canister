@@ -287,9 +287,8 @@ mod test {
     use super::*;
     use crate::{
         genesis_block, runtime, state,
-        test_utils::{BlockBuilder, BlockChainBuilder, TransactionBuilder},
+        test_utils::{BlockBuilder, BlockChainBuilder, TestBlocksCache, TransactionBuilder},
         types::into_dogecoin_network,
-        unstable_blocks::MemBlocksCache,
         with_state_mut,
     };
     use ic_doge_interface::{Fees, InitConfig, Network, OutPoint, Utxo};
@@ -982,7 +981,7 @@ mod test {
             .with_transaction(tx)
             .build();
 
-        let mut state = State::new(MemBlocksCache::new(network), 2, network, block_0);
+        let mut state = State::new(TestBlocksCache::new(network), 2, network, block_0);
         state::insert_block(&mut state, block_1.clone()).unwrap();
 
         // Address 1 should have no UTXOs at zero confirmations.
@@ -1027,7 +1026,7 @@ mod test {
                 block_builder = block_builder.with_transaction(transaction.clone());
             }
             let block_0 = block_builder.build();
-            let state = State::new(MemBlocksCache::new(network), 2, network, block_0.clone());
+            let state = State::new(TestBlocksCache::new(network), 2, network, block_0.clone());
             let tip_block_hash = block_0.block_hash();
 
             let utxo_set = get_utxos_internal(
@@ -1138,7 +1137,7 @@ mod test {
                 prev_block = Some(block);
             }
 
-            let mut state = State::new(MemBlocksCache::new(network), 2, network, blocks[0].clone());
+            let mut state = State::new(TestBlocksCache::new(network), 2, network, blocks[0].clone());
             for block in blocks[1..].iter() {
                 state::insert_block(&mut state, block.clone()).unwrap();
             }

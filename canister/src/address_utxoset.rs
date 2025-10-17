@@ -117,10 +117,9 @@ impl<'a> AddressUtxoSet<'a> {
 mod test {
     use super::*;
     use crate::{
-        test_utils::{BlockBuilder, TransactionBuilder},
+        test_utils::{BlockBuilder, TestBlocksCache, TransactionBuilder},
         types::into_dogecoin_network,
         unstable_blocks,
-        unstable_blocks::MemBlocksCache,
     };
     use ic_doge_interface::Network;
     use ic_doge_test_utils::random_p2pkh_address;
@@ -145,7 +144,7 @@ mod test {
             .build();
 
         let unstable_blocks = UnstableBlocks::new(
-            MemBlocksCache::new(network),
+            TestBlocksCache::new(network),
             &utxo_set,
             2,
             block_0.clone(),
@@ -198,7 +197,7 @@ mod test {
             .build();
 
         let mut unstable_blocks = UnstableBlocks::new(
-            MemBlocksCache::new(network),
+            TestBlocksCache::new(network),
             &utxo_set,
             2,
             block_0.clone(),
@@ -262,7 +261,7 @@ mod test {
         // Process the blocks.
         let utxo_set = UtxoSet::new(Network::Mainnet);
         let mut unstable_blocks = UnstableBlocks::new(
-            MemBlocksCache::new(network),
+            TestBlocksCache::new(network),
             &utxo_set,
             2,
             block_0.clone(),
