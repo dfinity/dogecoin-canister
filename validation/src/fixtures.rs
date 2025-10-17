@@ -101,8 +101,8 @@ impl<T: AsRef<SimpleHeaderStore>> HeaderStore for T {
     }
 }
 
-impl AsMut<SimpleHeaderStore> for SimpleHeaderStore {
-    fn as_mut(&mut self) -> &mut SimpleHeaderStore {
+impl AsRef<SimpleHeaderStore> for SimpleHeaderStore {
+    fn as_ref(&self) -> &SimpleHeaderStore {
         self
     }
 }

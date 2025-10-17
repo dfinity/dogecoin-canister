@@ -17,7 +17,7 @@ use bitcoin::dogecoin::constants::genesis_block as dogecoin_genesis_block;
 use bitcoin::dogecoin::Network as DogecoinNetwork;
 use bitcoin::{CompactTarget, Target};
 
-impl HeaderValidatorExt<SimpleHeaderStore> for DogecoinHeaderValidator<SimpleHeaderStore> {
+impl HeaderValidatorExt for DogecoinHeaderValidator<SimpleHeaderStore> {
     fn store(&self) -> &SimpleHeaderStore {
         &self.store
     }

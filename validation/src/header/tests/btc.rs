@@ -28,7 +28,7 @@ const TESTNET_HEADER_2132555: &str = "004000200e1ff99438666c67c649def743fb821175
 /// Testnet 00000000383cd7fff4692410ccd9bd6201790043bb41b93bacb21e9b85620767
 const TESTNET_HEADER_2132556: &str = "00000020974f55e77dff100bc252a01aa7b00d16736c6e04a091b03be200000000000000c44f2d69fc200c4a2211885000b6b67512f42c1bec550f3754e103b6c4046e05a202c161ffff001d09ec1bc4";
 
-impl HeaderValidatorExt<SimpleHeaderStore> for BitcoinHeaderValidator<SimpleHeaderStore> {
+impl HeaderValidatorExt for BitcoinHeaderValidator<SimpleHeaderStore> {
     fn store(&self) -> &SimpleHeaderStore {
         &self.store
     }
