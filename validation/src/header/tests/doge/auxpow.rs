@@ -5,40 +5,49 @@
 //!
 //! The goal is to verify correctness of merged mining validation logic, particularly around
 //! version number and chain ID rules, and child/parent PoW validation.
-use crate::header::tests::utils::{build_header_chain, SimpleHeaderStore};
+
+use crate::fixtures::SimpleHeaderStore;
+use crate::header::tests::utils::build_header_chain;
 use crate::header::{AuxPowHeaderValidator, ValidateAuxPowHeaderError};
-use crate::{DogecoinHeaderValidator, HeaderValidator, ValidateHeaderError};
+use crate::{DogecoinHeaderValidator, ValidateHeaderError};
 use bitcoin::block::Header;
 use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::dogecoin::Header as DogecoinHeader;
+use bitcoin::dogecoin::Network as DogecoinNetwork;
 use ic_doge_test_utils::{AuxPowBuilder, HeaderBuilder, DOGECOIN_CHAIN_ID};
+use std::time::Duration;
 
 const BASE_VERSION: i32 = 5;
-const CURRENT_TIME: u64 = 1756131718; // 25 August 2025
+const CURRENT_TIME: Duration = Duration::from_secs(1_756_131_718); // 25 August 2025
 
 /// Helper to create a header chain before AuxPow activation in regtest
-fn create_header_store_before_auxpow_activation_regtest() -> (SimpleHeaderStore, Header) {
-    let validator = DogecoinHeaderValidator::regtest();
-    let genesis_header = genesis_block(validator.network()).header;
+fn create_header_store_before_auxpow_activation_regtest(
+) -> (DogecoinHeaderValidator<SimpleHeaderStore>, Header) {
+    let genesis_header = genesis_block(DogecoinNetwork::Regtest).header;
+    let store = SimpleHeaderStore::new(*genesis_header, 0);
+    let mut validator = DogecoinHeaderValidator::regtest(store);
     // Build chain up to height 15 - next block will be at height 16 (before AuxPow activation at height 20)
-    let (store, last_header) = build_header_chain(&validator, *genesis_header, 16);
-    (store, last_header)
+    let last_header = build_header_chain(&mut validator, 16);
+    (validator, last_header)
 }
 
 /// Helper to create a header chain that extends beyond AuxPow activation in regtest
-fn create_header_store_after_auxpow_activation_regtest() -> (SimpleHeaderStore, Header) {
-    let validator = DogecoinHeaderValidator::regtest();
-    let genesis_header = genesis_block(validator.network()).header;
+fn create_header_store_after_auxpow_activation_regtest(
+) -> (DogecoinHeaderValidator<SimpleHeaderStore>, Header) {
+    let genesis_header = genesis_block(DogecoinNetwork::Regtest).header;
+    let store = SimpleHeaderStore::new(*genesis_header, 0);
+    let mut validator = DogecoinHeaderValidator::regtest(store);
     // Build chain up to height 25 - next block will be at height 26 (after AuxPow activation at height 20)
-    let (store, last_header) = build_header_chain(&validator, *genesis_header, 26);
-    (store, last_header)
+    let last_header = build_header_chain(&mut validator, 26);
+    (validator, last_header)
 }
 
 #[test]
 fn test_auxpow_version() {
-    let validator = DogecoinHeaderValidator::regtest();
-    let (store_legacy, prev_header_legacy) = create_header_store_before_auxpow_activation_regtest();
-    let (store_auxpow, prev_header_auxpow) = create_header_store_after_auxpow_activation_regtest();
+    let (validator_legacy, prev_header_legacy) =
+        create_header_store_before_auxpow_activation_regtest();
+    let (validator_auxpow, prev_header_auxpow) =
+        create_header_store_after_auxpow_activation_regtest();
 
     // Version 1 (legacy) - should pass (before AuxPow activation)
     let dogecoin_header = HeaderBuilder::default()
@@ -49,8 +58,8 @@ fn test_auxpow_version() {
         .with_valid_pow(true)
         .build()
         .into();
-    assert!(validator
-        .validate_auxpow_header(&store_legacy, &dogecoin_header, CURRENT_TIME)
+    assert!(validator_legacy
+        .validate_auxpow_header(&dogecoin_header, CURRENT_TIME)
         .is_ok());
 
     // Version 3 (with no chain ID) - should fail (before AuxPow activation)
@@ -64,7 +73,7 @@ fn test_auxpow_version() {
         .build()
         .into();
     assert_eq!(
-        validator.validate_auxpow_header(&store_legacy, &dogecoin_header, CURRENT_TIME),
+        validator_legacy.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateAuxPowHeaderError::InvalidChainId.into())
     );
 
@@ -77,8 +86,8 @@ fn test_auxpow_version() {
         .with_valid_pow(true)
         .build()
         .into();
-    assert!(validator
-        .validate_auxpow_header(&store_legacy, &dogecoin_header, CURRENT_TIME)
+    assert!(validator_legacy
+        .validate_auxpow_header(&dogecoin_header, CURRENT_TIME)
         .is_ok());
 
     // Version 2 (with correct chain ID) - should pass (after AuxPow activation)
@@ -90,8 +99,8 @@ fn test_auxpow_version() {
         .with_valid_pow(true)
         .build()
         .into();
-    assert!(validator
-        .validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME)
+    assert!(validator_auxpow
+        .validate_auxpow_header(&dogecoin_header, CURRENT_TIME)
         .is_ok());
 
     // AuxPow bit set (with correct chain ID) - should fail (before AuxPow activation)
@@ -110,7 +119,7 @@ fn test_auxpow_version() {
         aux_pow: Some(aux_pow),
     };
     assert_eq!(
-        validator.validate_auxpow_header(&store_legacy, &dogecoin_header, CURRENT_TIME),
+        validator_legacy.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateAuxPowHeaderError::AuxPowBlockNotAllowed.into())
     );
 
@@ -129,8 +138,8 @@ fn test_auxpow_version() {
         pure_header,
         aux_pow: Some(aux_pow),
     };
-    assert!(validator
-        .validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME)
+    assert!(validator_auxpow
+        .validate_auxpow_header(&dogecoin_header, CURRENT_TIME)
         .is_ok());
 
     // AuxPow bit set (with wrong chain ID) - should fail (after AuxPow activation)
@@ -143,15 +152,14 @@ fn test_auxpow_version() {
         .build()
         .into();
     assert_eq!(
-        validator.validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME),
+        validator_auxpow.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateAuxPowHeaderError::InvalidChainId.into())
     );
 }
 
 #[test]
 fn test_without_auxpow_data() {
-    let validator = DogecoinHeaderValidator::regtest();
-    let (legacy_store, prev_header_legacy) = create_header_store_before_auxpow_activation_regtest();
+    let (validator, prev_header_legacy) = create_header_store_before_auxpow_activation_regtest();
 
     // AuxPow flag unset and no AuxPow data with correct PoW - should pass
     let dogecoin_header = HeaderBuilder::default()
@@ -163,7 +171,7 @@ fn test_without_auxpow_data() {
         .build()
         .into();
     assert!(validator
-        .validate_auxpow_header(&legacy_store, &dogecoin_header, CURRENT_TIME)
+        .validate_auxpow_header(&dogecoin_header, CURRENT_TIME)
         .is_ok());
 
     // AuxPow flag unset and no AuxPow data but bad PoW - should fail
@@ -176,7 +184,7 @@ fn test_without_auxpow_data() {
         .build()
         .into();
     assert_eq!(
-        validator.validate_auxpow_header(&legacy_store, &dogecoin_header, CURRENT_TIME),
+        validator.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateHeaderError::InvalidPoWForComputedTarget)
     );
 
@@ -190,15 +198,14 @@ fn test_without_auxpow_data() {
         .build()
         .into();
     assert_eq!(
-        validator.validate_auxpow_header(&legacy_store, &dogecoin_header, CURRENT_TIME),
+        validator.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet.into())
     );
 }
 
 #[test]
 fn test_with_auxpow_data() {
-    let validator = DogecoinHeaderValidator::regtest();
-    let (store_auxpow, prev_header_auxpow) = create_header_store_after_auxpow_activation_regtest();
+    let (validator, prev_header_auxpow) = create_header_store_after_auxpow_activation_regtest();
 
     // Parent block with valid PoW - should pass
     let pure_header = HeaderBuilder::default()
@@ -216,7 +223,7 @@ fn test_with_auxpow_data() {
         aux_pow: Some(aux_pow),
     };
     assert!(validator
-        .validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME)
+        .validate_auxpow_header(&dogecoin_header, CURRENT_TIME)
         .is_ok());
 
     // Parent block with invalid PoW - should fail
@@ -235,7 +242,7 @@ fn test_with_auxpow_data() {
         aux_pow: Some(aux_pow),
     };
     assert_eq!(
-        validator.validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME),
+        validator.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateAuxPowHeaderError::InvalidParentPoW.into())
     );
 
@@ -255,7 +262,7 @@ fn test_with_auxpow_data() {
         aux_pow: Some(aux_pow),
     };
     assert_eq!(
-        validator.validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME),
+        validator.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateAuxPowHeaderError::InvalidParentPoW.into())
     );
 
@@ -275,15 +282,14 @@ fn test_with_auxpow_data() {
         aux_pow: Some(aux_pow),
     };
     assert_eq!(
-        validator.validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME),
+        validator.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateAuxPowHeaderError::InconsistentAuxPowBitSet.into())
     );
 }
 
 #[test]
 fn test_header_modification_invalidates_auxpow_proof() {
-    let validator = DogecoinHeaderValidator::regtest();
-    let (store_auxpow, prev_header_auxpow) = create_header_store_after_auxpow_activation_regtest();
+    let (validator, prev_header_auxpow) = create_header_store_after_auxpow_activation_regtest();
 
     let pure_header = HeaderBuilder::default()
         .with_prev_header(prev_header_auxpow)
@@ -302,7 +308,7 @@ fn test_header_modification_invalidates_auxpow_proof() {
 
     // Should pass initially
     assert!(validator
-        .validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME)
+        .validate_auxpow_header(&dogecoin_header, CURRENT_TIME)
         .is_ok());
 
     // Modify the block header
@@ -310,7 +316,7 @@ fn test_header_modification_invalidates_auxpow_proof() {
 
     // Should fail after modification because AuxPow references old block header
     assert_eq!(
-        validator.validate_auxpow_header(&store_auxpow, &dogecoin_header, CURRENT_TIME),
+        validator.validate_auxpow_header(&dogecoin_header, CURRENT_TIME),
         Err(ValidateAuxPowHeaderError::InvalidAuxPoW.into())
     );
 }

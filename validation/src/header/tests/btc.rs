@@ -1,13 +1,15 @@
+use crate::fixtures::SimpleHeaderStore;
 use crate::header::btc::DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN;
 use crate::header::tests::utils::{bitcoin_genesis_header, btc_files, deserialize_header};
 use crate::header::tests::{
     verify_backdated_block_difficulty, verify_consecutive_headers, verify_difficulty_adjustment,
     verify_header_sequence, verify_regtest_difficulty_calculation, verify_timestamp_rules,
     verify_with_excessive_target, verify_with_invalid_pow,
-    verify_with_invalid_pow_with_computed_target, verify_with_missing_parent,
+    verify_with_invalid_pow_with_computed_target, verify_with_missing_parent, HeaderValidatorExt,
 };
 use crate::header::HeaderValidator;
 use crate::BitcoinHeaderValidator;
+use bitcoin::block::Header;
 use bitcoin::constants::genesis_block as bitcoin_genesis_block;
 use bitcoin::network::Network as BitcoinNetwork;
 use bitcoin::CompactTarget;
@@ -26,93 +28,102 @@ const TESTNET_HEADER_2132555: &str = "004000200e1ff99438666c67c649def743fb821175
 /// Testnet 00000000383cd7fff4692410ccd9bd6201790043bb41b93bacb21e9b85620767
 const TESTNET_HEADER_2132556: &str = "00000020974f55e77dff100bc252a01aa7b00d16736c6e04a091b03be200000000000000c44f2d69fc200c4a2211885000b6b67512f42c1bec550f3754e103b6c4046e05a202c161ffff001d09ec1bc4";
 
+impl HeaderValidatorExt for BitcoinHeaderValidator<SimpleHeaderStore> {
+    fn store(&self) -> &SimpleHeaderStore {
+        &self.store
+    }
+
+    fn store_mut(&mut self) -> &mut SimpleHeaderStore {
+        &mut self.store
+    }
+}
+
 #[test]
 fn test_basic_header_validation_mainnet() {
+    let start_header = deserialize_header(MAINNET_HEADER_705600);
+    let store = SimpleHeaderStore::new(start_header, 705_600);
     verify_consecutive_headers(
-        &BitcoinHeaderValidator::mainnet(),
-        MAINNET_HEADER_705600,
-        705_600,
-        MAINNET_HEADER_705601,
+        &BitcoinHeaderValidator::mainnet(store),
+        deserialize_header(MAINNET_HEADER_705601),
     );
 }
 
 #[test]
 fn test_basic_header_validation_testnet() {
+    let start_header = deserialize_header(TESTNET_HEADER_2132555);
+    let store = SimpleHeaderStore::new(start_header, 2_132_555);
     verify_consecutive_headers(
-        &BitcoinHeaderValidator::testnet(),
-        TESTNET_HEADER_2132555,
-        2_132_555,
-        TESTNET_HEADER_2132556,
+        &BitcoinHeaderValidator::testnet(store),
+        deserialize_header(TESTNET_HEADER_2132556),
     );
 }
 
 #[test]
 fn test_sequential_header_validation_mainnet() {
+    let start_header = deserialize_header(MAINNET_HEADER_586656);
+    let store = SimpleHeaderStore::new(start_header, 586_656);
     verify_header_sequence(
-        &BitcoinHeaderValidator::mainnet(),
+        BitcoinHeaderValidator::mainnet(store),
         btc_files::MAINNET_HEADERS_586657_589289_PARSED,
-        deserialize_header(MAINNET_HEADER_586656),
-        586_656,
     );
 }
 
 #[test]
 fn test_sequential_header_validation_testnet() {
+    let start_header = bitcoin_genesis_block(BitcoinNetwork::Testnet).header;
+    let store = SimpleHeaderStore::new(start_header, 0);
     verify_header_sequence(
-        &BitcoinHeaderValidator::testnet(),
+        BitcoinHeaderValidator::testnet(store),
         btc_files::TESTNET_HEADERS_1_5000_PARSED,
-        bitcoin_genesis_block(BitcoinNetwork::Testnet).header,
-        0,
     );
 }
 
 #[test]
 fn test_missing_previous_header() {
+    let start_header = deserialize_header(MAINNET_HEADER_705600);
+    let store = SimpleHeaderStore::new(start_header, 705_600);
     verify_with_missing_parent(
-        &BitcoinHeaderValidator::mainnet(),
-        MAINNET_HEADER_705600,
-        705_600,
-        MAINNET_HEADER_705602,
+        &BitcoinHeaderValidator::mainnet(store),
+        deserialize_header(MAINNET_HEADER_705602),
     );
 }
 
 #[test]
 fn test_invalid_pow_mainnet() {
+    let start_header = deserialize_header(MAINNET_HEADER_705600);
+    let store = SimpleHeaderStore::new(start_header, 705_600);
     verify_with_invalid_pow(
-        &BitcoinHeaderValidator::mainnet(),
-        MAINNET_HEADER_705600,
-        705_600,
-        MAINNET_HEADER_705601,
+        &BitcoinHeaderValidator::mainnet(store),
+        deserialize_header(MAINNET_HEADER_705601),
     );
 }
 
 #[test]
 fn test_invalid_pow_with_computed_target_regtest() {
     let bitcoin_genesis_header = bitcoin_genesis_header(
-        BitcoinNetwork::Bitcoin,
-        BitcoinHeaderValidator::mainnet().pow_limit_bits(),
+        BitcoinNetwork::Regtest,
+        CompactTarget::from_consensus(0x1701ddb2), // Put a low target
     );
-    verify_with_invalid_pow_with_computed_target(
-        &BitcoinHeaderValidator::regtest(),
-        bitcoin_genesis_header,
-    );
+    let store = SimpleHeaderStore::new(bitcoin_genesis_header, 0);
+    let mut header_validator = BitcoinHeaderValidator::regtest(store);
+    verify_with_invalid_pow_with_computed_target(&mut header_validator, bitcoin_genesis_header);
 }
 
 #[test]
 fn test_target_exceeds_maximum_mainnet() {
-    verify_with_excessive_target(
-        &BitcoinHeaderValidator::mainnet(),
-        &BitcoinHeaderValidator::regtest(),
-        MAINNET_HEADER_705600,
-        705_600,
-        MAINNET_HEADER_705601,
-    );
+    let start_header = deserialize_header(MAINNET_HEADER_705600);
+    let store = SimpleHeaderStore::new(start_header, 705_600);
+    let mut header = deserialize_header(MAINNET_HEADER_705601);
+    header.bits = CompactTarget::from_hex("0x207fffff").unwrap(); // Target exceeds what is allowed on mainnet
+    verify_with_excessive_target(&BitcoinHeaderValidator::mainnet(store), &header);
 }
 
 #[test]
 fn test_difficulty_adjustments_mainnet() {
+    let start_header = bitcoin_genesis_block(BitcoinNetwork::Bitcoin).header;
+    let store = SimpleHeaderStore::new(start_header, 0);
     verify_difficulty_adjustment(
-        &BitcoinHeaderValidator::mainnet(),
+        &mut BitcoinHeaderValidator::mainnet(store),
         btc_files::MAINNET_HEADERS_0_782282_RAW,
         782_281,
     );
@@ -120,8 +131,10 @@ fn test_difficulty_adjustments_mainnet() {
 
 #[test]
 fn test_difficulty_adjustments_testnet() {
+    let start_header = bitcoin_genesis_block(BitcoinNetwork::Testnet).header;
+    let store = SimpleHeaderStore::new(start_header, 0);
     verify_difficulty_adjustment(
-        &BitcoinHeaderValidator::testnet(),
+        &mut BitcoinHeaderValidator::testnet(store),
         btc_files::TESTNET_HEADERS_0_2425489_RAW,
         2_425_488,
     );
@@ -130,33 +143,29 @@ fn test_difficulty_adjustments_testnet() {
 #[test]
 fn test_difficulty_regtest() {
     let initial_pow = CompactTarget::from_consensus(7); // Some non-limit PoW, the actual value is not important.
-    let genesis_header = bitcoin_genesis_header(BitcoinNetwork::Regtest, initial_pow);
-    verify_regtest_difficulty_calculation(
-        &BitcoinHeaderValidator::regtest(),
-        genesis_header,
-        initial_pow,
-    );
+    let start_header = bitcoin_genesis_header(BitcoinNetwork::Regtest, initial_pow);
+    let store = SimpleHeaderStore::new(start_header, 0);
+    verify_regtest_difficulty_calculation(&mut BitcoinHeaderValidator::regtest(store), initial_pow);
 }
 
 #[test]
 fn test_backdated_difficulty_adjustment_testnet() {
     let genesis_target = CompactTarget::from_consensus(486604799);
-    let genesis_header = bitcoin_genesis_header(BitcoinNetwork::Testnet, genesis_target);
+    let start_header = bitcoin_genesis_header(BitcoinNetwork::Testnet, genesis_target);
+    let store = SimpleHeaderStore::new(start_header, 0);
     verify_backdated_block_difficulty(
-        &BitcoinHeaderValidator::testnet(),
+        &mut BitcoinHeaderValidator::testnet(store),
         DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN,
-        genesis_header,
         CompactTarget::from_consensus(473956288),
     );
 }
 
 #[test]
 fn test_timestamp_validation_mainnet() {
-    verify_timestamp_rules(
-        &BitcoinHeaderValidator::mainnet(),
-        MAINNET_HEADER_705600,
-        705_600,
-        MAINNET_HEADER_705601,
-        MAINNET_HEADER_705602,
-    );
+    let start_header = deserialize_header(MAINNET_HEADER_705600);
+    let start_header_height = 705_600;
+    let mut store = SimpleHeaderStore::new(start_header, start_header_height);
+    store.add(deserialize_header(MAINNET_HEADER_705601));
+    store.add(deserialize_header(MAINNET_HEADER_705602));
+    verify_timestamp_rules(&BitcoinHeaderValidator::mainnet(store), start_header_height);
 }

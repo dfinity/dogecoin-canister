@@ -67,7 +67,7 @@ impl From<ValidateAuxPowHeaderError> for ValidateHeaderError {
     }
 }
 
-const ONE_HOUR: u64 = 3_600;
+const ONE_HOUR: Duration = Duration::from_secs(3_600);
 
 pub trait HeaderStore {
     /// Returns the header with the given block hash.
@@ -87,16 +87,16 @@ pub trait HeaderStore {
     }
 }
 
-fn timestamp_is_less_than_2h_in_future(
-    block_time: u64,
-    current_time: u64,
+fn timestamp_is_at_most_2h_in_future(
+    block_time: Duration,
+    current_time: Duration,
 ) -> Result<(), ValidateHeaderError> {
     let max_allowed_time = current_time + 2 * ONE_HOUR;
 
     if block_time > max_allowed_time {
         return Err(ValidateHeaderError::HeaderIsTooFarInFuture {
-            block_time,
-            max_allowed_time,
+            block_time: block_time.as_secs(),
+            max_allowed_time: max_allowed_time.as_secs(),
         });
     }
 
@@ -110,9 +110,9 @@ fn timestamp_is_less_than_2h_in_future(
 fn is_timestamp_valid(
     store: &impl HeaderStore,
     header: &Header,
-    current_time: u64,
+    current_time: Duration,
 ) -> Result<(), ValidateHeaderError> {
-    timestamp_is_less_than_2h_in_future(header.time as u64, current_time)?;
+    timestamp_is_at_most_2h_in_future(Duration::from_secs(header.time as u64), current_time)?;
     let mut times = vec![];
     let mut current_header: Header = *header;
     let initial_hash = store.get_initial_hash();
@@ -163,16 +163,14 @@ pub trait HeaderValidator {
     /// [ValidateHeaderError](ValidateHeaderError) will be returned.
     fn validate_header(
         &self,
-        store: &impl HeaderStore,
         header: &Header,
-        current_time: u64,
+        current_time: Duration,
     ) -> Result<(), ValidateHeaderError>;
 
     /// Returns the next required target at the given timestamp.
     /// The target is the number that a block hash must be below for it to be accepted.
     fn get_next_target(
         &self,
-        store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
         timestamp: u32,
@@ -187,7 +185,6 @@ pub trait HeaderValidator {
     /// minutes.
     fn find_next_difficulty_in_chain(
         &self,
-        store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
     ) -> CompactTarget;
@@ -196,7 +193,6 @@ pub trait HeaderValidator {
     /// header given the previous header in the Bitcoin network
     fn compute_next_difficulty(
         &self,
-        store: &impl HeaderStore,
         prev_header: &Header,
         prev_height: BlockHeight,
     ) -> CompactTarget;
@@ -215,8 +211,7 @@ pub trait AuxPowHeaderValidator: HeaderValidator {
     /// [ValidateHeaderError](ValidateHeaderError) will be returned.
     fn validate_auxpow_header(
         &self,
-        store: &impl HeaderStore,
         header: &AuxPowHeader,
-        current_time: u64,
+        current_time: Duration,
     ) -> Result<(), ValidateHeaderError>;
 }

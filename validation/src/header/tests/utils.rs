@@ -1,5 +1,6 @@
+use crate::header::tests::HeaderValidatorExt;
 use crate::header::HeaderValidator;
-use crate::{BlockHeight, HeaderStore};
+use crate::HeaderStore;
 use bitcoin::block::{Header, Version};
 use bitcoin::consensus::deserialize;
 #[cfg(feature = "doge")]
@@ -14,11 +15,11 @@ use bitcoin::{
 };
 use bitcoin::{BlockHash, CompactTarget, TxMerkleNode};
 use csv::{Reader, StringRecord};
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::time::Duration;
 
-pub const MOCK_CURRENT_TIME: u64 = 2_634_590_600;
+pub const MOCK_CURRENT_TIME: Duration = Duration::from_secs(2_634_590_600);
 const TEST_DATA_FOLDER: &str = "tests/data";
 
 #[cfg(feature = "btc")]
@@ -57,79 +58,6 @@ pub fn deserialize_header(encoded_bytes: &str) -> Header {
 pub fn deserialize_auxpow_header(encoded_bytes: &str) -> DogecoinHeader {
     let bytes = Vec::from_hex(encoded_bytes).expect("failed to decoded bytes");
     deserialize(bytes.as_slice()).expect("failed to deserialize")
-}
-
-#[derive(Clone)]
-struct StoredHeader {
-    header: Header,
-    height: BlockHeight,
-}
-
-pub struct SimpleHeaderStore {
-    headers: HashMap<BlockHash, StoredHeader>,
-    height: BlockHeight,
-    tip_hash: BlockHash,
-    initial_hash: BlockHash,
-}
-
-impl SimpleHeaderStore {
-    pub fn new(initial_header: Header, height: BlockHeight) -> Self {
-        let initial_hash = initial_header.block_hash();
-        let tip_hash = initial_header.block_hash();
-        let mut headers = HashMap::new();
-        headers.insert(
-            initial_hash,
-            StoredHeader {
-                header: initial_header,
-                height,
-            },
-        );
-
-        Self {
-            headers,
-            height,
-            tip_hash,
-            initial_hash,
-        }
-    }
-
-    pub fn add(&mut self, header: Header) {
-        let prev = self
-            .headers
-            .get(&header.prev_blockhash)
-            .unwrap_or_else(|| panic!("Previous hash missing for header: {:?}", header));
-        let stored_header = StoredHeader {
-            header,
-            height: prev.height + 1,
-        };
-
-        self.height = stored_header.height;
-        self.headers.insert(header.block_hash(), stored_header);
-        self.tip_hash = header.block_hash();
-    }
-}
-
-impl HeaderStore for SimpleHeaderStore {
-    fn get_with_block_hash(&self, hash: &BlockHash) -> Option<Header> {
-        self.headers.get(hash).map(|stored| stored.header)
-    }
-
-    fn get_with_height(&self, height: u32) -> Option<Header> {
-        let blocks_to_traverse = self.height - height;
-        let mut header = self.headers.get(&self.tip_hash).unwrap().header;
-        for _ in 0..blocks_to_traverse {
-            header = self.headers.get(&header.prev_blockhash).unwrap().header;
-        }
-        Some(header)
-    }
-
-    fn height(&self) -> u32 {
-        self.height
-    }
-
-    fn get_initial_hash(&self) -> BlockHash {
-        self.initial_hash
-    }
 }
 
 /// Creates a Header from a CSV record with fields: version, prev_blockhash, merkle_root, time, bits, nonce
@@ -239,21 +167,20 @@ pub fn next_block_header<T: HeaderValidator>(
 
 /// Creates a chain of headers with the given length and
 /// proof of work for the first header.
-pub fn build_header_chain<T: HeaderValidator>(
-    validator: &T,
-    genesis_header: Header,
+pub fn build_header_chain<T: HeaderValidator + HeaderValidatorExt>(
+    validator: &mut T,
     chain_length: u32,
-) -> (SimpleHeaderStore, Header) {
+) -> Header {
     let pow_limit = validator.pow_limit_bits();
-    let h0 = genesis_header;
-    let mut store = SimpleHeaderStore::new(h0, 0);
-    let mut last_header = h0;
+
+    let current_height = validator.store().height();
+    let mut last_header = validator.store().get_with_height(current_height).unwrap();
 
     for _ in 1..chain_length {
         let new_header = next_block_header(validator, last_header, pow_limit);
-        store.add(new_header);
+        validator.store_mut().add(new_header);
         last_header = new_header;
     }
 
-    (store, last_header)
+    last_header
 }
