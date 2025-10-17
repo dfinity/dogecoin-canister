@@ -2,15 +2,15 @@ benches:
   get_metrics:
     total:
       calls: 1
-      instructions: 7691076
+      instructions: 6820096
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   insert_300_blocks:
     total:
       calls: 1
-      instructions: 4427033797
-      heap_increase: 18
+      instructions: 4406608730
+      heap_increase: 15
       stable_memory_increase: 0
     scopes:
       validate:
@@ -36,7 +36,7 @@ benches:
   insert_block_headers:
     total:
       calls: 1
-      instructions: 1600162407
+      instructions: 1587082256
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
