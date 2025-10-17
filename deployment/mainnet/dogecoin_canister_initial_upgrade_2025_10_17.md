@@ -72,3 +72,10 @@ UPGRADE_ARG="(opt record {
 })"
 didc encode -d canister/candid.did -t '(opt set_config_request)' "$UPGRADE_ARG" | xxd -r -p | sha256sum
 ```
+
+* `stability_threshold`: set to 360, which corresponds to 6 hours of blocks produced on the Dogecoin network (on average). This number corresponds to roughly the number of full blocks stored in heap memory. It was chosen to keep the heap memory usage below the available limits. It will be increased in the future once blocks are stored in stable memory.
+* `syncing`: set to `enabled` to enable the canister to sync blocks.
+* `disable_api_if_not_fully_synced`: set to `enabled` to disable the API if the canister is not fully synced to the tip.
+* `api_access`: set to `enabled` to enable the API (once the canister is synced to the tip).
+* `burn_cycles`: set to `enabled` to burn received cycles.
+* `lazily_evaluate_fee_percentiles`: set to `enabled` to indicate that fee percentiles are only evaluated when fees are requested, rather than updating them automatically whenever a newly received block is processed.
