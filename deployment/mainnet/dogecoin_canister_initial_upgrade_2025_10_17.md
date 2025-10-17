@@ -70,5 +70,5 @@ UPGRADE_ARG="(opt record {
     burn_cycles = opt variant { enabled };
     lazily_evaluate_fee_percentiles = opt variant { enabled };
 })"
-didc encode -d candid.did -t '(opt set_config_request)' "$UPGRADE_ARG" | xxd -r -p | sha256sum
+didc encode -d canister/candid.did -t '(opt set_config_request)' "$UPGRADE_ARG" | xxd -r -p | sha256sum
 ```
