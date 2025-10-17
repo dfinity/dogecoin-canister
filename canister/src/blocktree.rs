@@ -12,18 +12,18 @@ use std::rc::Rc;
 /// * the first block of the chain
 /// * the successors to this block (which can be an empty list)
 #[derive(Debug, PartialEq, Eq)]
-pub struct BlockChain<'a> {
+pub struct BlockChain<'a, T> {
     // The first block of this `BlockChain`, i.e. the one at the lowest height.
-    first: &'a CachedBlock,
+    first: &'a T,
     // The successor blocks of this `BlockChain`, i.e. the chain after the
     // `first` block.
-    successors: Vec<&'a CachedBlock>,
+    successors: Vec<&'a T>,
 }
 
-impl<'a> BlockChain<'a> {
+impl<'a, T> BlockChain<'a, T> {
     /// Creates a new `BlockChain` with the given `first` block and an empty list
     /// of successors.
-    pub fn new(first: &'a CachedBlock) -> Self {
+    pub fn new(first: &'a T) -> Self {
         Self {
             first,
             successors: vec![],
@@ -32,12 +32,12 @@ impl<'a> BlockChain<'a> {
 
     /// This is only useful for tests to simplify the creation of a `BlockChain`.
     #[cfg(test)]
-    pub fn new_with_successors(first: &'a CachedBlock, successors: Vec<&'a CachedBlock>) -> Self {
+    pub fn new_with_successors(first: &'a T, successors: Vec<&'a T>) -> Self {
         Self { first, successors }
     }
 
     /// Appends a new block to the list of `successors` of this `BlockChain`.
-    pub fn push(&mut self, block: &'a CachedBlock) {
+    pub fn push(&mut self, block: &'a T) {
         self.successors.push(block);
     }
 
@@ -46,11 +46,11 @@ impl<'a> BlockChain<'a> {
         self.successors.len() + 1
     }
 
-    pub fn first(&self) -> &'a CachedBlock {
+    pub fn first(&self) -> &'a T {
         self.first
     }
 
-    pub fn tip(&self) -> &'a CachedBlock {
+    pub fn tip(&self) -> &'a T {
         match self.successors.last() {
             None => {
                 // The chain consists of only one block, and that is the tip.
@@ -61,7 +61,7 @@ impl<'a> BlockChain<'a> {
     }
 
     /// Consumes this `BlockChain` and returns the entire chain of blocks.
-    pub fn into_chain(self) -> Vec<&'a CachedBlock> {
+    pub fn into_chain(self) -> Vec<&'a T> {
         let mut chain = vec![self.first];
         chain.extend(self.successors);
         chain
@@ -321,7 +321,7 @@ impl BlockTree {
     }
 
     /// Returns all the blockchains in the tree.
-    pub fn blockchains(&self) -> Vec<BlockChain<'_>> {
+    pub fn blockchains(&self) -> Vec<BlockChain<'_, CachedBlock>> {
         if self.children.is_empty() {
             return vec![BlockChain {
                 first: &self.root,
@@ -339,7 +339,7 @@ impl BlockTree {
                         first: &self.root,
                         successors: bc.into_chain(),
                     })
-                    .collect::<Vec<BlockChain>>(),
+                    .collect::<Vec<_>>(),
             );
         }
 
@@ -349,7 +349,10 @@ impl BlockTree {
     /// Returns a `BlockChain` starting from the anchor and ending with the `tip`.
     ///
     /// If the `tip` doesn't exist in the tree, `None` is returned.
-    pub fn get_chain_with_tip<'a>(&'a self, tip: &BlockHash) -> Option<BlockChain<'a>> {
+    pub fn get_chain_with_tip<'a>(
+        &'a self,
+        tip: &BlockHash,
+    ) -> Option<BlockChain<'a, CachedBlock>> {
         // Compute the chain in reverse order, as that's more efficient, and then
         // reverse it to get the answer in the correct order.
         self.get_chain_with_tip_reverse(tip).map(|mut chain| {

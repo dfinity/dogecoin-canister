@@ -1,5 +1,5 @@
 use crate::{
-    blocktree::BlockChain,
+    blocktree::{BlockChain, CachedBlock},
     charge_cycles,
     runtime::{performance_counter, print},
     types::{Address, GetUtxosRequest, Page, Utxo},
@@ -194,7 +194,7 @@ fn get_utxos_from_chain(
     state: &State,
     address: &str,
     min_confirmations: u32,
-    chain: BlockChain,
+    chain: BlockChain<CachedBlock>,
     offset: Option<Utxo>,
     utxo_limit: usize,
 ) -> Result<(GetUtxosResponse, Stats), GetUtxosError> {
