@@ -25,7 +25,7 @@ Note: there is no need to have an additional proposal to enable the API endpoint
 Changes made to the Dogecoin canister since it was forked from the Bitcoin canister:
 
 ```
-git log --format='%C(auto) %h %s' cadc7c92f1d900294994d34fe6ecec9fad318d3a.. -- canister
+git log --format='%C(auto) %h %s' d4ff6c830996903b9e40d6631b74878c49d5af24.. -- canister
   454cc37 chore(upstream): cherry-pick from dfinity/bitcoin-canister@master (defadc1..46e1a4c) (#32)
   266caa5 fix: use buffered writer during pre-upgrade and set stability threshold to 360 to reduce heap memory pressure (#41)
   da251d5 feat: revert "store auxpow headers into stable memory" (#35)
