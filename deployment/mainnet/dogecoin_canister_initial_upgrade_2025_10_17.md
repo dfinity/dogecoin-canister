@@ -16,7 +16,7 @@ Previous proposal: https://dashboard.internetcomputer.org/proposal/138938
 
 ## Motivation
 
-This proposal concludes the launch of the **Dogecoin mainnet canister**. It follows the installation of the `uploader` canister which was used to upload the pre-computed state of the Dogecoin mainnet canister at height **5,906,189**. The Dogecoin canister will then start syncing blocks from height 5,906,189 until the tip.
+This proposal concludes the launch of the **Dogecoin mainnet canister** (see [initial forum post](https://forum.dfinity.org/t/direct-integration-with-dogecoin/58675/)) by installing the actual Dogecoin canister. It follows from the installation of the `uploader` canister which was used to upload the pre-computed state of the Dogecoin mainnet canister at height **5,906,189**. The Dogecoin canister will then start syncing blocks from height 5,906,189 until the tip.
 
 Note: there is no need to have an additional proposal to enable the API endpoints [as initially described](https://dashboard.internetcomputer.org/proposal/138938). The canister now contains the logic to disable the API if it is not fully synced to the tip (configurable with a parameter `disable_api_if_not_fully_synced`).
 
@@ -48,6 +48,7 @@ git log --format='%C(auto) %h %s' cadc7c92f1d900294994d34fe6ecec9fad318d3a.. -- 
 ## Wasm Verification
 
 Verify that the hash of the gzipped WASM matches the proposed hash.
+NOTE: This process is not yet guaranteed to match on Apple Silicon.
 
 ```
 git fetch
