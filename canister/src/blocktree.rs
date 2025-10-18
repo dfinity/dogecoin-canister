@@ -583,7 +583,7 @@ mod test {
         let mut iter = blocks.iter();
         BlockChain {
             first: iter.next().unwrap(),
-            successors: iter.map(|x| *x).collect(),
+            successors: iter.copied().collect(),
         }
     }
 
@@ -599,7 +599,7 @@ mod test {
         );
         assert_eq!(
             Some((to_blockchain(expected_chain), vec![])),
-            block_tree.get_chain_with_tip(&block_tree.root.block_hash())
+            block_tree.get_chain_with_tip(block_tree.root.block_hash())
         );
     }
 
@@ -626,7 +626,7 @@ mod test {
                 to_blockchain(&[&block_tree.root]),
                 children.iter().collect::<Vec<_>>()
             )),
-            block_tree.get_chain_with_tip(&block_tree.root.block_hash())
+            block_tree.get_chain_with_tip(block_tree.root.block_hash())
         );
     }
 
@@ -914,7 +914,7 @@ mod test {
         flatten(&tree, &mut blocks);
         let chosen_block = blocks[random_index % blocks.len()];
 
-        let (chain, tip_children) = tree.get_chain_with_tip(&chosen_block.block_hash()).unwrap();
+        let (chain, tip_children) = tree.get_chain_with_tip(chosen_block.block_hash()).unwrap();
         let tip = tree
             .find(chain.tip().block_hash())
             .expect("BUG: could not find tip");

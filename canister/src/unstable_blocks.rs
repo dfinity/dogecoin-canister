@@ -740,8 +740,8 @@ mod test {
             .collect()
     }
 
-    fn get_chain_with_tip<'a>(
-        blocks: &'a UnstableBlocks,
+    fn get_chain_with_tip(
+        blocks: &UnstableBlocks,
         block_hash: &BlockHash,
     ) -> Option<(Vec<Block>, Vec<Block>)> {
         super::get_chain_with_tip(blocks, block_hash).map(|(chain, tips)| {
