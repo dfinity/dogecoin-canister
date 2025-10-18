@@ -96,6 +96,12 @@ impl Block {
     }
 }
 
+impl From<Block> for BlockData {
+    fn from(block: Block) -> BlockData {
+        block.block
+    }
+}
+
 impl PartialEq for Block {
     fn eq(&self, other: &Self) -> bool {
         self.block == other.block && self.transactions == other.transactions

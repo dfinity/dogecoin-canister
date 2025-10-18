@@ -8,7 +8,7 @@ pub struct ValidationContext<'a> {
     state: &'a State,
     // BlockHash is stored in order to avoid repeatedly calling to
     // Header::block_hash() which is expensive.
-    chain: Vec<(&'a Header, ic_doge_types::BlockHash)>,
+    chain: Vec<(Header, ic_doge_types::BlockHash)>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,14 +31,14 @@ impl<'a> ValidationContext<'a> {
                 })?;
         if tip_successors
             .iter()
-            .any(|c| c.block_hash() == current_block_hash)
+            .any(|c| c.block_hash() == &current_block_hash)
         {
             return Err(ValidationContextError::AlreadyKnown(current_block_hash));
         }
         let chain = chain
             .into_chain()
             .iter()
-            .map(|block| (block.header(), block.block_hash()))
+            .map(|block| (block.header(), block.block_hash().clone()))
             .collect();
 
         Ok(Self { state, chain })
@@ -58,8 +58,8 @@ impl<'a> ValidationContext<'a> {
             Self::new(state, header)
         } else {
             let mut context = Self::new(state, next_block_headers_chain[0].0)?;
-            for item in next_block_headers_chain.iter() {
-                context.chain.push(item.clone())
+            for (header, hash) in next_block_headers_chain.into_iter() {
+                context.chain.push((*header, hash))
             }
             Ok(context)
         }
@@ -73,7 +73,7 @@ impl HeaderStore for ValidationContext<'_> {
         let hash = ic_doge_types::BlockHash::from(hash.as_raw_hash().as_byte_array().to_vec());
         for item in self.chain.iter() {
             if item.1 == hash {
-                return Some(*item.0);
+                return Some(item.0);
             }
         }
 
@@ -95,7 +95,7 @@ impl HeaderStore for ValidationContext<'_> {
         } else if height <= self.height() {
             // The height requested is for an unstable block.
             // Retrieve the block header from the chain.
-            Some(*self.chain[(height - self.state.utxos.next_height()) as usize].0)
+            Some(self.chain[(height - self.state.utxos.next_height()) as usize].0)
         } else {
             // The height requested is higher than the tip.
             None
@@ -108,7 +108,7 @@ mod test {
     use super::*;
     use crate::{
         state::{ingest_stable_blocks_into_utxoset, insert_block},
-        test_utils::{build_chain, BlockBuilder},
+        test_utils::{build_chain, BlockBuilder, TestBlocksCache},
     };
     use ic_doge_interface::Network;
     use proptest::prelude::*;
@@ -119,7 +119,7 @@ mod test {
         let genesis = BlockBuilder::genesis().build();
         let network = Network::Mainnet;
 
-        let mut state = State::new(2, network, genesis.clone());
+        let mut state = State::new(TestBlocksCache::new(network), 2, network, genesis.clone());
         let block_0 = BlockBuilder::with_prev_header(genesis.header()).build();
         let block_1 = BlockBuilder::with_prev_header(block_0.header()).build();
         let block_2 = BlockBuilder::with_prev_header(block_1.header()).build();
@@ -144,10 +144,10 @@ mod test {
         assert_eq!(
             validation_context.chain,
             vec![
-                (genesis.header(), genesis.block_hash()),
-                (block_0.header(), block_0.block_hash()),
-                (block_1.header(), block_1.block_hash()),
-                (block_2.header(), block_2.block_hash()),
+                (*genesis.header(), genesis.block_hash()),
+                (*block_0.header(), block_0.block_hash()),
+                (*block_1.header(), block_1.block_hash()),
+                (*block_2.header(), block_2.block_hash()),
             ]
         );
 
@@ -175,7 +175,7 @@ mod test {
             let network = Network::Regtest;
             let blocks = build_chain(network, num_blocks, num_transactions_in_block, with_auxpow);
 
-            let mut state = State::new(stability_threshold, network, blocks[0].clone());
+            let mut state = State::new(TestBlocksCache::new(network), stability_threshold, network, blocks[0].clone());
 
             // Insert all the blocks except the last block.
             for block in blocks[1..blocks.len() - 1].iter() {
