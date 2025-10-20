@@ -733,4 +733,34 @@ mod test {
             with_state(|s| assert_eq!(s.fees, expected_fees));
         }
     }
+
+    #[test]
+    fn test_post_upgrade_old_format_compatibility() {
+        memory::set_memory(ic_stable_structures::DefaultMemoryImpl::default());
+
+        init(InitConfig {
+            stability_threshold: Some(360),
+            network: Some(Network::Regtest),
+            ..Default::default()
+        });
+
+        // Take out the state (which also clears the `STATE` singleton).
+        let previous_state = STATE.with(|cell| cell.take().unwrap());
+        
+        // Serialize the state to bytes
+        let mut state_bytes = vec![];
+        ciborium::ser::into_writer(&previous_state, &mut state_bytes).unwrap();
+
+        // Write state into stable memory using old format
+        let len = state_bytes.len() as u32;
+        let memory = memory::get_upgrades_memory();
+        memory::write(&memory, 0, &len.to_le_bytes());
+        memory::write(&memory, 4, &state_bytes);
+
+        // Run postupgrade hook
+        post_upgrade(None);
+
+        // The new and old states should be equivalent
+        with_state(|new_state| assert!(new_state == &previous_state));
+    }
 }
