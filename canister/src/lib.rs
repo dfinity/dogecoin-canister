@@ -36,6 +36,7 @@ use ic_doge_interface::{
 use ic_doge_types::Block;
 use ic_stable_structures::reader::{BufferedReader, Reader};
 use ic_stable_structures::writer::{BufferedWriter, Writer};
+use ic_stable_structures::Memory;
 pub use memory::get_memory;
 use serde_bytes::ByteBuf;
 use state::main_chain_height;
@@ -207,12 +208,31 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
 
     let memory = memory::get_upgrades_memory();
 
-    let reader = Reader::new(&memory, 0);
-    let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+    let state: State = {
+        let reader = Reader::new(&memory, 0);
+        let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
 
-    // Deserialize and set the state.
-    let state: State = ciborium::de::from_reader(&mut buffered_reader)
-        .expect("failed to decode state from stable memory");
+        match ciborium::de::from_reader(&mut buffered_reader) {
+            Ok(state) => state,
+            Err(e) => {
+                print(&format!(
+                    "Failed to deserialize state: {:?}. Trying old format...",
+                    e
+                ));
+
+                // Fall back to old format (manual length prefix + bytes)
+                let mut state_len_bytes = [0; 4];
+                memory.read(0, &mut state_len_bytes);
+                let state_len = u32::from_le_bytes(state_len_bytes) as usize;
+
+                let mut state_bytes = vec![0; state_len];
+                memory.read(4, &mut state_bytes);
+
+                ciborium::de::from_reader(&*state_bytes)
+                    .expect("failed to decode state using old format")
+            }
+        }
+    };
 
     set_state(state);
 
