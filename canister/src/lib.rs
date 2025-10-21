@@ -209,29 +209,48 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
     let memory = memory::get_upgrades_memory();
 
     let state: State = {
-        let reader = Reader::new(&memory, 0);
-        let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+        // Buffered reader at offset 0
+        let read_buffer_offset_0 = || {
+            let reader = Reader::new(&memory, 0);
+            let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+            ciborium::de::from_reader(&mut buffered_reader)
+        };
 
-        match ciborium::de::from_reader(&mut buffered_reader) {
-            Ok(state) => state,
-            Err(e) => {
+        // Buffered reader at offset 4
+        let read_buffer_offset_4 = || {
+            let reader = Reader::new(&memory, 4);
+            let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+            ciborium::de::from_reader(&mut buffered_reader)
+        };
+
+        // Read into array
+        let read_array = || {
+            let mut state_len_bytes = [0; 4];
+            memory.read(0, &mut state_len_bytes);
+            let state_len = u32::from_le_bytes(state_len_bytes) as usize;
+
+            let mut state_bytes = vec![0; state_len];
+            memory.read(4, &mut state_bytes);
+
+            ciborium::de::from_reader(&*state_bytes)
+        };
+
+        read_buffer_offset_0()
+            .or_else(|e| {
                 print(&format!(
-                    "Failed to deserialize state: {:?}. Trying old format...",
+                    "Failed to read state with buffered reader: {:?}. Trying different format...",
                     e
                 ));
-
-                // Fall back to old format (manual length prefix + bytes)
-                let mut state_len_bytes = [0; 4];
-                memory.read(0, &mut state_len_bytes);
-                let state_len = u32::from_le_bytes(state_len_bytes) as usize;
-
-                let mut state_bytes = vec![0; state_len];
-                memory.read(4, &mut state_bytes);
-
-                ciborium::de::from_reader(&*state_bytes)
-                    .expect("failed to decode state using old format")
-            }
-        }
+                read_buffer_offset_4()
+            })
+            .or_else(|e| {
+                print(&format!(
+                    "Failed to read state with buffered reader at offset 4: {:?}. Trying different format...",
+                    e
+                ));
+                read_array()
+            })
+            .expect("Failed to read state into array.")
     };
 
     set_state(state);
@@ -746,7 +765,7 @@ mod test {
 
         // Take out the state (which also clears the `STATE` singleton).
         let previous_state = STATE.with(|cell| cell.take().unwrap());
-        
+
         // Serialize the state to bytes
         let mut state_bytes = vec![];
         ciborium::ser::into_writer(&previous_state, &mut state_bytes).unwrap();
