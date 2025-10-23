@@ -2,14 +2,14 @@ benches:
   insert_block_headers_multiple_times_regtest_with_auxpow:
     total:
       calls: 1
-      instructions: 3569298710
+      instructions: 3737278447
       heap_increase: 6
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_regtest_with_auxpow:
     total:
       calls: 1
-      instructions: 4841961409
+      instructions: 5028724389
       heap_increase: 3
       stable_memory_increase: 0
     scopes: {}
