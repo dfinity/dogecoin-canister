@@ -238,6 +238,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
     const MAX_INSTRUCTIONS_THRESHOLD: u64 = 30_000_000_000;
 
     for block_header_blob in next_block_headers.iter() {
+        #[cfg(not(feature = "canbench-rs"))]
         if inc_performance_counter() > MAX_INSTRUCTIONS_THRESHOLD {
             print("Reaching instruction threshold while inserting next block headers. Breaking...");
             break;
