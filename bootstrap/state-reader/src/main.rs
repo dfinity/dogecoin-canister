@@ -129,6 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Sort the data for deterministic hashing
+    // Note: when comparing the canister state to the state-builder output, the data should already be ordered identically.
     log!("Sorting data for deterministic hashing...");
     log!("  Sorting {} UTXOs...", utxos.len());
     utxos.sort();
