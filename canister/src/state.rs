@@ -235,6 +235,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
     // The limit at which no further next block headers are processed.
     // Note that the actual limit available on system subnets is 50B. The threshold is set
     // lower to be conservative.
+    #[cfg(not(feature = "canbench-rs"))]
     const MAX_INSTRUCTIONS_THRESHOLD: u64 = 30_000_000_000;
 
     for block_header_blob in next_block_headers.iter() {
