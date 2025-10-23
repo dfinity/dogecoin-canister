@@ -3,7 +3,7 @@ use crate::{
     address_utxoset::AddressUtxoSet,
     block_header_store::BlockHeaderStore,
     metrics::Metrics,
-    runtime::{duration_since_epoch, inc_performance_counter, performance_counter, print},
+    runtime::{duration_since_epoch, performance_counter, print},
     types::{
         into_dogecoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
         GetSuccessorsPartialResponse, Slicing,
@@ -239,7 +239,7 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
 
     for block_header_blob in next_block_headers.iter() {
         #[cfg(not(feature = "canbench-rs"))]
-        if inc_performance_counter() > MAX_INSTRUCTIONS_THRESHOLD {
+        if crate::runtime::inc_performance_counter() > MAX_INSTRUCTIONS_THRESHOLD {
             print("Reaching instruction threshold while inserting next block headers. Breaking...");
             break;
         }
