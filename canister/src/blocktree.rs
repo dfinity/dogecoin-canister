@@ -256,7 +256,7 @@ impl BlockTree {
         self.children.swap_remove(idx)
     }
 
-    /// Returns all blocks in the tree with their depths
+    /// Returns the hashes of all blocks in the tree with their depths
     /// separated by heights.
     pub fn blocks_with_depths_by_heights(&self) -> Vec<Vec<(&BlockHash, u32)>> {
         let mut blocks_with_depths_by_heights: Vec<Vec<(&BlockHash, u32)>> = vec![vec![]];
