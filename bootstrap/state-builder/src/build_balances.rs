@@ -74,7 +74,8 @@ fn main() {
             let address: Address = address.into();
 
             // Update the balance of the address.
-            if amount != 0 { // TODO(XC-505): ensure this condition is consistent with the canister code.
+            if amount != 0 {
+                // TODO(XC-505): ensure this condition is consistent with the canister code.
                 balances
                     .entry(address.clone())
                     .and_modify(|curr| *curr += amount)

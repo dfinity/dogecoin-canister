@@ -10,10 +10,10 @@ pub fn compute_utxo_set_hash(utxos: &[Utxo]) -> String {
     let mut hasher = Sha256::new();
 
     for utxo in utxos {
-        hasher.update(&Storable::to_bytes(&utxo.outpoint));
-        hasher.update(&utxo.txout.value.to_le_bytes());
+        hasher.update(Storable::to_bytes(&utxo.outpoint));
+        hasher.update(utxo.txout.value.to_le_bytes());
         hasher.update(&utxo.txout.script_pubkey);
-        hasher.update(&utxo.height.to_le_bytes());
+        hasher.update(utxo.height.to_le_bytes());
     }
 
     hex::encode(hasher.finalize())
@@ -25,8 +25,8 @@ pub fn compute_address_utxos_hash(address_utxos: &[AddressUtxo]) -> String {
 
     for addr_utxo in address_utxos {
         hasher.update(addr_utxo.address.to_string().as_bytes());
-        hasher.update(&addr_utxo.height.to_le_bytes());
-        hasher.update(&addr_utxo.outpoint.to_bytes());
+        hasher.update(addr_utxo.height.to_le_bytes());
+        hasher.update(addr_utxo.outpoint.to_bytes());
     }
 
     hex::encode(hasher.finalize())
@@ -38,7 +38,7 @@ pub fn compute_address_balances_hash(balances: &[(Address, u128)]) -> String {
 
     for (address, balance) in balances {
         hasher.update(address.to_string().as_bytes());
-        hasher.update(&balance.to_le_bytes());
+        hasher.update(balance.to_le_bytes());
     }
 
     hex::encode(hasher.finalize())
@@ -49,7 +49,7 @@ pub fn compute_block_headers_hash(headers: &[(BlockHash, BlockHeaderBlob)]) -> S
     let mut hasher = Sha256::new();
 
     for (hash, header_blob) in headers {
-        hasher.update(&hash.to_bytes());
+        hasher.update(hash.to_bytes());
         hasher.update(header_blob.as_slice());
     }
 
@@ -61,8 +61,8 @@ pub fn compute_block_heights_hash(heights: &[(Height, BlockHash)]) -> String {
     let mut hasher = Sha256::new();
 
     for (height, hash) in heights {
-        hasher.update(&height.to_le_bytes());
-        hasher.update(&hash.to_bytes());
+        hasher.update(height.to_le_bytes());
+        hasher.update(hash.to_bytes());
     }
 
     hex::encode(hasher.finalize())

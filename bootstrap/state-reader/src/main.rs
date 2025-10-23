@@ -32,6 +32,10 @@ struct Args {
     #[arg(short, long)]
     quiet: bool,
 
+    /// Compute and print detailed statistics
+    #[arg(long)]
+    stats: bool,
+
     /// Select which data types to process (default: all)
     #[arg(long, value_enum, value_delimiter = ',')]
     data: Option<Vec<DataType>>,
@@ -71,12 +75,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ic_doge_canister::init(ic_doge_interface::InitConfig::default());
 
     // Deserialize the state from upgrade memory region 0 (including large UTXOs)
+    // Note: this requires the canister to run pre-upgrade so that heap data is serialized
+    // to stable memory.
     ic_doge_canister::post_upgrade(None);
 
     let reader = UtxoReader::new(&args.input)?;
 
     log!("Extracting data from stable memory...");
 
+    // TODO(mducroux): use streamed approach instead of reading the whole state in memory.
     let mut canister_data = reader.read_data(process_utxos, process_balances, process_headers);
 
     // Extract large UTXOs from the deserialized canister state (only if processing UTXOs)
@@ -164,7 +171,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    if !args.quiet {
+    if args.stats && !args.quiet {
         print_statistics(&canister_data, &utxos);
     }
 
@@ -222,17 +229,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &block_heights_hash,
     ]);
 
+    log!("{}", "═".repeat(120));
+    log!("{:^120}", "DATA HASHES (SHA256)");
+    log!("{}", "═".repeat(120));
+
+    log!("\n{:<16}: {}", "UTXO Set", utxo_hash);
+    log!("{:<16}: {}", "Address UTXOs", address_utxos_hash);
+    log!("{:<16}: {}", "Address Balance", address_balance_hash);
+    log!("{:<16}: {}", "Block Headers", block_headers_hash);
+    log!("{:<16}: {}", "Block Heights", block_heights_hash);
+
     if !args.quiet {
-        println!("{}", "═".repeat(120));
-        println!("{:^120}", "DATA HASHES (SHA256)");
-        println!("{}", "═".repeat(120));
-
-        println!("\n{:<16}: {}", "UTXO Set", utxo_hash);
-        println!("{:<16}: {}", "Address UTXOs", address_utxos_hash);
-        println!("{:<16}: {}", "Address Balance", address_balance_hash);
-        println!("{:<16}: {}", "Block Headers", block_headers_hash);
-        println!("{:<16}: {}", "Block Heights", block_heights_hash);
-
         println!("\n{:<16}: {}", "Combined hash", hash_data);
     } else {
         println!("{}", hash_data);
@@ -388,8 +395,8 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
     if !utxos.is_empty() {
         println!("\nFirst {} UTXO Details:", std::cmp::min(20, utxos.len()));
         println!(
-            "{:<8} {:<66} {:<5} {:<20} {:<12} {}",
-            "Index", "Txid", "Vout", "Value (DOGE)", "Height", "Script Size"
+            "{:<8} {:<66} {:<5} {:<20} {:<12} Script Size",
+            "Index", "Txid", "Vout", "Value (DOGE)", "Height"
         );
         println!("{}", "-".repeat(120));
 
@@ -508,8 +515,8 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
             std::cmp::min(20, data.address_utxos.len())
         );
         println!(
-            "{:<8} {:<40} {:<66} {:<5} {}",
-            "Index", "Address", "Txid", "Vout", "Height"
+            "{:<8} {:<40} {:<66} {:<5} Height",
+            "Index", "Address", "Txid", "Vout"
         );
         println!("{}", "-".repeat(120));
 
@@ -873,11 +880,11 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
             let small_auxpow = auxpow_sizes.iter().filter(|&&size| size < 500).count();
             let medium_auxpow = auxpow_sizes
                 .iter()
-                .filter(|&&size| size >= 500 && size < 1000)
+                .filter(|&&size| (500..1000).contains(&size))
                 .count();
             let large_auxpow = auxpow_sizes
                 .iter()
-                .filter(|&&size| size >= 1000 && size < 2000)
+                .filter(|&&size| (1000..2000).contains(&size))
                 .count();
             let xlarge_auxpow = auxpow_sizes.iter().filter(|&&size| size >= 2000).count();
 
@@ -939,7 +946,7 @@ fn print_statistics(data: &CanisterData, utxos: &[Utxo]) {
             "\n  Last {} Block Headers Details:",
             std::cmp::min(5, data.block_headers.len())
         );
-        println!("{:<64} {}", "Block Hash", "Height");
+        println!("{:<64} Height", "Block Hash");
         println!("{}", "-".repeat(100));
 
         for h in heights.iter().rev().take(5) {

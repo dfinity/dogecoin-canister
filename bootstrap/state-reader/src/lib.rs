@@ -8,20 +8,17 @@ use ic_stable_structures::{
     memory_manager::MemoryManager, storable::Blob, FileMemory, StableBTreeMap,
     Storable as StableStorable,
 };
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{fs::File, path::Path};
 
-use std::cell::RefCell;
-
-thread_local! {
-    static QUIET_FLAG: RefCell<bool> = RefCell::new(false);
-}
+static QUIET_FLAG: AtomicBool = AtomicBool::new(false);
 
 pub fn set_logging_quiet(quiet: bool) {
-    QUIET_FLAG.with(|q| *q.borrow_mut() = quiet);
+    QUIET_FLAG.store(quiet, Ordering::Relaxed);
 }
 
 pub fn is_quiet() -> bool {
-    QUIET_FLAG.with(|q| *q.borrow())
+    QUIET_FLAG.load(Ordering::Relaxed)
 }
 
 #[macro_export]
