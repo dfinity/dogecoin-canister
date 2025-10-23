@@ -85,7 +85,7 @@ fn init() {
     for _ in 0..NUM_BLOCKS {
         let mut block = BlockBuilder::default().with_prev_header(*prev_header);
         for i in lock_time_offset..lock_time_offset + TXS_PER_BLOCK {
-            // A transaction giving 1 satoshi to the address.
+            // A transaction giving 1 koinu to the address.
             block = block.with_transaction(
                 TransactionBuilder::new()
                     .with_lock_time(i)

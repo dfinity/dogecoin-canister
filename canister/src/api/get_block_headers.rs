@@ -173,6 +173,8 @@ pub fn get_block_headers(
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::test_utils::build_chain;
+    use crate::types::into_dogecoin_network;
     use crate::{
         genesis_block, runtime,
         state::{self, ingest_stable_blocks_into_utxoset, insert_block},
@@ -671,5 +673,77 @@ mod test {
 
         // Base fee + instructions are charged for.
         assert_eq!(runtime::get_cycles_balance(), 10 + 1000);
+    }
+
+    #[test]
+    fn test_get_block_headers_returns_pure_headers() {
+        let stability_threshold: u64 = 10;
+
+        let network = Network::Regtest;
+        crate::init(InitConfig {
+            stability_threshold: Some(stability_threshold as u128),
+            network: Some(network),
+            ..Default::default()
+        });
+
+        // Create chain with AuxPow enabled
+        let num_blocks = 50;
+        let chain = build_chain(network, num_blocks, 1, true);
+        for block in chain.iter().skip(1) {
+            with_state_mut(|state| {
+                insert_block(state, block.clone()).unwrap();
+            });
+        }
+        with_state_mut(|state| {
+            ingest_stable_blocks_into_utxoset(state);
+        });
+
+        // Verify that headers after AuxPow height activation are larger than 80 bytes
+        let auxpow_height = into_dogecoin_network(network).params().auxpow_height as usize;
+        for (i, block) in chain.iter().skip(auxpow_height).enumerate() {
+            let mut auxpow_header_bytes = vec![];
+            block
+                .auxpow_header()
+                .consensus_encode(&mut auxpow_header_bytes)
+                .unwrap();
+            assert!(
+                auxpow_header_bytes.len() > 80,
+                "Block {} should have AuxPow header larger than 80 bytes, got {} bytes",
+                i,
+                auxpow_header_bytes.len()
+            );
+        }
+
+        // Verify that all stable block headers have been ingested
+        assert_eq!(
+            with_state(|s| { s.stable_block_headers.block_headers.len() }),
+            num_blocks as u64 - stability_threshold
+        );
+
+        // Retrieve headers for both stable and unstable blocks
+        let request = GetBlockHeadersRequest {
+            start_height: 0,
+            end_height: Some(num_blocks - 1),
+            network: network.into(),
+        };
+        let response = get_block_headers(request).unwrap();
+
+        assert_eq!(
+            response.block_headers.len(),
+            num_blocks as usize,
+            "Expected {} headers in response, got {}",
+            num_blocks,
+            response.block_headers.len()
+        );
+
+        // Verify that the returned headers do not contain AuxPow information
+        for header_bytes in response.block_headers.iter() {
+            assert_eq!(
+                header_bytes.len(),
+                80,
+                "Header in response should be exactly 80 bytes (no AuxPow information), got {} bytes",
+                header_bytes.len()
+            );
+        }
     }
 }

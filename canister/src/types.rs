@@ -6,8 +6,8 @@ use candid::CandidType;
 use datasize::DataSize;
 use ic_doge_interface::{
     Address as AddressStr, GetBalanceRequest as PublicGetBalanceRequest,
-    GetUtxosRequest as PublicGetUtxosRequest, Height, Network, NetworkAdapter, Satoshi,
-    UtxosFilter, UtxosFilterInRequest,
+    GetUtxosRequest as PublicGetUtxosRequest, Height, Koinu, Network, NetworkAdapter, UtxosFilter,
+    UtxosFilterInRequest,
 };
 use ic_doge_types::{BlockHash, OutPoint, Txid};
 use ic_stable_structures::{
@@ -430,22 +430,9 @@ pub struct Address(String);
 impl Address {
     /// Creates a new address from a bitcoin script.
     pub fn from_script(script: &Script, network: Network) -> Result<Self, InvalidAddress> {
-        let address = DogecoinAddress::from_script(script, into_dogecoin_network(network))
-            .map_err(|_| InvalidAddress)?;
-
-        // Due to a bug in the bitcoin crate, it is possible in some extremely rare cases
-        // that `Address:from_script` succeeds even if the address is invalid.
-        //
-        // To get around this bug, we convert the address to a string, and verify that this
-        // string is a valid address.
-        //
-        // See https://github.com/rust-bitcoin/rust-bitcoin/issues/995 for more information.
-        let address_str = address.to_string();
-        if DogecoinAddress::from_str(&address_str).is_ok() {
-            Ok(Self(address_str))
-        } else {
-            Err(InvalidAddress)
-        }
+        DogecoinAddress::from_script(script, into_dogecoin_network(network))
+            .map(|address| Self(address.to_string()))
+            .map_err(|_| InvalidAddress)
     }
 }
 
@@ -540,7 +527,7 @@ pub enum Slicing<T, U> {
 pub struct Utxo {
     pub height: u32,
     pub outpoint: OutPoint,
-    pub value: Satoshi,
+    pub value: Koinu,
 }
 
 impl Ord for Utxo {
@@ -645,15 +632,10 @@ fn test_txid_to_string() {
 }
 
 #[test]
-fn address_handles_script_edge_case() {
-    // A script that isn't valid, but can be successfully converted into an address
-    // due to a bug in the bitcoin crate. See:
-    // (https://github.com/rust-bitcoin/rust-bitcoin/issues/995)
-    //
-    // This test verifies that we're protecting ourselves from that case.
+fn test_address_from_invalid_script() {
     let script = Script::from_bytes(&[
         0, 17, 97, 69, 142, 51, 3, 137, 205, 4, 55, 238, 159, 227, 100, 29, 112, 204, 24,
-    ]);
+    ]); // Invalid script
 
     assert_eq!(
         Address::from_script(script, Network::Testnet),

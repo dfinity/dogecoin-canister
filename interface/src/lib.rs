@@ -8,8 +8,8 @@ use std::fmt;
 use std::str::FromStr;
 
 pub type Address = String;
-pub type Satoshi = u64;
-pub type MillisatoshiPerByte = u64;
+pub type Koinu = u64;
+pub type MillikoinuPerByte = u64;
 pub type BlockHash = Vec<u8>;
 pub type Height = u32;
 pub type Page = ByteBuf;
@@ -18,7 +18,7 @@ pub type BlockHeader = Vec<u8>;
 /// Default stability threshold for the Dogecoin canister.
 /// Must not be zero — a value of 0 can make the canister follow wrong branches,
 /// get stuck, and require a manual reset.
-const DEFAULT_STABILITY_THRESHOLD: u128 = 1_440; // ~24 hours at 1 min per block
+const DEFAULT_STABILITY_THRESHOLD: u128 = 360; // ~6 hours at 1 min per block
 
 #[derive(CandidType, Clone, Copy, Deserialize, Debug, Eq, PartialEq, Serialize, Hash, DataSize)]
 pub enum NetworkAdapter {
@@ -329,7 +329,7 @@ pub struct OutPoint {
 #[derive(CandidType, Debug, Deserialize, PartialEq, Serialize, Clone, Hash, Eq)]
 pub struct Utxo {
     pub outpoint: OutPoint,
-    pub value: Satoshi,
+    pub value: Koinu,
     pub height: Height,
 }
 
@@ -545,7 +545,7 @@ pub struct SendTransactionRequest {
 pub enum SendTransactionError {
     /// Can't deserialize transaction.
     MalformedTransaction,
-    /// Enqueueing a request failed due to full queue to the Bitcoin adapter.
+    /// Enqueueing a request failed due to full queue to the Dogecoin adapter.
     QueueFull,
 }
 

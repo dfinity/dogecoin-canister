@@ -15,7 +15,7 @@ validate_network "$NETWORK"
 trap "kill 0" EXIT
 
 # Create a temporary dogecoin.conf file with the required settings.
-CONF_FILE=$(mktemp -u "dogecoin.conf.XXXXXX")
+CONF_FILE=$(mktemp "dogecoin.conf.XXXXXX")
 CONF_FILE_PATH="$DATA_DIR/$CONF_FILE"
 
 generate_config "$NETWORK" "$CONF_FILE_PATH"
@@ -27,7 +27,9 @@ DOGECOIND_PID=$!
 
 # Wait for dogecoind to initialize.
 echo "Waiting for dogecoind to load..."
-sleep 30
+until "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount >/dev/null 2>&1; do
+    sleep 5
+done
 
 # Get chain tips.
 echo "Fetching chain tips for $NETWORK..."

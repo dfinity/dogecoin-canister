@@ -211,7 +211,7 @@ impl UnstableBlocks {
         chain
     }
 
-    /// Returns block headers of all unstable blocks in height range `heights`.
+    /// Returns block headers (without AuxPow information) of all unstable blocks in height range `heights`.
     pub fn get_block_headers_in_range(
         &self,
         stable_height: Height,
@@ -372,7 +372,7 @@ pub fn blocks_count(blocks: &UnstableBlocks) -> usize {
 pub fn get_chain_with_tip<'a>(
     blocks: &'a UnstableBlocks,
     tip: &BlockHash,
-) -> Option<BlockChain<'a>> {
+) -> Option<(BlockChain<'a>, Vec<&'a Block>)> {
     blocks.tree.get_chain_with_tip(tip)
 }
 
@@ -399,7 +399,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
 
     // Prevent excessive chain growth in testnets where difficulty resets.
     if network == Network::Testnet || network == Network::Regtest {
-        // The difficulty in the Bitcoin testnet/regtest can be reset to the minimum
+        // The difficulty in the Dogecoin testnet/regtest can be reset to the minimum
         // in case a block hasn't been found for 20 minutes. This can be problematic.
         // Consider the following scenario:
         //
@@ -738,6 +738,25 @@ mod test {
             get_main_chain(&forest),
             BlockChain::new_with_successors(&block_0, vec![&block_1, &block_2])
         );
+
+        assert_eq!(
+            (BlockChain::new(&block_0), vec![&block_1]),
+            get_chain_with_tip(&forest, &block_0.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_1]),
+                vec![&block_2]
+            ),
+            get_chain_with_tip(&forest, &block_1.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_1, &block_2]),
+                vec![]
+            ),
+            get_chain_with_tip(&forest, &block_2.block_hash()).unwrap()
+        );
     }
 
     // Creating a forest that looks like this:
@@ -756,9 +775,28 @@ mod test {
         let utxos = UtxoSet::new(network);
         let mut forest = UnstableBlocks::new(&utxos, 1, block_0.clone(), network);
 
-        push(&mut forest, &utxos, block_1).unwrap();
-        push(&mut forest, &utxos, block_2).unwrap();
+        push(&mut forest, &utxos, block_1.clone()).unwrap();
+        push(&mut forest, &utxos, block_2.clone()).unwrap();
         assert_eq!(get_main_chain(&forest), BlockChain::new(&block_0));
+
+        assert_eq!(
+            (BlockChain::new(&block_0), vec![&block_1, &block_2]),
+            get_chain_with_tip(&forest, &block_0.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_1]),
+                vec![]
+            ),
+            get_chain_with_tip(&forest, &block_1.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_2]),
+                vec![]
+            ),
+            get_chain_with_tip(&forest, &block_2.block_hash()).unwrap()
+        );
     }
 
     // Creating the following forest:
@@ -778,12 +816,38 @@ mod test {
         let utxos = UtxoSet::new(network);
         let mut forest = UnstableBlocks::new(&utxos, 1, block_0.clone(), network);
 
-        push(&mut forest, &utxos, block_1).unwrap();
+        push(&mut forest, &utxos, block_1.clone()).unwrap();
         push(&mut forest, &utxos, block_2.clone()).unwrap();
         push(&mut forest, &utxos, block_3.clone()).unwrap();
         assert_eq!(
             get_main_chain(&forest),
             BlockChain::new_with_successors(&block_0, vec![&block_2, &block_3])
+        );
+
+        assert_eq!(
+            (BlockChain::new(&block_0), vec![&block_1, &block_2]),
+            get_chain_with_tip(&forest, &block_0.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_1]),
+                vec![]
+            ),
+            get_chain_with_tip(&forest, &block_1.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_2]),
+                vec![&block_3]
+            ),
+            get_chain_with_tip(&forest, &block_2.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_2, &block_3]),
+                vec![]
+            ),
+            get_chain_with_tip(&forest, &block_3.block_hash()).unwrap()
         );
     }
 
@@ -808,13 +872,39 @@ mod test {
         let mut forest = UnstableBlocks::new(&utxos, 1, block_0.clone(), network);
 
         push(&mut forest, &utxos, block_1.clone()).unwrap();
-        push(&mut forest, &utxos, block_2).unwrap();
-        push(&mut forest, &utxos, block_3).unwrap();
-        push(&mut forest, &utxos, block_a).unwrap();
-        push(&mut forest, &utxos, block_b).unwrap();
+        push(&mut forest, &utxos, block_2.clone()).unwrap();
+        push(&mut forest, &utxos, block_3.clone()).unwrap();
+        push(&mut forest, &utxos, block_a.clone()).unwrap();
+        push(&mut forest, &utxos, block_b.clone()).unwrap();
         assert_eq!(
             get_main_chain(&forest),
             BlockChain::new_with_successors(&block_0, vec![&block_1])
+        );
+
+        assert_eq!(
+            (BlockChain::new(&block_0), vec![&block_1]),
+            get_chain_with_tip(&forest, &block_0.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_1]),
+                vec![&block_2, &block_a]
+            ),
+            get_chain_with_tip(&forest, &block_1.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_1, &block_2]),
+                vec![&block_3]
+            ),
+            get_chain_with_tip(&forest, &block_2.block_hash()).unwrap()
+        );
+        assert_eq!(
+            (
+                BlockChain::new_with_successors(&block_0, vec![&block_1, &block_a]),
+                vec![&block_b]
+            ),
+            get_chain_with_tip(&forest, &block_a.block_hash()).unwrap()
         );
     }
 

@@ -103,6 +103,7 @@ mod test {
     use bitcoin::consensus::Encodable;
     use proptest::proptest;
 
+    use crate::test_utils::BlockChainBuilder;
     use crate::{
         block_header_store::BlockHeaderStore, test_utils::BlockBuilder, types::BlockHeaderBlob,
     };
@@ -142,5 +143,43 @@ mod test {
                 }
             }
         );
+    }
+
+    #[test]
+    fn test_headers_stored_are_pure_headers() {
+        let block_num = 10;
+        let blockchain = BlockChainBuilder::new(block_num).with_auxpow().build();
+
+        for (i, block) in blockchain.iter().skip(1).enumerate() {
+            // Verify the original AuxPow header is larger than 80 bytes
+            let mut auxpow_header_bytes = vec![];
+            block
+                .auxpow_header()
+                .consensus_encode(&mut auxpow_header_bytes)
+                .unwrap();
+            assert!(
+                auxpow_header_bytes.len() > 80,
+                "Block {} should have AuxPow header larger than 80 bytes, got {} bytes",
+                i,
+                auxpow_header_bytes.len()
+            );
+        }
+
+        let mut store = BlockHeaderStore::init();
+        for i in 0..block_num {
+            store.insert_block(&blockchain[i as usize], i);
+        }
+
+        // Verify that stored headers are pure 80-byte headers (no AuxPow)
+        for header in store.get_block_headers_in_range(std::ops::RangeInclusive::new(1, block_num))
+        {
+            let header_bytes: Vec<u8> = header.into();
+            let header_bytes_len = header_bytes.len();
+            assert_eq!(
+                header_bytes_len, 80,
+                "Stored header should be pure 80-byte header, got {} bytes",
+                header_bytes_len
+            );
+        }
     }
 }

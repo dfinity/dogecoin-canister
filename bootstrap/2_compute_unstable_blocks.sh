@@ -2,6 +2,10 @@
 #
 # Script for preparing the unstable blocks file and setting the chainstate database
 # to the exact height needed.
+#
+# The unstable blocks are used to populate the `unstable_block` field of the state of the canister.
+# These serve as anchor point - when new blocks are received, the canister verifies that they build
+# on top of the unstable blocks tree.
 set -euo pipefail
 
 source "./utils.sh"
@@ -19,7 +23,7 @@ validate_network "$NETWORK"
 trap "kill 0" EXIT
 
 # Create a temporary dogecoin.conf file with the required settings.
-CONF_FILE=$(mktemp -u "dogecoin.conf.XXXXXX")
+CONF_FILE=$(mktemp "dogecoin.conf.XXXXXX")
 CONF_FILE_PATH="$DATA_DIR/$CONF_FILE"
 
 generate_config "$NETWORK" "$CONF_FILE_PATH"
@@ -31,7 +35,9 @@ DOGECOIND_PID=$!
 
 # Wait for dogecoind to initialize.
 echo "Waiting for dogecoind to load..."
-sleep 30
+until "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount >/dev/null 2>&1; do
+    sleep 5
+done
 
 # Fetch block hashes for unstable blocks.
 echo "Fetching block hash at height $((HEIGHT + 1))..."

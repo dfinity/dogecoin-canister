@@ -1,8 +1,9 @@
+use crate::validation::ValidationContextError;
 use crate::{
     address_utxoset::AddressUtxoSet,
     block_header_store::BlockHeaderStore,
     metrics::Metrics,
-    runtime::{inc_performance_counter, performance_counter, print, time_secs},
+    runtime::{duration_since_epoch, inc_performance_counter, performance_counter, print},
     types::{
         into_dogecoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
         GetSuccessorsPartialResponse, Slicing,
@@ -13,11 +14,10 @@ use crate::{
 };
 use bitcoin::{consensus::Decodable, dogecoin::Header};
 use candid::Principal;
-use ic_doge_interface::{Fees, Flag, Height, MillisatoshiPerByte, Network};
+use ic_doge_interface::{Fees, Flag, Height, MillikoinuPerByte, Network};
 use ic_doge_types::{Block, BlockHash, OutPoint};
 use ic_doge_validation::{
-    AuxPowHeaderValidator, DogecoinHeaderValidator, ValidateHeaderError as InsertBlockError,
-    ValidateHeaderError,
+    AuxPowHeaderValidator, BlockValidator, DogecoinHeaderValidator, ValidateBlockError,
 };
 use serde::{Deserialize, Serialize};
 
@@ -124,17 +124,33 @@ impl State {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum InsertBlockError {
+    InvalidContext(ValidationContextError),
+    InvalidBlock(ValidateBlockError),
+}
+
+impl From<ValidationContextError> for InsertBlockError {
+    fn from(value: ValidationContextError) -> Self {
+        Self::InvalidContext(value)
+    }
+}
+
+impl From<ValidateBlockError> for InsertBlockError {
+    fn from(value: ValidateBlockError) -> Self {
+        Self::InvalidBlock(value)
+    }
+}
+
 /// Inserts a block into the state.
 /// Returns an error if the block doesn't extend any known block in the state.
 pub fn insert_block(state: &mut State, block: Block) -> Result<(), InsertBlockError> {
     let start = performance_counter();
-    let header_validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
-    header_validator.validate_auxpow_header(
-        &ValidationContext::new(state, block.header())
-            .map_err(|_| ValidateHeaderError::PrevHeaderNotFound)?,
-        block.auxpow_header(),
-        time_secs(),
-    )?;
+    let validator = BlockValidator::new(
+        ValidationContext::new(state, block.header())?,
+        into_dogecoin_network(state.network()),
+    );
+    validator.validate_block(block.internal_bitcoin_block(), duration_since_epoch())?;
 
     unstable_blocks::push(&mut state.unstable_blocks, &state.utxos, block)
         .expect("Inserting a block with a validated header must succeed.");
@@ -209,7 +225,6 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
     // Note that the actual limit available on system subnets is 50B. The threshold is set
     // lower to be conservative.
     const MAX_INSTRUCTIONS_THRESHOLD: u64 = 30_000_000_000;
-    let validator = DogecoinHeaderValidator::new(into_dogecoin_network(state.network()));
 
     for block_header_blob in next_block_headers.iter() {
         if inc_performance_counter() > MAX_INSTRUCTIONS_THRESHOLD {
@@ -234,17 +249,19 @@ pub fn insert_next_block_headers(state: &mut State, next_block_headers: &[BlockH
         }
 
         let validation_result =
-            match ValidationContext::new_with_next_block_headers(state, &block_header)
-                .map_err(|_| ValidateHeaderError::PrevHeaderNotFound)
-            {
-                Ok(store) => validator.validate_auxpow_header(&store, &block_header, time_secs()),
-                Err(err) => Err(err),
-            };
+            ValidationContext::new_with_next_block_headers(state, &block_header)
+                .map_err(|e| format!("{:?}", e))
+                .and_then(|store| {
+                    let validator =
+                        DogecoinHeaderValidator::new(store, into_dogecoin_network(state.network()));
+                    validator
+                        .validate_auxpow_header(&block_header, duration_since_epoch())
+                        .map_err(|e| format!("{:?}", e))
+                });
 
         if let Err(err) = validation_result {
             print(&format!(
-                "ERROR: Failed to validate block header. Err: {:?}, Block header: {:?}",
-                err, block_header,
+                "ERROR: Failed to validate block header. Err: {err}, Block header: {block_header:?}",
             ));
 
             return;
@@ -283,7 +300,7 @@ const TX_OUT_SCRIPT_MAX_SIZE_SMALL: u32 = 25;
 // The maximum size in bytes of a bitcoin script for it to be considered "medium".
 const TX_OUT_SCRIPT_MAX_SIZE_MEDIUM: u32 = 201;
 
-// A transaction output's value in satoshis is a `u64`, which is 8 bytes.
+// A transaction output's value in koinus is a `u64`, which is 8 bytes.
 const TX_OUT_VALUE_SIZE: u32 = 8;
 
 const TX_OUT_MAX_SIZE_SMALL: u32 = TX_OUT_SCRIPT_MAX_SIZE_SMALL + TX_OUT_VALUE_SIZE;
@@ -445,7 +462,7 @@ impl SuccessorsResponseStats {
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FeePercentilesCache {
     pub tip_block_hash: BlockHash,
-    pub fee_percentiles: Vec<MillisatoshiPerByte>,
+    pub fee_percentiles: Vec<MillikoinuPerByte>,
 }
 
 #[cfg(test)]
@@ -528,5 +545,30 @@ mod test {
 
         // Assert the stats have been updated.
         assert_ne!(metrics_before, state.metrics.block_ingestion_stats);
+    }
+
+    #[test]
+    fn should_not_ingest_same_block_twice() {
+        let stability_threshold = 0;
+        let num_blocks = 3;
+        let num_transactions_per_block = 10;
+        let network = Network::Regtest;
+        let blocks = build_chain(network, num_blocks, num_transactions_per_block, false);
+
+        let mut state = State::new(stability_threshold, network, blocks[0].clone());
+        insert_block(&mut state, blocks[1].clone()).unwrap();
+        insert_block(&mut state, blocks[2].clone()).unwrap();
+
+        let mut other_state = State::new(stability_threshold, network, blocks[0].clone());
+        insert_block(&mut other_state, blocks[1].clone()).unwrap();
+        insert_block(&mut other_state, blocks[2].clone()).unwrap();
+        assert_eq!(
+            insert_block(&mut other_state, blocks[1].clone()),
+            Err(InsertBlockError::from(
+                ValidationContextError::AlreadyKnown(blocks[1].block_hash())
+            ))
+        );
+
+        assert!(state == other_state);
     }
 }

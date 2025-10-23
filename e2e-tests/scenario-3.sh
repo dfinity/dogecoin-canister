@@ -3,6 +3,7 @@ set -Eexuo pipefail
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "${SCRIPT_DIR}/utils.sh"
+pushd "$SCRIPT_DIR"
 
 # Run dfx stop if we run into errors.
 trap "dfx stop" EXIT SIGINT
@@ -21,7 +22,7 @@ dfx deploy --no-wallet dogecoin --argument "(record {
 
 # Send transaction valid transaction
 TX_BYTES="blob \"\\00\\00\\00\\00\\00\\01\\00\\00\\00\\00\\00\\00\""
-dfx canister call dogecoin bitcoin_send_transaction "(record {
+dfx canister call dogecoin dogecoin_send_transaction "(record {
   network = variant { regtest };
   transaction = ${TX_BYTES}
 })"
@@ -36,7 +37,7 @@ fi
 # Send invalid transaction.
 set +e
 TX_BYTES="blob \"12341234789789\""
-SEND_TX_OUTPUT=$(dfx canister call dogecoin bitcoin_send_transaction "(record {
+SEND_TX_OUTPUT=$(dfx canister call dogecoin dogecoin_send_transaction "(record {
   network = variant { regtest };
   transaction = ${TX_BYTES}
 })" 2>&1);

@@ -18,7 +18,7 @@ validate_network "$NETWORK"
 trap "kill 0" EXIT
 
 # Create a temporary dogecoin.conf file with the required settings.
-CONF_FILE=$(mktemp -u "dogecoin.conf.XXXXXX")
+CONF_FILE=$(mktemp "dogecoin.conf.XXXXXX")
 CONF_FILE_PATH="$DATA_DIR/$CONF_FILE"
 
 generate_config "$NETWORK" "$CONF_FILE_PATH"
@@ -33,7 +33,9 @@ DOGECOIND_PID=$!
 
 # Wait for dogecoind to initialize.
 echo "Waiting for dogecoind to load..."
-sleep 30
+until "$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockcount >/dev/null 2>&1; do
+    sleep 5
+done
 
 # Function to format seconds as xxh xxm xxs.
 format_time() {
@@ -52,9 +54,18 @@ echo "Fetching block headers up to height $STABLE_HEIGHT..."
 for ((height = 0; height <= STABLE_HEIGHT; height++)); do
     BLOCK_HASH=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockhash "$height")
     BLOCK_HEADER=$("$DOGECOIN_CLI" -conf="$CONF_FILE" -datadir="$DATA_DIR" getblockheader "$BLOCK_HASH" false)
+    PURE_HEADER="${BLOCK_HEADER:0:160}"
+
+    # Check if header is all zeros (indicates missing data, e.g. pruned AuxPow header)
+    if [[ "$PURE_HEADER" =~ ^0+$ ]]; then
+        echo "Error: Got all zeros header at height $height (hash: $BLOCK_HASH)"
+        echo "This likely means that the header is a AuxPow header which has been pruned."
+        echo "Try syncing the chain again without the prune option."
+        exit 1
+    fi
 
     # Append the block hash and header to the file.
-    echo "$BLOCK_HASH,$BLOCK_HEADER" >> "$BLOCK_HEADERS_FILE"
+    echo "$BLOCK_HASH,$PURE_HEADER" >> "$BLOCK_HEADERS_FILE"
 
     # Calculate and log progress every 100 blocks.
     if ((height % 100 == 0 || height == STABLE_HEIGHT)); then
