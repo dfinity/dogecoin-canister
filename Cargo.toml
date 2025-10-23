@@ -28,7 +28,7 @@ resolver = "2"
 assert_matches = "1.5.0"
 bitcoin = { git = "https://github.com/dfinity/rust-dogecoin.git", rev = "851705aa88e0a2f0f8b5002173b4cdb1d218a4e5" }
 byteorder = "1.4.3"
-canbench-rs = "0.2.0"
+canbench-rs = "0.3.0"
 candid = "0.10.6"
 candid_parser = "0.1.4"
 ciborium = "0.2.1"
