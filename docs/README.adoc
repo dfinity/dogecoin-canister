@@ -1,5 +1,4 @@
 = Build on Dogecoin
-
 :toc:
 
 == Developer Workflow
@@ -16,7 +15,7 @@
 
 === Creating Dogecoin Transactions
 
-=== Signing Transsactions
+=== Signing Transactions
 
 === Submitting Transactions
 
