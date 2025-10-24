@@ -300,7 +300,6 @@ jobs:
           bash e2e-tests/charge-cycles-on-reject.sh
 
   upgradability:
-    if: ${{ false }} # TODO (XC-458): Re-enable this job once a release for the Dogecoin canister is available
     runs-on: ubuntu-latest
     needs: cargo-build
 
@@ -691,7 +690,7 @@ jobs:
         e2e-scenario-2,
         e2e-scenario-3,
         charge-cycles-on-reject,
-        #        upgradability, TODO (XC-458): Re-enable this job once a release for the Dogecoin canister is available
+        upgradability,
         set_config,
         cycles_burn,
         benchmark,
@@ -731,9 +730,9 @@ jobs:
       - name: check charge-cycles-on-reject result
         if: ${{ needs.charge-cycles-on-reject.result != 'success' }}
         run: exit 1
-      #      - name: check upgradability result
-      #        if: ${{ needs.upgradability.result != 'success' }}
-      #        run: exit 1 TODO (XC-458): Re-enable this job once a release for the Dogecoin canister is available
+      - name: check upgradability result
+        if: ${{ needs.upgradability.result != 'success' }}
+        run: exit 1
       - name: check set_config result
         if: ${{ needs.set_config.result != 'success' }}
         run: exit 1
