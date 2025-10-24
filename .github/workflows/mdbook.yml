@@ -33,7 +33,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      MDBOOK_VERSION: 0.4.52
+      MDBOOK_VERSION: 0.4.48
       RUST_VERSION: 1.84.0 # Use the same version as in `rust-toolchain.toml`
     steps:
       - uses: actions/checkout@v4
