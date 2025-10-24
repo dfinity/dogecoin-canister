@@ -23,7 +23,7 @@ This proposal contains the fix to ensure correct deserialization of the state th
 ## Release Notes
 
 ```
-git log --format='%C(auto) %h %s' d4ff6c830996903b9e40d6631b74878c49d5af24..e7c23733075c48037ac74d974ecdcb56bac9d1d3 -- canister
+git log --format='%C(auto) %h %s' 454cc3741ef43cfbeae88782ffcf10bbbea00332..e7c23733075c48037ac74d974ecdcb56bac9d1d3 -- canister
  e7c2373 fix: backward-compatible state deserialization (#44)
 ```
 
