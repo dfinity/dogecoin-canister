@@ -15,7 +15,7 @@ To this end, it provides a low-level API with a small set of functions, which se
 
 ## Useful Links
 
-* [Documentation](https://internetcomputer.org/docs/current/developer-docs/integrations/bitcoin/)
+* [Documentation](docs/README.adoc)
 * [Interface Specification](/INTERFACE_SPECIFICATION.md)
 * [Tutorial: Deploying Your First Bitcoin Dapp](https://internetcomputer.org/docs/current/samples/deploying-your-first-bitcoin-dapp/)
 * [Tutorial: Developing Bitcoin Dapps Locally](https://internetcomputer.org/docs/current/developer-docs/integrations/bitcoin/local-development)

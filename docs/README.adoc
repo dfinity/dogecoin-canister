@@ -1,0 +1,23 @@
+= Build on Dogecoin
+
+:toc:
+
+== Developer Workflow
+
+== Developer Environment
+
+== Using Dogecoin Regtest
+
+== Dogecoin API Endpoints
+
+== Dogecoin Transactions
+
+=== Generating a Dogecoin Address
+
+=== Creating Dogecoin Transactions
+
+=== Signing Transsactions
+
+=== Submitting Transactions
+
+== Reading the Dogecoin state
