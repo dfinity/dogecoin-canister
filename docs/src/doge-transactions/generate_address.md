@@ -1,0 +1,2 @@
+# Generating a Dogecoin address
+
