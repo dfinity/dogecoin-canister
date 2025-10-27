@@ -6,7 +6,7 @@ use ic_stable_structures::Storable;
 use sha2::{Digest, Sha256};
 
 /// Compute SHA256 hash of UTXO set
-pub fn compute_utxo_set_hash(utxos: &[Utxo]) -> String {
+pub fn compute_utxo_set_hash(utxos: &[Utxo]) -> [u8; 32] {
     let mut hasher = Sha256::new();
 
     for utxo in utxos {
@@ -25,11 +25,11 @@ pub fn compute_utxo_set_hash(utxos: &[Utxo]) -> String {
         hasher.update(height.to_le_bytes());
     }
 
-    hex::encode(hasher.finalize())
+    hasher.finalize().into()
 }
 
 /// Compute SHA256 hash of address UTXOs data
-pub fn compute_address_utxos_hash(address_utxos: &[AddressUtxo]) -> String {
+pub fn compute_address_utxos_hash(address_utxos: &[AddressUtxo]) -> [u8; 32] {
     let mut hasher = Sha256::new();
 
     for addr_utxo in address_utxos {
@@ -43,11 +43,11 @@ pub fn compute_address_utxos_hash(address_utxos: &[AddressUtxo]) -> String {
         hasher.update(outpoint.to_bytes());
     }
 
-    hex::encode(hasher.finalize())
+    hasher.finalize().into()
 }
 
 /// Compute SHA256 hash of address balances data
-pub fn compute_address_balances_hash(balances: &[(Address, u128)]) -> String {
+pub fn compute_address_balances_hash(balances: &[(Address, u128)]) -> [u8; 32] {
     let mut hasher = Sha256::new();
 
     for (address, balance) in balances {
@@ -55,11 +55,11 @@ pub fn compute_address_balances_hash(balances: &[(Address, u128)]) -> String {
         hasher.update(balance.to_le_bytes());
     }
 
-    hex::encode(hasher.finalize())
+    hasher.finalize().into()
 }
 
 /// Compute SHA256 hash of block headers data
-pub fn compute_block_headers_hash(headers: &[(BlockHash, BlockHeaderBlob)]) -> String {
+pub fn compute_block_headers_hash(headers: &[(BlockHash, BlockHeaderBlob)]) -> [u8; 32] {
     let mut hasher = Sha256::new();
 
     for (hash, header_blob) in headers {
@@ -67,11 +67,11 @@ pub fn compute_block_headers_hash(headers: &[(BlockHash, BlockHeaderBlob)]) -> S
         hasher.update(header_blob.as_slice());
     }
 
-    hex::encode(hasher.finalize())
+    hasher.finalize().into()
 }
 
 /// Compute SHA256 hash of block heights data
-pub fn compute_block_heights_hash(heights: &[(Height, BlockHash)]) -> String {
+pub fn compute_block_heights_hash(heights: &[(Height, BlockHash)]) -> [u8; 32] {
     let mut hasher = Sha256::new();
 
     for (height, hash) in heights {
@@ -79,16 +79,16 @@ pub fn compute_block_heights_hash(heights: &[(Height, BlockHash)]) -> String {
         hasher.update(hash.to_bytes());
     }
 
-    hex::encode(hasher.finalize())
+    hasher.finalize().into()
 }
 
 /// Compute combined hash of individual hashes
-pub fn compute_combined_hash(hashes: &[&str]) -> String {
+pub fn compute_combined_hash(hashes: &[[u8; 32]]) -> [u8; 32] {
     let mut hasher = Sha256::new();
 
     for hash in hashes {
-        hasher.update(hash.as_bytes());
+        hasher.update(hash);
     }
 
-    hex::encode(hasher.finalize())
+    hasher.finalize().into()
 }

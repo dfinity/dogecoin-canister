@@ -9,7 +9,7 @@ use std::{collections::HashMap, fs::File, path::PathBuf};
 /// Macro for empty hash when data type is skipped
 macro_rules! empty_hash {
     () => {
-        "0".repeat(64)
+        [0u8; 32]
     };
 }
 
@@ -223,27 +223,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log!("  Computing combined hash...");
     let hash_data = hash::compute_combined_hash(&[
-        &utxo_hash,
-        &address_utxos_hash,
-        &address_balance_hash,
-        &block_headers_hash,
-        &block_heights_hash,
+        utxo_hash,
+        address_utxos_hash,
+        address_balance_hash,
+        block_headers_hash,
+        block_heights_hash,
     ]);
 
     log!("{}", "═".repeat(120));
     log!("{:^120}", "DATA HASHES (SHA256)");
     log!("{}", "═".repeat(120));
 
-    log!("\n{:<16}: {}", "UTXO Set", utxo_hash);
-    log!("{:<16}: {}", "Address UTXOs", address_utxos_hash);
-    log!("{:<16}: {}", "Address Balance", address_balance_hash);
-    log!("{:<16}: {}", "Block Headers", block_headers_hash);
-    log!("{:<16}: {}", "Block Heights", block_heights_hash);
+    log!("\n{:<16}: {}", "UTXO Set", hex::encode(utxo_hash));
+    log!("{:<16}: {}", "Address UTXOs", hex::encode(address_utxos_hash));
+    log!("{:<16}: {}", "Address Balance", hex::encode(address_balance_hash));
+    log!("{:<16}: {}", "Block Headers", hex::encode(block_headers_hash));
+    log!("{:<16}: {}", "Block Heights", hex::encode(block_heights_hash));
 
     if !args.quiet {
-        println!("\n{:<16}: {}", "Combined hash", hash_data);
+        println!("\n{:<16}: {}", "Combined hash", hex::encode(hash_data));
     } else {
-        println!("{}", hash_data);
+        println!("{}", hex::encode(hash_data));
     }
 
     Ok(())
