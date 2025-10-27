@@ -2,7 +2,7 @@ use clap::{Parser, ValueEnum};
 use ic_doge_types::BlockHash;
 use ic_stable_structures::Storable;
 use separator::Separatable;
-use state_reader::{hash, log, set_logging_quiet, CanisterData, Utxo, UtxoReader};
+use state_reader::{hash, log, set_logging_quiet, CanisterData, ReaderOptions, Utxo, UtxoReader};
 use std::collections::HashSet;
 use std::{collections::HashMap, fs::File, path::PathBuf};
 
@@ -36,7 +36,7 @@ struct Args {
     #[arg(long)]
     stats: bool,
 
-    /// Select which data types to process (default: all)
+    /// Select which data types to read (default: all)
     #[arg(long, value_enum, value_delimiter = ',')]
     data: Option<Vec<DataType>>,
 }
@@ -46,15 +46,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     set_logging_quiet(args.quiet);
 
-    // Determine which data types to process (default: all)
+    // Determine which data types to read (default: all)
     let data_types = args
         .data
         .unwrap_or_else(|| vec![DataType::Utxos, DataType::Balances, DataType::Headers]);
-    let process_utxos = data_types.contains(&DataType::Utxos);
-    let process_balances = data_types.contains(&DataType::Balances);
-    let process_headers = data_types.contains(&DataType::Headers);
 
-    log!("Processing data types: {:?}", data_types);
+    let options = ReaderOptions {
+        read_utxos: data_types.contains(&DataType::Utxos),
+        read_balances: data_types.contains(&DataType::Balances),
+        read_headers: data_types.contains(&DataType::Headers),
+    };
+
+    log!("Reading data types: {:?}", data_types);
 
     if !args.input.exists() {
         eprintln!(
@@ -84,11 +87,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     log!("Extracting data from stable memory...");
 
     // TODO(mducroux): use streamed approach instead of reading the whole state in memory.
-    let mut canister_data = reader.read_data(process_utxos, process_balances, process_headers);
+    let mut canister_data = reader.read_data(options);
 
     // Extract large UTXOs from the deserialized canister state (only if processing UTXOs)
     let mut utxos = canister_data.utxos.clone();
-    if process_utxos {
+    if options.read_utxos {
         log!("Extracting large UTXOs from canister state...");
         let large_utxos =
             ic_doge_canister::with_state(|state| state.utxos.utxos.large_utxos.clone());
@@ -109,13 +112,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // TODO(XC-501): temporary workaround to remove unspendable UTXO from Genesis block.
     // Note that we don't need to remove the corresponding entry from the balance map and
     // address UTXOs map because the script is P2PK and is never translated into an address.
-    if process_utxos {
+    if options.read_utxos {
         log!("Removing unspendable UTXO from Genesis block...");
         utxos.retain(|utxo| utxo.height != 0);
     }
 
     // TODO(XC-505): there is a discrepancy between addresses and UTXOs for 0-amount UTXOs. Ignore addresses with 0 balance for now.
-    if process_balances {
+    if options.read_balances {
         log!("Filtering out addresses with 0 balance...");
         let initial_balance_count = canister_data.balances.len();
         canister_data
@@ -178,14 +181,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log!("Computing data hashes...");
 
-    let utxo_hash = if process_utxos {
+    let utxo_hash = if options.read_utxos {
         log!("  Computing UTXO set hash ({} entries)...", utxos.len());
         hash::compute_utxo_set_hash(&utxos)
     } else {
         empty_hash!()
     };
 
-    let (address_utxos_hash, address_balance_hash) = if process_balances {
+    let (address_utxos_hash, address_balance_hash) = if options.read_balances {
         log!(
             "  Computing address UTXOs hash ({} entries)...",
             canister_data.address_utxos.len()
@@ -203,7 +206,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         (empty_hash!(), empty_hash!())
     };
 
-    let (block_headers_hash, block_heights_hash) = if process_headers {
+    let (block_headers_hash, block_heights_hash) = if options.read_headers {
         log!(
             "  Computing block headers hash ({} entries)...",
             canister_data.block_headers.len()
@@ -235,10 +238,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     log!("{}", "═".repeat(120));
 
     log!("\n{:<16}: {}", "UTXO Set", hex::encode(utxo_hash));
-    log!("{:<16}: {}", "Address UTXOs", hex::encode(address_utxos_hash));
-    log!("{:<16}: {}", "Address Balance", hex::encode(address_balance_hash));
-    log!("{:<16}: {}", "Block Headers", hex::encode(block_headers_hash));
-    log!("{:<16}: {}", "Block Heights", hex::encode(block_heights_hash));
+    log!(
+        "{:<16}: {}",
+        "Address UTXOs",
+        hex::encode(address_utxos_hash)
+    );
+    log!(
+        "{:<16}: {}",
+        "Address Balance",
+        hex::encode(address_balance_hash)
+    );
+    log!(
+        "{:<16}: {}",
+        "Block Headers",
+        hex::encode(block_headers_hash)
+    );
+    log!(
+        "{:<16}: {}",
+        "Block Heights",
+        hex::encode(block_heights_hash)
+    );
 
     if !args.quiet {
         println!("\n{:<16}: {}", "Combined hash", hex::encode(hash_data));

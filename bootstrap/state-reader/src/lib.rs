@@ -45,6 +45,14 @@ pub mod memory_ids {
     pub const BLOCK_HEIGHTS: MemoryId = MemoryId::new(6);
 }
 
+/// Options for controlling which data of the state to read
+#[derive(Debug, Clone, Copy)]
+pub struct ReaderOptions {
+    pub read_utxos: bool,
+    pub read_balances: bool,
+    pub read_headers: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Utxo {
     pub outpoint: OutPoint,
@@ -93,29 +101,30 @@ impl UtxoReader {
     }
 
     /// Read data from stable memory
-    pub fn read_data(
-        &self,
-        process_utxos: bool,
-        process_balances: bool,
-        process_headers: bool,
-    ) -> CanisterData {
+    pub fn read_data(&self, options: ReaderOptions) -> CanisterData {
         log!("Reading canister data from stable memory...");
 
-        let utxos = if process_utxos {
+        let ReaderOptions {
+            read_utxos,
+            read_balances,
+            read_headers,
+        } = options;
+
+        let utxos = if read_utxos {
             self.read_utxos()
         } else {
             log!("Skipping UTXOs");
             Vec::new()
         };
 
-        let (address_utxos, balances) = if process_balances {
+        let (address_utxos, balances) = if read_balances {
             (self.read_address_utxos(), self.read_balances())
         } else {
             log!("Skipping address-utxos and balances");
             (Vec::new(), Vec::new())
         };
 
-        let (block_headers, block_heights) = if process_headers {
+        let (block_headers, block_heights) = if read_headers {
             (self.read_block_headers(), self.read_block_heights())
         } else {
             log!("Skipping block headers and heights");
@@ -176,7 +185,7 @@ impl UtxoReader {
 
             count += 1;
             if count % 1_000_000 == 0 {
-                log!("    Processed {} small UTXOs...", count);
+                log!("    Read {} small UTXOs...", count);
             }
         }
 
@@ -209,7 +218,7 @@ impl UtxoReader {
 
             count += 1;
             if count % 1_000_000 == 0 {
-                log!("    Processed {} medium UTXOs...", count);
+                log!("    Read {} medium UTXOs...", count);
             }
         }
 
@@ -236,7 +245,7 @@ impl UtxoReader {
 
             count += 1;
             if count % 1_000_000 == 0 {
-                log!("  Processed {} address UTXOs...", count);
+                log!("  Read {} address UTXOs...", count);
             }
         }
 
@@ -257,7 +266,7 @@ impl UtxoReader {
 
             count += 1;
             if count % 1_000_000 == 0 {
-                log!("  Processed {} address balances...", count);
+                log!("  Read {} address balances...", count);
             }
         }
 
@@ -279,7 +288,7 @@ impl UtxoReader {
 
             count += 1;
             if count % 1_000_000 == 0 {
-                log!("  Processed {} block headers...", count);
+                log!("  Read {} block headers...", count);
             }
         }
 
@@ -301,7 +310,7 @@ impl UtxoReader {
 
             count += 1;
             if count % 1_000_000 == 0 {
-                log!("  Processed {} block heights...", count);
+                log!("  Read {} block heights...", count);
             }
         }
 
