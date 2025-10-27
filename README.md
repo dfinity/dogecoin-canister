@@ -9,15 +9,16 @@
 </div>
 
 ## Overview
-The Dogecoin canister is the core component of the Dogecoin integration project. It enables other canisters deployed on the Internet Computer to use Dogecoin and interact with the Dogecoin network.
 
-To this end, it provides a low-level API with a small set of functions, which serve as the foundation to build powerful Dogecoin libraries and other development tools, and Dogecoin smart contracts running on the Internet Computer.
+Enables smart contracts on the [Internet Computer](https://internetcomputer.org) (also called canisters) to interact with the [Dogecoin](https://dogecoin.org/) network. The core component of this integration is the **Dogecoin canister**
+that provides a low-level API with a small set of functions. It serves as the foundation to build powerful Dogecoin libraries and other development tools, and Dogecoin smart contracts running on the Internet Computer.
 
-## Useful Links
+## Quick start
 
-* [Documentation](https://internetcomputer.org/docs/current/developer-docs/integrations/bitcoin/)
-* [Interface Specification](/INTERFACE_SPECIFICATION.md)
-* [Tutorial: Deploying Your First Bitcoin Dapp](https://internetcomputer.org/docs/current/samples/deploying-your-first-bitcoin-dapp/)
-* [Tutorial: Developing Bitcoin Dapps Locally](https://internetcomputer.org/docs/current/developer-docs/integrations/bitcoin/local-development)
+Read the [Build on Dogecoin](https://dfinity.github.io/dogecoin-canister/) book.
+
+## Examples
+
+See the [examples](./examples) directory.
 
 For developers contributing to this repo, please see the [development guide](/development-guide.md).
