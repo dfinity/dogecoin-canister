@@ -75,7 +75,7 @@ impl<'a> ValidationContext<'a> {
             .chain(
                 self.headers_chain
                     .iter()
-                    .map(|(&header, hash)| (header.clone(), hash.clone())),
+                    .map(|(&header, hash)| (header, hash.clone())),
             )
             .collect::<Vec<_>>()
     }
@@ -90,7 +90,7 @@ impl HeaderStore for ValidationContext<'_> {
             .iter()
             .find_map(|(&header, block_hash)| {
                 if block_hash == &hash {
-                    Some(header.clone())
+                    Some(header)
                 } else {
                     None
                 }
@@ -130,9 +130,7 @@ impl HeaderStore for ValidationContext<'_> {
                     .map(|block| block.header())
             } else {
                 index -= self.unstable_blocks_chain.len();
-                self.headers_chain
-                    .get(index)
-                    .map(|(&header, _)| header.clone())
+                self.headers_chain.get(index).map(|(&header, _)| header)
             }
         } else {
             // The height requested is higher than the tip.
