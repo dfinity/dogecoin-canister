@@ -60,11 +60,33 @@ impl<'a, T> BlockChain<'a, T> {
         }
     }
 
+    pub fn get(&self, index: usize) -> Option<&'a T> {
+        if index == 0 {
+            return Some(&self.first);
+        }
+        if index < self.successors.len() + 1 {
+            return Some(&self.successors[index - 1]);
+        }
+        None
+    }
+
     /// Consumes this `BlockChain` and returns the entire chain of blocks.
     pub fn into_chain(self) -> Vec<&'a T> {
         let mut chain = vec![self.first];
         chain.extend(self.successors);
         chain
+    }
+}
+
+impl<'a> BlockChain<'a, CachedBlock> {
+    pub fn find(&self, block_hash: &BlockHash) -> Option<&'a CachedBlock> {
+        if self.first.block_hash() == block_hash {
+            return Some(&self.first);
+        }
+        self.successors
+            .iter()
+            .find(|block| block_hash == block.block_hash())
+            .copied()
     }
 }
 
