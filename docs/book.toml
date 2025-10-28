@@ -1,0 +1,7 @@
+[book]
+title = "Build on Dogecoin"
+description = "Documentation for building smart contracts on ICP that interact with Dogecoin"
+authors = ["DFINITY Foundation"]
+language = "en"
+multilingual = false
+src = "src"
