@@ -19,7 +19,7 @@ To interact with the Dogecoin blockchain, your canister will make use of the fol
 
 First, set up your [development environment](./environment.md). Then, to build smart contracts interacting with the Dogecoin blockchain, you will need to know how to
 
-- [Generate a Dogecoin address](./doge-transactions/generate_address.md). Dogecoin addresses are necessary for your dapp to sign transactions and hold assets like BTC. An ICP smart contract can have multiple addresses that have been generated with different signature types, i.e., ECDSA and Schnorr.
+- [Generate a Dogecoin address](./doge-transactions/generate_address.md). Dogecoin addresses are necessary for your dapp to sign transactions and hold assets like DOGE. An ICP smart contract can have multiple addresses.
 
 - [Create a Dogecoin transaction](./doge-transactions/create_transactions.md). Dogecoin transactions spend unspent transaction outputs (UTXOs) and create new UTXOs. A UTXO is the output of a Dogecoin transaction. It exists until it is used as the input of another transaction.
 
