@@ -1,3 +1,9 @@
+<div align="center">
+  <img alt="Interact with Dogecoin from a smart contract on the Internet Computer"
+  src="images/Doge-cover.jpg"
+  width="100%">
+</div>
+
 # Introduction
 
 ## Background
