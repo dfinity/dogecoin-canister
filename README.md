@@ -1,6 +1,11 @@
 # Dogecoin Canister
 
-<div>
+<div style="text-align: center;">
+  <picture>
+    <img alt="Interact with Dogecoin from a smart contract on the Internet Computer"
+         src="./static/images/Doge-cover.jpg"
+         width="75%">
+  </picture>
   <p>
     <a href="https://github.com/dfinity/dogecoin-canister/blob/master/LICENSE"><img alt="Apache-2.0" src="https://img.shields.io/github/license/dfinity/dogecoin-canister"/></a>
     <a href="/INTERFACE_SPECIFICATION.md"><img alt="API Specification" src="https://img.shields.io/badge/spec-interface%20specification-blue"/></a>
