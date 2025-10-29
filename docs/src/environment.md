@@ -18,7 +18,7 @@ To develop Dogecoin applications to be deployed on ICP, your local developer env
 
 ### Rust toolchain
 
-Before developing BTC applications in Rust, you will need to install the Rust toolchain, including:
+Before developing DOGE applications in Rust, you will need to install the Rust toolchain, including:
 
 - [The Rust programming language.](https://www.rust-lang.org/tools/install)
 - [The `cargo` package manager.](https://doc.rust-lang.org/cargo/getting-started/installation.html)
