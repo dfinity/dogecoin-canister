@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "canisters": {
+    "basic_dogecoin": {
+      "build": "build.sh",
+      "candid": "basic_dogecoin.did",
+      "gzip": true,
+      "metadata": [
+        {
+          "name": "candid:service",
+          "path": "basic_dogecoin.did",
+          "visibility": "public"
+        }
+      ],
+      "package": "basic_dogecoin",
+      "type": "custom",
+      "wasm": "target/wasm32-unknown-unknown/release/basic_dogecoin.wasm",
+      "init_arg": "(variant { regtest })"
+    }
+  },
+  "defaults": {
+    "bitcoin": {
+      "enabled": true,
+      "nodes": ["127.0.0.1:18444"]
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:4943"
+    }
+  }
+}

@@ -1,0 +1,59 @@
+type satoshi = nat64;
+
+type millisatoshi_per_vbyte = nat64;
+
+type dogecoin_address = text;
+
+type transaction_id = text;
+
+type block_hash = blob;
+
+type network = variant {
+  regtest;
+  mainnet;
+};
+
+type outpoint = record {
+  txid : blob;
+  vout : nat32;
+};
+
+type utxo = record {
+  outpoint : outpoint;
+  value : satoshi;
+  height : nat32;
+};
+
+type get_utxos_response = record {
+  utxos : vec utxo;
+  tip_block_hash : block_hash;
+  tip_height : nat32;
+  next_page : opt blob;
+};
+
+type block_header = blob;
+type block_height = nat32;
+
+type get_block_headers_response = record {
+  tip_height : block_height;
+  block_headers : vec block_header;
+};
+
+service : (network) -> {
+  "get_p2pkh_address" : () -> (dogecoin_address);
+
+  "get_balance" : (address : dogecoin_address) -> (satoshi);
+
+  "get_utxos" : (dogecoin_address) -> (get_utxos_response);
+
+  "get_block_headers" : (start_height : block_height, end_height : opt block_height) -> (get_block_headers_response);
+
+  "get_current_fee_percentiles" : () -> (vec millisatoshi_per_vbyte);
+
+  "send_from_p2pkh_address" : (
+    record {
+      destination_address : dogecoin_address;
+      amount_in_satoshi : satoshi;
+    }
+  ) -> (transaction_id);
+};

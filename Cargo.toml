@@ -20,6 +20,8 @@ members = [
     "ic-http",
     "ic-http/example_canister/src/canister_backend",
     "bootstrap/utxo-dump",
+    # Example crates
+    "examples/basic_dogecoin"
 ]
 
 resolver = "2"

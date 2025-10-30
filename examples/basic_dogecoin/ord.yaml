@@ -1,0 +1,8 @@
+dogecoin_data_dir: ./dogecoin_data
+dogecoin_rpc_password: QPQiNaph19FqUsCrBRN0FII7lyM26B51fAMeBQzCb-E=
+dogecoin_rpc_url: http://127.0.0.1:18443
+dogecoin_rpc_username: ic-doge-integration
+chain: regtest
+index_addresses: true
+index_sats: true
+index_transactions: true
