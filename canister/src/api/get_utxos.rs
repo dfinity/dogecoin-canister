@@ -1,12 +1,12 @@
 use crate::{
-    blocktree::BlockChain,
+    blocktree::{BlockChain, CachedBlock},
     charge_cycles,
     runtime::{performance_counter, print},
     types::{Address, GetUtxosRequest, Page, Utxo},
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut, State,
 };
 use ic_doge_interface::{GetUtxosError, GetUtxosResponse, Utxo as PublicUtxo, UtxosFilter};
-use ic_doge_types::{Block, BlockHash, OutPoint, Txid};
+use ic_doge_types::{BlockHash, OutPoint, Txid};
 use serde_bytes::ByteBuf;
 use std::str::FromStr;
 
@@ -175,13 +175,13 @@ fn get_utxos_internal(
 //    stability_count(b) = d(b) if |D(b)| = 0 and d(b) - max_{b' ∈ D(b)} d(b') otherwise.
 // ```
 fn get_stability_count(
-    blocks_with_depths_on_the_same_height: &[(&Block, u32)],
-    target_block: BlockHash,
+    blocks_with_depths_on_the_same_height: &[(&BlockHash, u32)],
+    target_block: &BlockHash,
 ) -> i32 {
     let mut max_depth_of_the_other_blocks = 0;
     let mut target_block_depth = 0;
-    for (block, depth) in blocks_with_depths_on_the_same_height.iter() {
-        if block.block_hash() != target_block {
+    for (block_hash, depth) in blocks_with_depths_on_the_same_height.iter() {
+        if block_hash != &target_block {
             max_depth_of_the_other_blocks = std::cmp::max(max_depth_of_the_other_blocks, *depth);
         } else {
             target_block_depth = *depth;
@@ -194,7 +194,7 @@ fn get_utxos_from_chain(
     state: &State,
     address: &str,
     min_confirmations: u32,
-    chain: BlockChain,
+    chain: BlockChain<CachedBlock>,
     offset: Option<Utxo>,
     utxo_limit: usize,
 ) -> Result<(GetUtxosResponse, Stats), GetUtxosError> {
@@ -228,7 +228,7 @@ fn get_utxos_from_chain(
         }
         tip_block_hash = block.block_hash();
         tip_block_height = state.utxos.next_height() + (i as u32);
-        address_utxos.apply_block(block);
+        address_utxos.apply_block(block.block_hash());
     }
     stats.ins_apply_unstable_blocks = performance_counter() - ins_start;
 
@@ -274,7 +274,7 @@ fn get_utxos_from_chain(
     Ok((
         GetUtxosResponse {
             utxos,
-            tip_block_hash: tip_block_hash.to_vec(),
+            tip_block_hash: tip_block_hash.clone().to_vec(),
             tip_height: tip_block_height,
             next_page: next_page.map(ByteBuf::from),
         },
@@ -287,7 +287,7 @@ mod test {
     use super::*;
     use crate::{
         genesis_block, runtime, state,
-        test_utils::{BlockBuilder, BlockChainBuilder, TransactionBuilder},
+        test_utils::{BlockBuilder, BlockChainBuilder, TestBlocksCache, TransactionBuilder},
         types::into_dogecoin_network,
         with_state_mut,
     };
@@ -981,7 +981,7 @@ mod test {
             .with_transaction(tx)
             .build();
 
-        let mut state = State::new(2, network, block_0);
+        let mut state = State::new(TestBlocksCache::new(network), 2, network, block_0);
         state::insert_block(&mut state, block_1.clone()).unwrap();
 
         // Address 1 should have no UTXOs at zero confirmations.
@@ -1026,7 +1026,7 @@ mod test {
                 block_builder = block_builder.with_transaction(transaction.clone());
             }
             let block_0 = block_builder.build();
-            let state = State::new(2, network, block_0.clone());
+            let state = State::new(TestBlocksCache::new(network), 2, network, block_0.clone());
             let tip_block_hash = block_0.block_hash();
 
             let utxo_set = get_utxos_internal(
@@ -1137,7 +1137,7 @@ mod test {
                 prev_block = Some(block);
             }
 
-            let mut state = State::new(2, network, blocks[0].clone());
+            let mut state = State::new(TestBlocksCache::new(network), 2, network, blocks[0].clone());
             for block in blocks[1..].iter() {
                 state::insert_block(&mut state, block.clone()).unwrap();
             }
@@ -1246,37 +1246,26 @@ mod test {
 
     #[test]
     fn test_get_stability_count_single_block_on_height() {
-        let block = BlockBuilder::genesis().build();
-        let blocks_with_depths: Vec<(&Block, u32)> = vec![(&block, 1)];
+        let block_hash = BlockBuilder::genesis().build().block_hash();
+        let blocks_with_depths: Vec<(&BlockHash, u32)> = vec![(&block_hash, 1)];
         // Stability count should be 1.
-        assert_eq!(
-            get_stability_count(&blocks_with_depths, block.block_hash()),
-            1
-        );
+        assert_eq!(get_stability_count(&blocks_with_depths, &block_hash), 1);
     }
 
     #[test]
     fn test_get_stability_count_multiple_blocks_on_height() {
-        let block1 = BlockBuilder::genesis().build();
-        let block2 = BlockBuilder::genesis().build();
-        let block3 = BlockBuilder::genesis().build();
+        let block_hash_1 = BlockBuilder::genesis().build().block_hash();
+        let block_hash_2 = BlockBuilder::genesis().build().block_hash();
+        let block_hash_3 = BlockBuilder::genesis().build().block_hash();
 
-        let blocks_with_depths: Vec<(&Block, u32)> = vec![(&block1, 5), (&block2, 7), (&block3, 3)];
+        let blocks_with_depths: Vec<_> =
+            vec![(&block_hash_1, 5), (&block_hash_2, 7), (&block_hash_3, 3)];
         // The stability_count of block1 should be 5 - 7 = -2.
-        assert_eq!(
-            get_stability_count(&blocks_with_depths, block1.block_hash()),
-            -2
-        );
+        assert_eq!(get_stability_count(&blocks_with_depths, &block_hash_1), -2);
         // The stability_count of block2 should be 7 - 5 = 2.
-        assert_eq!(
-            get_stability_count(&blocks_with_depths, block2.block_hash()),
-            2
-        );
+        assert_eq!(get_stability_count(&blocks_with_depths, &block_hash_2), 2);
         // The stability_count of block3 should be 3 - 7 = -4.
-        assert_eq!(
-            get_stability_count(&blocks_with_depths, block3.block_hash()),
-            -4
-        );
+        assert_eq!(get_stability_count(&blocks_with_depths, &block_hash_3), -4);
     }
 
     // Documents the behavior of `get_utxos` when min_confirmations = 0.

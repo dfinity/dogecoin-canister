@@ -67,7 +67,7 @@ fn get_balance_private(request: GetBalanceRequest) -> Result<u128, GetBalanceErr
 
             for outpoint in state
                 .unstable_blocks
-                .get_added_outpoints(&block.block_hash(), &address)
+                .get_added_outpoints(block.block_hash(), &address)
             {
                 let (txout, _) = state.unstable_blocks.get_tx_out(outpoint).unwrap();
                 balance += txout.value as u128;
@@ -75,7 +75,7 @@ fn get_balance_private(request: GetBalanceRequest) -> Result<u128, GetBalanceErr
 
             for outpoint in state
                 .unstable_blocks
-                .get_removed_outpoints(&block.block_hash(), &address)
+                .get_removed_outpoints(block.block_hash(), &address)
             {
                 let (txout, _) = state.unstable_blocks.get_tx_out(outpoint).unwrap();
                 balance -= txout.value as u128;

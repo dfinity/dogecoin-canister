@@ -95,7 +95,12 @@ pub fn init(init_config: InitConfig) {
     print("Running init...");
 
     let config = Config::from(init_config);
+    let cache = unstable_blocks::BlocksCacheInStableMem::new(
+        config.network,
+        memory::get_unstable_blocks_memory(),
+    );
     set_state(State::new(
+        cache,
         config
             .stability_threshold
             .try_into()
@@ -208,7 +213,7 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
 
     let memory = memory::get_upgrades_memory();
 
-    let state: State = {
+    let mut state: State = {
         // Buffered reader at offset 0
         let read_buffer_offset_0 = || {
             let reader = Reader::new(&memory, 0);
@@ -252,6 +257,13 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
             })
             .expect("Failed to read state into array.")
     };
+
+    // Reset cache to stable memory
+    let cache = unstable_blocks::BlocksCacheInStableMem::new(
+        state.network(),
+        memory::get_unstable_blocks_memory(),
+    );
+    state.replace_unstable_blocks_cache(cache);
 
     set_state(state);
 
@@ -382,12 +394,22 @@ mod test {
                 ..Default::default()
             });
 
+           let cache = unstable_blocks::BlocksCacheInStableMem::new(network, crate::memory::get_unstable_blocks_memory());
+
             with_state(|state| {
                 assert!(
-                    *state == State::new(stability_threshold as u32, network, genesis_block(network))
+                    *state == State::new(cache, stability_threshold as u32, network, genesis_block(network))
                 );
             });
         }
+    }
+
+    fn get_main_chain(blocks: &unstable_blocks::UnstableBlocks) -> Vec<Block> {
+        unstable_blocks::get_main_chain(blocks)
+            .into_chain()
+            .into_iter()
+            .map(|block| block.block())
+            .collect()
     }
 
     #[test_strategy::proptest(ProptestConfig::with_cases(10))]
@@ -418,6 +440,8 @@ mod test {
             });
         }
 
+        let main_chain_before = with_state(|state| get_main_chain(&state.unstable_blocks));
+
         // Run the preupgrade hook.
         pre_upgrade();
 
@@ -427,8 +451,11 @@ mod test {
         // Run the postupgrade hook.
         post_upgrade(None);
 
+        let main_chain_after = with_state(|state| get_main_chain(&state.unstable_blocks));
+
         // The new and old states should be equivalent.
         with_state(|new_state| assert!(new_state == &old_state));
+        assert_eq!(main_chain_before, main_chain_after);
     }
 
     #[test_strategy::proptest(ProptestConfig::with_cases(1))]

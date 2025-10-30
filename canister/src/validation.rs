@@ -1,4 +1,8 @@
-use crate::{state::State, unstable_blocks};
+use crate::{
+    blocktree::{BlockChain, CachedBlock},
+    state::State,
+    unstable_blocks,
+};
 use bitcoin::{block::Header, hashes::Hash};
 use ic_doge_types::BlockHash;
 use ic_doge_validation::HeaderStore;
@@ -6,9 +10,10 @@ use ic_doge_validation::HeaderStore;
 /// A structure passed to the validation crate to validate a specific block header.
 pub struct ValidationContext<'a> {
     state: &'a State,
+    unstable_blocks_chain: BlockChain<'a, CachedBlock>,
     // BlockHash is stored in order to avoid repeatedly calling to
     // Header::block_hash() which is expensive.
-    chain: Vec<(&'a Header, ic_doge_types::BlockHash)>,
+    headers_chain: Vec<(&'a Header, ic_doge_types::BlockHash)>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,17 +36,15 @@ impl<'a> ValidationContext<'a> {
                 })?;
         if tip_successors
             .iter()
-            .any(|c| c.block_hash() == current_block_hash)
+            .any(|c| c.block_hash() == &current_block_hash)
         {
             return Err(ValidationContextError::AlreadyKnown(current_block_hash));
         }
-        let chain = chain
-            .into_chain()
-            .iter()
-            .map(|block| (block.header(), block.block_hash()))
-            .collect();
-
-        Ok(Self { state, chain })
+        Ok(Self {
+            state,
+            unstable_blocks_chain: chain,
+            headers_chain: vec![],
+        })
     }
 
     /// Initialize a `ValidationContext` for the given block header.
@@ -58,11 +61,23 @@ impl<'a> ValidationContext<'a> {
             Self::new(state, header)
         } else {
             let mut context = Self::new(state, next_block_headers_chain[0].0)?;
-            for item in next_block_headers_chain.iter() {
-                context.chain.push(item.clone())
-            }
+            context.headers_chain = next_block_headers_chain;
             Ok(context)
         }
+    }
+
+    #[cfg(test)]
+    fn chain(self) -> Vec<(Header, BlockHash)> {
+        self.unstable_blocks_chain
+            .into_chain()
+            .iter()
+            .map(|block| (block.header(), block.block_hash().clone()))
+            .chain(
+                self.headers_chain
+                    .iter()
+                    .map(|(&header, hash)| (header, hash.clone())),
+            )
+            .collect::<Vec<_>>()
     }
 }
 
@@ -71,20 +86,33 @@ impl HeaderStore for ValidationContext<'_> {
     fn get_with_block_hash(&self, hash: &bitcoin::BlockHash) -> Option<Header> {
         // Check if the header is in the chain.
         let hash = ic_doge_types::BlockHash::from(hash.as_raw_hash().as_byte_array().to_vec());
-        for item in self.chain.iter() {
-            if item.1 == hash {
-                return Some(*item.0);
-            }
-        }
-
-        // The header is in the stable store.
-        self.state.stable_block_headers.get_with_block_hash(&hash)
+        self.headers_chain
+            .iter()
+            .find_map(|(&header, block_hash)| {
+                if block_hash == &hash {
+                    Some(header)
+                } else {
+                    None
+                }
+            })
+            .or_else(|| {
+                self.unstable_blocks_chain
+                    .find(&hash)
+                    .map(|block| block.header())
+            })
+            .or_else(|| {
+                // The header is in the stable store.
+                self.state.stable_block_headers.get_with_block_hash(&hash)
+            })
     }
 
     fn height(&self) -> u32 {
         // The `next_height` method returns the height of the UTXOs + 1, so we
         // subtract 1 to account for that.
-        self.state.utxos.next_height() + self.chain.len() as u32 - 1
+        self.state.utxos.next_height()
+            + self.unstable_blocks_chain.len() as u32
+            + self.headers_chain.len() as u32
+            - 1
     }
 
     fn get_with_height(&self, height: u32) -> Option<Header> {
@@ -95,7 +123,15 @@ impl HeaderStore for ValidationContext<'_> {
         } else if height <= self.height() {
             // The height requested is for an unstable block.
             // Retrieve the block header from the chain.
-            Some(*self.chain[(height - self.state.utxos.next_height()) as usize].0)
+            let mut index = (height - self.state.utxos.next_height()) as usize;
+            if index < self.unstable_blocks_chain.len() {
+                self.unstable_blocks_chain
+                    .get(index)
+                    .map(|block| block.header())
+            } else {
+                index -= self.unstable_blocks_chain.len();
+                self.headers_chain.get(index).map(|(&header, _)| header)
+            }
         } else {
             // The height requested is higher than the tip.
             None
@@ -108,7 +144,7 @@ mod test {
     use super::*;
     use crate::{
         state::{ingest_stable_blocks_into_utxoset, insert_block},
-        test_utils::{build_chain, BlockBuilder},
+        test_utils::{build_chain, BlockBuilder, TestBlocksCache},
     };
     use ic_doge_interface::Network;
     use proptest::prelude::*;
@@ -119,7 +155,7 @@ mod test {
         let genesis = BlockBuilder::genesis().build();
         let network = Network::Mainnet;
 
-        let mut state = State::new(2, network, genesis.clone());
+        let mut state = State::new(TestBlocksCache::new(network), 2, network, genesis.clone());
         let block_0 = BlockBuilder::with_prev_header(genesis.header()).build();
         let block_1 = BlockBuilder::with_prev_header(block_0.header()).build();
         let block_2 = BlockBuilder::with_prev_header(block_1.header()).build();
@@ -142,12 +178,12 @@ mod test {
             ValidationContext::new_with_next_block_headers(&state, block_3.header()).unwrap();
 
         assert_eq!(
-            validation_context.chain,
+            validation_context.chain(),
             vec![
-                (genesis.header(), genesis.block_hash()),
-                (block_0.header(), block_0.block_hash()),
-                (block_1.header(), block_1.block_hash()),
-                (block_2.header(), block_2.block_hash()),
+                (*genesis.header(), genesis.block_hash()),
+                (*block_0.header(), block_0.block_hash()),
+                (*block_1.header(), block_1.block_hash()),
+                (*block_2.header(), block_2.block_hash()),
             ]
         );
 
@@ -175,7 +211,7 @@ mod test {
             let network = Network::Regtest;
             let blocks = build_chain(network, num_blocks, num_transactions_in_block, with_auxpow);
 
-            let mut state = State::new(stability_threshold, network, blocks[0].clone());
+            let mut state = State::new(TestBlocksCache::new(network), stability_threshold, network, blocks[0].clone());
 
             // Insert all the blocks except the last block.
             for block in blocks[1..blocks.len() - 1].iter() {

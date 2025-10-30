@@ -1,12 +1,14 @@
 use super::BlockTree;
-use bitcoin::dogecoin::Block as DogecoinBlock;
-use ic_doge_types::Block;
+use crate::unstable_blocks::BlocksCache;
+use ic_doge_types::BlockHash;
 use serde::{
     de::{Deserializer, SeqAccess, Visitor},
     ser::SerializeSeq,
     Deserialize, Serialize, Serializer,
 };
+use std::cell::RefCell;
 use std::fmt;
+use std::rc::Rc;
 
 // Serialize a BlockTree by first flattening it into a list.
 //
@@ -18,8 +20,15 @@ impl Serialize for BlockTree {
         let _p = canbench_rs::bench_scope("serialize_blocktree");
 
         // Flatten a block tree into a list.
-        fn flatten<'a>(tree: &'a BlockTree, flattened_tree: &mut Vec<(&'a DogecoinBlock, usize)>) {
-            flattened_tree.push((tree.root.internal_bitcoin_block(), tree.children.len()));
+        fn flatten<'a>(
+            tree: &'a BlockTree,
+            flattened_tree: &mut Vec<(&'a BlockHash, u128, usize)>,
+        ) {
+            flattened_tree.push((
+                tree.root.block_hash(),
+                tree.root.difficulty(),
+                tree.children.len(),
+            ));
 
             for child in &tree.children {
                 flatten(child, flattened_tree);
@@ -49,11 +58,12 @@ impl<'de> Deserialize<'de> for BlockTree {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_seq(BlockTreeDeserializer)
+        let cache: Rc<RefCell<Box<dyn BlocksCache>>> = Rc::new(RefCell::new(Box::new(())));
+        deserializer.deserialize_seq(BlockTreeDeserializer(cache))
     }
 }
 
-struct BlockTreeDeserializer;
+struct BlockTreeDeserializer(Rc<RefCell<Box<dyn BlocksCache>>>);
 
 impl<'de> Visitor<'de> for BlockTreeDeserializer {
     type Value = BlockTree;
@@ -63,18 +73,20 @@ impl<'de> Visitor<'de> for BlockTreeDeserializer {
     }
 
     fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-        fn next<'de, A: SeqAccess<'de>>(seq: &mut A) -> Option<(Block, usize)> {
-            seq.next_element::<(DogecoinBlock, usize)>()
+        fn next<'de, A: SeqAccess<'de>>(seq: &mut A) -> Option<(BlockHash, u128, usize)> {
+            seq.next_element::<(BlockHash, u128, usize)>()
                 .expect("reading next element must succeed")
-                .map(|(b, n)| (Block::new(b), n))
         }
 
         // A stack containing a `BlockTree` along with how many children remain to be added to it.
         let mut stack: Vec<(BlockTree, usize)> = Vec::new();
 
         // Read the root and add it to the stack.
-        let (root, children_to_add) = next(&mut seq).unwrap();
-        stack.push((BlockTree::new(root), children_to_add));
+        let (root, difficulty, children_to_add) = next(&mut seq).unwrap();
+        stack.push((
+            BlockTree::new_with_shared_cache_and_hash(self.0.clone(), difficulty, root),
+            children_to_add,
+        ));
 
         while let Some((tree, children_to_add)) = stack.pop() {
             if children_to_add == 0 {
@@ -94,8 +106,11 @@ impl<'de> Visitor<'de> for BlockTreeDeserializer {
                 stack.push((tree, children_to_add - 1));
 
                 // Add the child to the stack.
-                let (child, grand_children_to_add) = next(&mut seq).unwrap();
-                stack.push((BlockTree::new(child), grand_children_to_add));
+                let (child, difficulty, grand_children_to_add) = next(&mut seq).unwrap();
+                stack.push((
+                    BlockTree::new_with_shared_cache_and_hash(self.0.clone(), difficulty, child),
+                    grand_children_to_add,
+                ));
             }
         }
 
