@@ -1,13 +1,10 @@
 ## The Dogecoin Canister API
 
-The canister IDs of the Dogecoin canisters for Dogecoin mainnet and testnet:
+The canister IDs of the Dogecoin canisters:
 
-* `mainnet`:  [`ghsi2-tqaaa-aaaan-aaaca-cai`](https://dashboard.internetcomputer.org/canister/ghsi2-tqaaa-aaaan-aaaca-cai)
-* `testnet` (specifically `testnet4`):  [`g4xu7-jiaaa-aaaan-aaaaq-cai`](https://dashboard.internetcomputer.org/canister/g4xu7-jiaaa-aaaan-aaaaq-cai)
+* `mainnet`:  [gordg-fyaaa-aaaan-aaadq-cai](https://dashboard.internetcomputer.org/canister/gordg-fyaaa-aaaan-aaadq-cai)
 
-TODO (XC-468): Add a link to the Dogecoin integration wiki page.
-
-Information about Dogecoin and the IC Dogecoin integration can be found in the [Bitcoin developer guides](https://developer.bitcoin.org/devguide/) and the [Bitcoin integration documentation](https://internetcomputer.org/docs/current/references/bitcoin-how-it-works).
+Information about Dogecoin and the IC Dogecoin integration can be found in the [Build on Dogecoin](https://dfinity.github.io/dogecoin-canister) book.
 
 ### `dogecoin_get_utxos`
 
@@ -68,19 +65,13 @@ The following address formats are supported:
 
 -   Pay to script hash (P2SH)
 
--   Pay to witness public key hash (P2WPKH)
-
--   Pay to witness script hash (P2WSH)
-
--   Pay to taproot (P2TR)
-
 If the address is malformed, the call is rejected.
 
 The optional `filter` parameter can be used to restrict the set of returned UTXOs, either providing a minimum number of confirmations or a page reference when pagination is used for addresses with many UTXOs. In the first case, only UTXOs with at least the provided number of confirmations are returned, i.e., transactions with fewer than this number of confirmations are not considered. In other words, if the number of confirmations is `c`, an output is returned if it occurred in a transaction with at least `c` confirmations and there is no transaction that spends the same output with at least `c` confirmations.
 
-There is an upper bound of 144 on the minimum number of confirmations. If a larger minimum number of confirmations is specified, the call is rejected. Note that this is not a severe restriction as the minimum number of confirmations is typically set to a value around 6 in practice.
+There is an upper bound of 144 on the minimum number of confirmations. If a larger minimum number of confirmations is specified, the call is rejected. Note that this is not a severe restriction as the minimum number of confirmations is typically set to a value around 60 in practice.
 
-It is important to note that the validity of transactions is not verified in the Dogecoin component. The Dogecoin component relies on the proof of work that goes into the blocks and the verification of the blocks in the Dogecoin network. For a newly discovered block, a regular Dogecoin (full) node therefore provides a higher level of security than the Dogecoin component, which implies that it is advisable to set the number of confirmations to a reasonably large value, such as 6, to gain confidence in the correctness of the returned UTXOs.
+It is important to note that the validity of transactions is not verified in the Dogecoin component. The Dogecoin component relies on the proof of work that goes into the blocks and the verification of the blocks in the Dogecoin network. For a newly discovered block, a regular Dogecoin (full) node therefore provides a higher level of security than the Dogecoin component, which implies that it is advisable to set the number of confirmations to a reasonably large value, such as 60, to gain confidence in the correctness of the returned UTXOs.
 
 There is an upper bound of 10,000 UTXOs that can be returned in a single request. For addresses that contain sufficiently many UTXOs, a partial set of the address's UTXOs are returned along with a page reference.
 
@@ -180,7 +171,7 @@ If no end height is specified, all blocks until the tip height, i.e., the larges
 The response is guaranteed to contain the block headers in order: if it contains any block headers, the first block header occurs at the start height, the second block header occurs at the start height plus one and so forth.
 
 The response is a record consisting of the tip height and the vector of block headers.
-The block headers are 80-byte blobs in the [standard Bitcoin format](https://developer.bitcoin.org/reference/block_chain.html#block-headers).
+The block headers are 80-byte blobs in the [standard Bitcoin format](https://developer.bitcoin.org/reference/block_chain.html#block-headers). Note that auxiliary proof-of-work ([AuxPoW](https://dogecoin.com/dogepedia/articles/what-is-a-miner/)) are **not** included.
 
 ### `dogecoin_send_transaction`
 ```
