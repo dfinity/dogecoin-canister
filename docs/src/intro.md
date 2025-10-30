@@ -12,7 +12,7 @@ To interact with the Dogecoin blockchain, your canister will make use of the fol
 
 - **[Dogecoin canister](https://github.com/dfinity/dogecoin-canister)**: Think of it as your decentralized gateway to reach the Dogecoin blockchain. This canister provides an API that can be used by others to query information about the network state, e.g., UTXOs, block information, or the balance of any Dogecoin address; and to send a signed transaction to the network.
 
-- **[Threshold ECDSA](/docs/building-apps/network-features/signatures/t-ecdsa)**: A canister can have a secret key that is stored in a secure and decentralized manner using chain-key cryptography. Messages sent by the canister can be signed using this key, enabling the canister to send signed transactions to Dogecoin.
+- **[Threshold ECDSA](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa)**: A canister can have a secret key that is stored in a secure and decentralized manner using chain-key cryptography (several such keys can be computed by key derivation). Messages sent by the canister can be signed using this key, enabling the canister to send signed transactions to Dogecoin.
 
 
 ## Getting Started
