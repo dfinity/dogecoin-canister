@@ -588,7 +588,7 @@ pub fn into_dogecoin_network(network: Network) -> DogecoinNetwork {
 mod test {
     use super::*;
     use bitcoin::{hashes::Hash, PubkeyHash};
-    use ic_btc_interface::Txid as PublicTxid;
+    use ic_doge_interface::Txid as PublicTxid;
     use proptest::prelude::*;
 
     proptest! {
@@ -607,7 +607,7 @@ mod test {
             assert_eq!(outpoint, OutPoint::from_bytes(bytes.into()));
 
             // Test AddressUtxo
-            let address = Address::from(BitcoinAddress::p2pkh(PubkeyHash::from_byte_array(pubhash), BitcoinNetwork::Bitcoin));
+            let address = Address::from(DogecoinAddress::p2pkh(PubkeyHash::from_byte_array(pubhash), DogecoinNetwork::Dogecoin));
              let utxo = AddressUtxo { address, height, outpoint };
             let bytes = utxo.clone().into_bytes();
             assert_eq!(utxo.to_bytes().as_ref(), &bytes, "utxo mismatch");

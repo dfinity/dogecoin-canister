@@ -172,10 +172,10 @@ impl UtxoReader {
         let mut utxos = Vec::new();
         let mut count = 0;
 
-        for (key_blob, value_blob) in small_utxos_map.iter() {
+        for outpoint_to_small_utxo in small_utxos_map.iter() {
             let outpoint =
-                StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
-            let (txout, height) = <(TxOut, Height)>::from_bytes(value_blob.as_slice().to_vec());
+                StableStorable::from_bytes(std::borrow::Cow::Borrowed(outpoint_to_small_utxo.key().as_slice()));
+            let (txout, height) = <(TxOut, Height)>::from_bytes(outpoint_to_small_utxo.value().as_slice().to_vec());
 
             utxos.push(Utxo {
                 outpoint,
@@ -205,10 +205,10 @@ impl UtxoReader {
         let mut utxos = Vec::new();
         let mut count = 0;
 
-        for (key_blob, value_blob) in medium_utxos_map.iter() {
+        for outpoint_to_medium_utxo in medium_utxos_map.iter() {
             let outpoint =
-                StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
-            let (txout, height) = <(TxOut, Height)>::from_bytes(value_blob.as_slice().to_vec());
+                StableStorable::from_bytes(std::borrow::Cow::Borrowed(outpoint_to_medium_utxo.key().as_slice()));
+            let (txout, height) = <(TxOut, Height)>::from_bytes(outpoint_to_medium_utxo.value().as_slice().to_vec());
 
             utxos.push(Utxo {
                 outpoint,
@@ -238,9 +238,9 @@ impl UtxoReader {
         let mut address_utxos = Vec::new();
         let mut count = 0;
 
-        for (key_blob, _) in address_utxos_map.iter() {
+        for address_utxo in address_utxos_map.iter() {
             let address_utxo =
-                StableStorable::from_bytes(std::borrow::Cow::Borrowed(key_blob.as_slice()));
+                StableStorable::from_bytes(std::borrow::Cow::Borrowed(address_utxo.key().as_slice()));
             address_utxos.push(address_utxo);
 
             count += 1;
@@ -261,7 +261,8 @@ impl UtxoReader {
         let mut balances = Vec::new();
         let mut count = 0;
 
-        for (address, balance) in balances_map.iter() {
+        for address_to_balance in balances_map.iter() {
+            let (address, balance) = address_to_balance.into_pair();
             balances.push((address, balance));
 
             count += 1;
@@ -283,7 +284,8 @@ impl UtxoReader {
         let mut block_headers = Vec::new();
         let mut count = 0;
 
-        for (block_hash, header_blob) in block_headers_map.iter() {
+        for block_hash_to_blob in block_headers_map.iter() {
+            let (block_hash, header_blob) = block_hash_to_blob.into_pair();
             block_headers.push((block_hash, header_blob));
 
             count += 1;
@@ -305,7 +307,8 @@ impl UtxoReader {
         let mut block_heights = Vec::new();
         let mut count = 0;
 
-        for (height, block_hash) in block_heights_map.iter() {
+        for height_to_block_hash in block_heights_map.iter() {
+            let (height, block_hash) = height_to_block_hash.into_pair();
             block_heights.push((height, block_hash));
 
             count += 1;
