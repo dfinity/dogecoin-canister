@@ -173,9 +173,11 @@ impl UtxoReader {
         let mut count = 0;
 
         for outpoint_to_small_utxo in small_utxos_map.iter() {
-            let outpoint =
-                StableStorable::from_bytes(std::borrow::Cow::Borrowed(outpoint_to_small_utxo.key().as_slice()));
-            let (txout, height) = <(TxOut, Height)>::from_bytes(outpoint_to_small_utxo.value().as_slice().to_vec());
+            let outpoint = StableStorable::from_bytes(std::borrow::Cow::Borrowed(
+                outpoint_to_small_utxo.key().as_slice(),
+            ));
+            let (txout, height) =
+                <(TxOut, Height)>::from_bytes(outpoint_to_small_utxo.value().as_slice().to_vec());
 
             utxos.push(Utxo {
                 outpoint,
@@ -206,9 +208,11 @@ impl UtxoReader {
         let mut count = 0;
 
         for outpoint_to_medium_utxo in medium_utxos_map.iter() {
-            let outpoint =
-                StableStorable::from_bytes(std::borrow::Cow::Borrowed(outpoint_to_medium_utxo.key().as_slice()));
-            let (txout, height) = <(TxOut, Height)>::from_bytes(outpoint_to_medium_utxo.value().as_slice().to_vec());
+            let outpoint = StableStorable::from_bytes(std::borrow::Cow::Borrowed(
+                outpoint_to_medium_utxo.key().as_slice(),
+            ));
+            let (txout, height) =
+                <(TxOut, Height)>::from_bytes(outpoint_to_medium_utxo.value().as_slice().to_vec());
 
             utxos.push(Utxo {
                 outpoint,
@@ -239,8 +243,9 @@ impl UtxoReader {
         let mut count = 0;
 
         for address_utxo in address_utxos_map.iter() {
-            let address_utxo =
-                StableStorable::from_bytes(std::borrow::Cow::Borrowed(address_utxo.key().as_slice()));
+            let address_utxo = StableStorable::from_bytes(std::borrow::Cow::Borrowed(
+                address_utxo.key().as_slice(),
+            ));
             address_utxos.push(address_utxo);
 
             count += 1;

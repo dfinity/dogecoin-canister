@@ -198,7 +198,8 @@ impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
                 loop {
                     // Check if non-limit PoW found or it's time to adjust difficulty.
                     if current_header.bits != pow_limit_bits
-                        || current_height.is_multiple_of(self.difficulty_adjustment_interval(prev_height + 1))
+                        || current_height
+                            .is_multiple_of(self.difficulty_adjustment_interval(prev_height + 1))
                     {
                         return current_header.bits;
                     }

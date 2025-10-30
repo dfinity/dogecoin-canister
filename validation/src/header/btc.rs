@@ -208,7 +208,9 @@ impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
         // regtest, simply return the previous difficulty target.
 
         let height = prev_height + 1;
-        if !height.is_multiple_of(DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN) || self.no_pow_retargeting() {
+        if !height.is_multiple_of(DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN)
+            || self.no_pow_retargeting()
+        {
             return prev_header.bits;
         }
         // Computing the `last_adjustment_header`.

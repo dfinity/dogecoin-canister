@@ -1,3 +1,4 @@
+use ic_cdk::api::{msg_reject, msg_reply};
 use ic_cdk_macros::{heartbeat, init, inspect_message, post_upgrade, pre_upgrade, query, update};
 use ic_doge_canister::types::{HttpRequest, HttpResponse};
 use ic_doge_interface::{
@@ -5,7 +6,6 @@ use ic_doge_interface::{
     GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig,
     MillikoinuPerByte, SendTransactionRequest, SetConfigRequest,
 };
-use ic_cdk::api::{msg_reject, msg_reply};
 use std::marker::PhantomData;
 
 /// Use Nat to represent an arbitrary amount of Koinus because the total amount of DOGE
