@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-# This script tests the upgradability of the dogecoin canister.
+# This script tests the upgradability of the Dogecoin canister.
 #
 # The process follows these steps:
-# - Fetches and downloads the latest release of the dogecoin canister (a reference canister).
+# - Fetches and downloads the latest release of the Dogecoin canister (a reference canister).
 # - Deploys this reference canister on a local IC network.
-# - Upgrades the reference canister to a recent 'dogecoin' canister from the current branch.
-# - Verifies that the 'dogecoin' canister is in a 'stopped' state.
+# - Upgrades the reference canister to a recent 'Dogecoin' canister from the current branch.
+# - Verifies that the 'Dogecoin' canister is in a 'stopped' state.
 # - Tests canister upgradability by redeploying and restarting it.
 
 set -Eexuo pipefail
@@ -22,8 +22,8 @@ pushd "$SCRIPT_DIR"
 
 # Get the URL of the latest release.
 get_latest_release_url() {
-  curl -s https://api.github.com/repos/dfinity/bitcoin-canister/releases/latest | 
-  grep "browser_download_url.*ic-btc-canister.wasm.gz" |
+  curl -s https://api.github.com/repos/dfinity/dogecoin-canister/releases/latest |
+  grep "browser_download_url.*ic-doge-canister.wasm.gz" |
   cut -d '"' -f 4
 }
 

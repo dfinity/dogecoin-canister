@@ -36,6 +36,7 @@ use ic_doge_interface::{
 use ic_doge_types::Block;
 use ic_stable_structures::reader::{BufferedReader, Reader};
 use ic_stable_structures::writer::{BufferedWriter, Writer};
+use ic_stable_structures::Memory;
 pub use memory::get_memory;
 use serde_bytes::ByteBuf;
 use state::main_chain_height;
@@ -207,12 +208,50 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
 
     let memory = memory::get_upgrades_memory();
 
-    let reader = Reader::new(&memory, 0);
-    let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+    let state: State = {
+        // Buffered reader at offset 0
+        let read_buffer_offset_0 = || {
+            let reader = Reader::new(&memory, 0);
+            let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+            ciborium::de::from_reader(&mut buffered_reader)
+        };
 
-    // Deserialize and set the state.
-    let state: State = ciborium::de::from_reader(&mut buffered_reader)
-        .expect("failed to decode state from stable memory");
+        // Buffered reader at offset 4
+        let read_buffer_offset_4 = || {
+            let reader = Reader::new(&memory, 4);
+            let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+            ciborium::de::from_reader(&mut buffered_reader)
+        };
+
+        // Read into array
+        let read_array = || {
+            let mut state_len_bytes = [0; 4];
+            memory.read(0, &mut state_len_bytes);
+            let state_len = u32::from_le_bytes(state_len_bytes) as usize;
+
+            let mut state_bytes = vec![0; state_len];
+            memory.read(4, &mut state_bytes);
+
+            ciborium::de::from_reader(&*state_bytes)
+        };
+
+        read_buffer_offset_0()
+            .or_else(|e| {
+                print(&format!(
+                    "Failed to read state with buffered reader: {:?}. Trying different format...",
+                    e
+                ));
+                read_buffer_offset_4()
+            })
+            .or_else(|e| {
+                print(&format!(
+                    "Failed to read state with buffered reader at offset 4: {:?}. Trying different format...",
+                    e
+                ));
+                read_array()
+            })
+            .expect("Failed to read state into array.")
+    };
 
     set_state(state);
 
@@ -712,5 +751,35 @@ mod test {
 
             with_state(|s| assert_eq!(s.fees, expected_fees));
         }
+    }
+
+    #[test]
+    fn test_post_upgrade_old_format_compatibility() {
+        memory::set_memory(ic_stable_structures::DefaultMemoryImpl::default());
+
+        init(InitConfig {
+            stability_threshold: Some(360),
+            network: Some(Network::Regtest),
+            ..Default::default()
+        });
+
+        // Take out the state (which also clears the `STATE` singleton).
+        let previous_state = STATE.with(|cell| cell.take().unwrap());
+
+        // Serialize the state to bytes
+        let mut state_bytes = vec![];
+        ciborium::ser::into_writer(&previous_state, &mut state_bytes).unwrap();
+
+        // Write state into stable memory using old format
+        let len = state_bytes.len() as u32;
+        let memory = memory::get_upgrades_memory();
+        memory::write(&memory, 0, &len.to_le_bytes());
+        memory::write(&memory, 4, &state_bytes);
+
+        // Run postupgrade hook
+        post_upgrade(None);
+
+        // The new and old states should be equivalent
+        with_state(|new_state| assert!(new_state == &previous_state));
     }
 }
