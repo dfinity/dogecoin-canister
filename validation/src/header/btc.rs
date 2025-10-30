@@ -112,7 +112,7 @@ impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
     ) -> Target {
         match self.network() {
             BitcoinNetwork::Testnet | BitcoinNetwork::Testnet4 | BitcoinNetwork::Regtest => {
-                if (prev_height + 1) % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 {
+                if !(prev_height + 1).is_multiple_of(DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN) {
                     // This if statements is reached only for Regtest and Testnet networks
                     // Here is the quote from "https://en.bitcoin.it/wiki/Testnet"
                     // "If no block has been found in 20 minutes, the difficulty automatically
@@ -168,7 +168,7 @@ impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
                 loop {
                     // Check if non-limit PoW found or it's time to adjust difficulty.
                     if current_header.bits != pow_limit_bits
-                        || current_height % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN == 0
+                        || current_height.is_multiple_of(DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN)
                     {
                         return current_header.bits;
                     }
@@ -208,16 +208,12 @@ impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
         // regtest, simply return the previous difficulty target.
 
         let height = prev_height + 1;
-        if height % DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN != 0 || self.no_pow_retargeting() {
+        if !height.is_multiple_of(DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN) || self.no_pow_retargeting() {
             return prev_header.bits;
         }
         // Computing the `last_adjustment_header`.
         // `last_adjustment_header` is the last header with height multiple of 2016
-        let last_adjustment_height = if height < DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN {
-            0
-        } else {
-            height - DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN
-        };
+        let last_adjustment_height = height.saturating_sub(DIFFICULTY_ADJUSTMENT_INTERVAL_BITCOIN);
         let last_adjustment_header = self
             .store
             .get_with_height(last_adjustment_height)
