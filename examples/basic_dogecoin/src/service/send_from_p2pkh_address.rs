@@ -1,13 +1,8 @@
-use crate::{
-    common::{get_fee_per_byte, DerivationPath, PrimaryOutput},
-    ecdsa::{get_ecdsa_public_key, sign_with_ecdsa},
-    p2pkh::{self},
-    SendRequest, DOGE_CONTEXT,
-};
-use bitcoin::{consensus::serialize, Address, PublicKey};
+use crate::{common::{get_fee_per_byte, DerivationPath, PrimaryOutput}, dogecoin_get_utxos, dogecoin_send_transaction, ecdsa::{get_ecdsa_public_key, sign_with_ecdsa}, p2pkh::{self}, SendRequest, DOGE_CONTEXT};
+use bitcoin::{consensus::serialize, dogecoin::Address, PublicKey};
 use ic_cdk::{
     bitcoin_canister::{
-        bitcoin_get_utxos, bitcoin_send_transaction, GetUtxosRequest, SendTransactionRequest,
+        GetUtxosRequest, SendTransactionRequest,
     },
     trap, update,
 };
@@ -19,7 +14,7 @@ use std::str::FromStr;
 pub async fn send_from_p2pkh_address(request: SendRequest) -> String {
     let ctx = DOGE_CONTEXT.with(|ctx| ctx.get());
 
-    if request.amount_in_satoshi == 0 {
+    if request.amount_in_koinu == 0 {
         trap("Amount must be greater than 0");
     }
 
@@ -49,7 +44,7 @@ pub async fn send_from_p2pkh_address(request: SendRequest) -> String {
     // contains all UTXOs.
     let own_utxos = dogecoin_get_utxos(&GetUtxosRequest {
         address: own_address.to_string(),
-        network: ctx.network,
+        network: ctx.network.into(),
         filter: None,
     })
     .await
@@ -63,7 +58,7 @@ pub async fn send_from_p2pkh_address(request: SendRequest) -> String {
         &own_public_key,
         &own_address,
         &own_utxos,
-        &PrimaryOutput::Address(dst_address, request.amount_in_satoshi),
+        &PrimaryOutput::Address(dst_address, request.amount_in_koinu),
         fee_per_byte,
     )
     .await;
@@ -81,7 +76,7 @@ pub async fn send_from_p2pkh_address(request: SendRequest) -> String {
 
     // Send the transaction to the Dogecoin API.
     dogecoin_send_transaction(&SendTransactionRequest {
-        network: ctx.network,
+        network: ctx.network.into(),
         transaction: serialize(&signed_transaction),
     })
     .await

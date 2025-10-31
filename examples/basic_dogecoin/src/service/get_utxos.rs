@@ -1,6 +1,6 @@
-use crate::DOGE_CONTEXT;
+use crate::{dogecoin_get_utxos, DOGE_CONTEXT};
 use ic_cdk::{
-    bitcoin_canister::{bitcoin_get_utxos, GetUtxosRequest, GetUtxosResponse},
+    bitcoin_canister::{GetUtxosRequest, GetUtxosResponse},
     update,
 };
 
@@ -11,7 +11,7 @@ pub async fn get_utxos(address: String) -> GetUtxosResponse {
 
     dogecoin_get_utxos(&GetUtxosRequest {
         address,
-        network: ctx.network,
+        network: ctx.network.into(),
         filter: None,
     })
     .await

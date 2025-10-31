@@ -1,7 +1,7 @@
-use crate::DOGE_CONTEXT;
+use crate::{dogecoin_get_block_headers, DOGE_CONTEXT};
 use ic_cdk::{
     bitcoin_canister::{
-        bitcoin_get_block_headers, GetBlockHeadersRequest, GetBlockHeadersResponse,
+        GetBlockHeadersRequest, GetBlockHeadersResponse,
     },
     update,
 };
@@ -17,7 +17,7 @@ pub async fn get_block_headers(
     dogecoin_get_block_headers(&GetBlockHeadersRequest {
         start_height,
         end_height,
-        network: ctx.network,
+        network: ctx.network.into(),
     })
     .await
     .unwrap()

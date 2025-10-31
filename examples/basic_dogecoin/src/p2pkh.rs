@@ -1,14 +1,14 @@
 use crate::{
     common::{build_transaction_with_fee, select_utxos_greedy, PrimaryOutput},
     ecdsa::mock_sign_with_ecdsa,
-    BitcoinContext,
+    DogecoinContext,
 };
 use bitcoin::{
     hashes::Hash,
     script::{Builder, PushBytesBuf},
     secp256k1::ecdsa::Signature as SecpSignature,
     sighash::{EcdsaSighashType, SighashCache},
-    Address, AddressType, PublicKey, Transaction, Witness,
+    dogecoin::Address, AddressType, PublicKey, Transaction, Witness,
 };
 use ic_cdk::{
     bitcoin_canister::{MillisatoshiPerByte, Utxo},
@@ -19,7 +19,7 @@ use std::convert::TryFrom;
 // Builds a transaction to send the given `amount` of satoshis to the
 // destination address.
 pub async fn build_transaction(
-    ctx: &BitcoinContext,
+    ctx: &DogecoinContext,
     own_public_key: &PublicKey,
     own_address: &Address,
     own_utxos: &[Utxo],
@@ -68,7 +68,7 @@ pub async fn build_transaction(
     }
 }
 
-// Sign a P2PKH bitcoin transaction.
+// Sign a P2PKH dogecoin transaction.
 //
 // IMPORTANT: This method is for demonstration purposes only and it only
 // supports signing transactions if:
@@ -76,7 +76,7 @@ pub async fn build_transaction(
 // 1. All the inputs are referencing outpoints that are owned by `own_address`.
 // 2. `own_address` is a P2PKH address.
 pub async fn sign_transaction<SignFun, Fut>(
-    ctx: &BitcoinContext,
+    ctx: &DogecoinContext,
     own_public_key: &PublicKey,
     own_address: &Address,
     mut transaction: Transaction,

@@ -1,4 +1,4 @@
-use crate::BitcoinContext;
+use crate::DogecoinContext;
 use bitcoin::secp256k1::ecdsa::Signature;
 use ic_cdk::management_canister::{
     self, EcdsaCurve, EcdsaKeyId, EcdsaPublicKeyArgs, SignWithEcdsaArgs,
@@ -18,7 +18,7 @@ thread_local! {
 /// This function checks the local in-memory cache first. If no cached key exists,
 /// it queries the ECDSA API for the public key at the given derivation path
 /// and stores the result in the cache.
-pub async fn get_ecdsa_public_key(ctx: &BitcoinContext, derivation_path: Vec<Vec<u8>>) -> Vec<u8> {
+pub async fn get_ecdsa_public_key(ctx: &DogecoinContext, derivation_path: Vec<Vec<u8>>) -> Vec<u8> {
     // Check in-memory cache first.
     if let Some(key) = ECDSA_KEY_CACHE.with_borrow(|map| map.get(&derivation_path).cloned()) {
         return key;

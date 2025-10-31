@@ -1,7 +1,7 @@
-use crate::DOGE_CONTEXT;
+use crate::{dogecoin_get_fee_percentiles, DOGE_CONTEXT};
 use ic_cdk::{
     bitcoin_canister::{
-        bitcoin_get_current_fee_percentiles, GetCurrentFeePercentilesRequest, MillisatoshiPerByte,
+        GetCurrentFeePercentilesRequest, MillisatoshiPerByte,
     },
     update,
 };
@@ -12,8 +12,8 @@ use ic_cdk::{
 pub async fn get_current_fee_percentiles() -> Vec<MillisatoshiPerByte> {
     let ctx = DOGE_CONTEXT.with(|ctx| ctx.get());
 
-    dogecoin_get_current_fee_percentiles(&GetCurrentFeePercentilesRequest {
-        network: ctx.network,
+    dogecoin_get_fee_percentiles(&GetCurrentFeePercentilesRequest {
+        network: ctx.network.into(),
     })
     .await
     .unwrap()

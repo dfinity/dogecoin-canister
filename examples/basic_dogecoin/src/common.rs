@@ -2,13 +2,13 @@
 // It includes UTXO selection algorithms, transaction building, fee estimation, and
 // BIP-32 derivation path handling used across all Dogecoin address types.
 
-use crate::DogecoinContext;
+use crate::{dogecoin_get_fee_percentiles, DogecoinContext};
 use bitcoin::{
     self, absolute::LockTime, blockdata::witness::Witness, hashes::Hash, transaction::Version,
-    Address, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
+    dogecoin::Address, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
 };
 use ic_cdk::bitcoin_canister::{
-    bitcoin_get_current_fee_percentiles, GetCurrentFeePercentilesRequest, Utxo,
+    GetCurrentFeePercentilesRequest, Utxo,
 };
 use std::fmt;
 
@@ -190,8 +190,8 @@ pub fn build_transaction_with_fee(
 pub async fn get_fee_per_byte(ctx: &DogecoinContext) -> u64 {
     // Query recent fee percentiles from the Dogecoin network.
     // This gives us real-time fee data based on recent transaction activity.
-    let fee_percentiles = dogecoin_get_current_fee_percentiles(&GetCurrentFeePercentilesRequest {
-        network: ctx.network,
+    let fee_percentiles = dogecoin_get_fee_percentiles(&GetCurrentFeePercentilesRequest {
+        network: ctx.network.into(),
     })
     .await
     .unwrap();
@@ -286,16 +286,6 @@ impl DerivationPath {
     /// Convenience constructor for P2PKH (legacy) addresses.
     pub fn p2pkh(account: u32, address_index: u32) -> Self {
         Self::new(Purpose::P2PKH, account, address_index)
-    }
-
-    /// Convenience constructor for P2WPKH (native SegWit) addresses.
-    pub fn p2wpkh(account: u32, address_index: u32) -> Self {
-        Self::new(Purpose::P2WPKH, account, address_index)
-    }
-
-    /// Convenience constructor for P2TR (Taproot) addresses.
-    pub fn p2tr(account: u32, address_index: u32) -> Self {
-        Self::new(Purpose::P2TR, account, address_index)
     }
 
     /// Converts the derivation path to the binary format expected by IC's key derivation APIs.

@@ -1,5 +1,5 @@
 use crate::{common::DerivationPath, ecdsa::get_ecdsa_public_key, DOGE_CONTEXT};
-use bitcoin::{Address, PublicKey};
+use bitcoin::{dogecoin::Address, PublicKey};
 use ic_cdk::update;
 
 /// Returns a legacy P2PKH (Pay-to-PubKey-Hash) address for this smart contract.
