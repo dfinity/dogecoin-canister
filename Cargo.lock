@@ -1926,10 +1926,12 @@ version = "0.1.0"
 dependencies = [
  "bitcoin",
  "candid",
+ "ciborium",
  "datasize",
  "hex",
  "ic-doge-interface",
  "ic-stable-structures",
+ "proptest 0.9.6",
  "serde",
  "serde_bytes",
 ]
