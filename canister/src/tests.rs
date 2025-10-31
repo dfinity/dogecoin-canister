@@ -19,7 +19,7 @@ use bitcoin::{
     p2p::Magic,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
-use ic_cdk::api::call::RejectionCode;
+use ic_cdk::call::RejectCode;
 use ic_doge_interface::{Flag, GetUtxosResponse, InitConfig, Network, Txid, UtxosFilter};
 use ic_doge_interface::{OutPoint, Utxo};
 use ic_doge_test_utils::random_p2pkh_address;
@@ -554,7 +554,7 @@ async fn test_rejections_counting() {
     let counter_prior = crate::with_state(|state| state.syncing_state.num_get_successors_rejects);
 
     runtime::set_successors_response(GetSuccessorsReply::Err(
-        RejectionCode::CanisterReject,
+        RejectCode::CanisterReject,
         String::from("Test verification error."),
     ));
 
