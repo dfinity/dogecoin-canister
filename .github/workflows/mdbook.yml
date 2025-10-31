@@ -35,6 +35,7 @@ jobs:
     env:
       MDBOOK_VERSION: 0.4.52
       RUST_VERSION: 1.84.0 # Use the same version as in `rust-toolchain.toml`
+      MDBOOK_ADMONISH_VERSION: 1.20.0
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +48,7 @@ jobs:
       - name: Install mdbook
         run: |
           cargo install mdbook --version ${MDBOOK_VERSION} --locked
+          cargo install mdbook-admonish --version ${MDBOOK_ADMONISH_VERSION} --locked
 
       - name: Setup Pages
         id: pages
@@ -55,6 +57,7 @@ jobs:
       - name: Build book
         run: |
           cd docs
+          mdbook-admonish install
           mdbook build
 
       - name: Upload artifact

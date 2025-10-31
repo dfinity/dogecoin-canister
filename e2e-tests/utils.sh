@@ -8,7 +8,7 @@ wait_until_main_chain_height () {
   DOGECOIN_CANISTER_ID=$(dfx canister id dogecoin)
 
   while
-    METRICS=$(curl "http://127.0.0.1:8000/metrics?canisterId=$DOGECOIN_CANISTER_ID")
+    METRICS=$(curl "http://$DOGECOIN_CANISTER_ID.raw.localhost:8000/metrics")
     ! [[ "$METRICS" == *"main_chain_height $HEIGHT"* ]]; do
       ((ATTEMPTS-=1))
 
@@ -29,7 +29,7 @@ wait_until_stable_height () {
   DOGECOIN_CANISTER_ID=$(dfx canister id dogecoin)
 
   while
-    METRICS=$(curl "http://127.0.0.1:8000/metrics?canisterId=$DOGECOIN_CANISTER_ID")
+    METRICS=$(curl "http://$DOGECOIN_CANISTER_ID.raw.localhost:8000/metrics")
     ! [[ "$METRICS" == *"stable_height $HEIGHT"* ]]; do
       ((ATTEMPTS-=1))
 
