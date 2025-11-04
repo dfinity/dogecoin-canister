@@ -1,5 +1,9 @@
 type koinu = nat64;
 
+// The total amount of DOGE is going to exceed the bound of nat64 by around year 2030.
+// So it is safer to use nat to represent an arbitrary amount of DOGE in koinus.
+type amount = nat;
+
 type millikoinu_per_byte = nat64;
 
 type dogecoin_address = text;
@@ -42,7 +46,7 @@ type get_block_headers_response = record {
 service : (network) -> {
   "get_p2pkh_address" : () -> (dogecoin_address);
 
-  "get_balance" : (address : dogecoin_address) -> (koinu);
+  "get_balance" : (address : dogecoin_address) -> (amount);
 
   "get_utxos" : (dogecoin_address) -> (get_utxos_response);
 
