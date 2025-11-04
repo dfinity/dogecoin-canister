@@ -46,34 +46,13 @@ pub fn select_utxos_greedy(
     Ok(utxos_to_spend)
 }
 
-/// Selects a single UTXO that can cover the required amount plus fee.
-///
-/// This function is used when you need to tie a specific operation to a single UTXO,
-/// such as with Bitcoin inscriptions where the asset must be associated with specific
-/// satoshis. It searches for the first UTXO (in reverse order) that has sufficient value.
-///
-/// Returns an error if no single UTXO has enough value to cover the payment and fee.
-pub fn select_one_utxo(own_utxos: &[Utxo], amount: u64, fee: u64) -> Result<Vec<&Utxo>, String> {
-    for utxo in own_utxos.iter().rev() {
-        if utxo.value >= amount + fee {
-            return Ok(vec![&utxo]);
-        }
-    }
-
-    Err(format!(
-        "No sufficiently large utxo found: amount {} satoshi, fee {}",
-        amount, fee
-    ))
-}
-
-/// Represents the primary output type for a Bitcoin transaction.
+/// Represents the primary output type for a Dogecoin transaction.
 ///
 /// This enum allows transaction builders to specify whether they want to send
-/// bitcoin to an address (normal payment) or embed data using OP_RETURN (for
-/// protocols like Runes that store metadata on-chain).
+/// dogecoin to an address (normal payment) or embed data using OP_RETURN.
 pub enum PrimaryOutput {
     /// Pay someone (spendable output).
-    Address(Address, u64), // destination address, amount in satoshis
+    Address(Address, u64), // destination address, amount in koinus
     /// Embed data (unspendable OP_RETURN output).
     OpReturn(ScriptBuf), // script already starts with OP_RETURN
 }
@@ -89,8 +68,7 @@ pub enum PrimaryOutput {
 /// The change output is sent back to `own_address` to prevent value loss, but only
 /// if the change amount is above the dust threshold to avoid creating uneconomical outputs.
 ///
-/// Returns the constructed unsigned transaction and the list of previous outputs (`prevouts`)
-/// used for signing different address types (P2WPKH, P2TR, etc.).
+/// Returns the constructed unsigned transaction.
 ///
 /// Assumes that:
 /// - Inputs are unspent and valid (caller's responsibility)
@@ -101,10 +79,10 @@ pub fn build_transaction_with_fee(
     own_address: &Address,
     primary_output: &PrimaryOutput,
     fee: u64,
-) -> Result<(Transaction, Vec<TxOut>), String> {
+) -> Result<Transaction, String> {
     // Define a dust threshold below which change outputs are discarded.
     // This prevents creating outputs that cost more to spend than they're worth.
-    const DUST_THRESHOLD: u64 = 1_000;
+    const DUST_THRESHOLD: u64 = 1_000_000;
 
     // --- Build Inputs ---
     // Convert UTXOs into transaction inputs, preparing them for signing.
@@ -118,18 +96,6 @@ pub fn build_transaction_with_fee(
             sequence: Sequence::MAX,      // No relative timelock constraints
             witness: Witness::new(),      // Will be filled in during signing
             script_sig: ScriptBuf::new(), // Empty for SegWit and Taproot (uses witness)
-        })
-        .collect();
-
-    // --- Create Previous Outputs ---
-    // Each TxOut represents an output from previous transactions being spent.
-    // This data is required for signing P2WPKH and P2TR transactions.
-    let prevouts = utxos_to_spend
-        .clone()
-        .into_iter()
-        .map(|utxo| TxOut {
-            value: Amount::from_sat(utxo.value),
-            script_pubkey: own_address.script_pubkey(),
         })
         .collect();
 
@@ -163,30 +129,29 @@ pub fn build_transaction_with_fee(
     }
 
     // --- Assemble Transaction ---
-    // Create the final unsigned transaction with version 2 for modern features.
-    Ok((
+    // Create the final unsigned transaction.
+    Ok(
         Transaction {
             input: inputs,
             output: outputs,
             lock_time: LockTime::ZERO, // No absolute timelock
-            version: Version::TWO,     // Standard for modern Dogecoin transactions
+            version: Version::ONE,     // Standard for Dogecoin transactions
         },
-        prevouts,
-    ))
+    )
 }
 
 /// Estimates a reasonable fee rate for Dogecoin transactions based on network conditions.
 ///
 /// This function queries the Dogecoin network for recent fee percentiles and returns
 /// the median (50th percentile) fee rate, which provides a good balance between
-/// confirmation time and cost. The fee rate is returned in millisatoshis per byte.
+/// confirmation time and cost. The fee rate is returned in millikoinus per byte.
 ///
 /// On regtest networks (local development), fee data is typically unavailable since
 /// there are no standard transactions, so the function falls back to a static rate
-/// of 2,000 millisatoshis/vbyte (2 sat/vB) which is reasonable for testing.
+/// of 2,000,000 millikoinus/byte (2,000 koinus/B or 0.02 DOGE/kB) which is reasonable for testing.
 ///
 /// # Returns
-/// Fee rate in millisatoshis per byte (1,000 msat = 1 satoshi).
+/// Fee rate in millikoinus per byte (1,000 millikoinus = 1 koinu).
 pub async fn get_fee_per_byte(ctx: &DogecoinContext) -> u64 {
     // Query recent fee percentiles from the Dogecoin network.
     // This gives us real-time fee data based on recent transaction activity.
@@ -199,7 +164,7 @@ pub async fn get_fee_per_byte(ctx: &DogecoinContext) -> u64 {
     if fee_percentiles.is_empty() {
         // Empty percentiles indicate that we're likely on regtest with no standard transactions.
         // Use a reasonable fallback that works for development and testing.
-        2000 // 2 sat/vB in millisatoshis
+        2_000_000 // 2,000 koinus/B in millikoinus
     } else {
         // Use the 50th percentile (median) for balanced confirmation time and cost.
         // This avoids both overpaying (high percentiles) and slow confirmation (low percentiles).
@@ -209,24 +174,18 @@ pub async fn get_fee_per_byte(ctx: &DogecoinContext) -> u64 {
 
 /// Purpose field for BIP-32 hierarchical deterministic wallet derivation paths.
 ///
-/// The purpose field determines the address type according to Bitcoin Improvement Proposals:
-/// - BIP-44 for P2PKH (legacy addresses): purpose = 44'
-/// - BIP-84 for P2WPKH (native SegWit addresses): purpose = 84'
-/// - BIP-86 for P2TR (Taproot addresses): purpose = 86'
+/// Dogecoin does not implement the purpose scheme for deterministic wallet. However, for
+/// compatibility with Bitcoin, we follow BIP-44 for P2PKH address.
 ///
-/// These standards ensure wallet compatibility and predictable address generation.
+/// In BIP-44, the purpose field is a constant set to 44' (or 0x8000002C) for P2PKH addresses.
 pub enum Purpose {
     P2PKH,  // BIP-44
-    P2WPKH, // BIP-84
-    P2TR,   // BIP-86
 }
 
 impl Purpose {
     fn to_u32(&self) -> u32 {
         match self {
             Purpose::P2PKH => 44,
-            Purpose::P2WPKH => 84,
-            Purpose::P2TR => 86,
         }
     }
 }
@@ -239,17 +198,17 @@ impl Purpose {
 /// - Logical separation of different address types and accounts
 /// - Privacy through address rotation within accounts
 ///
-/// This implementation supports BIP-44 (P2PKH), BIP-84 (P2WPKH), and BIP-86 (P2TR) standards
-/// and provides serialization compatible with the Internet Computer's key derivation APIs.
+/// This implementation supports BIP-44 (P2PKH) and provides serialization compatible with the
+/// Internet Computer's key derivation APIs.
 ///
 /// The concept of a wallet derivation path being hardened does not apply on ICP, since key
 /// derivation is entirely handled by the subnet and private keys are never accessible. Derivation paths
 /// function purely as deterministic identifiers.
 pub struct DerivationPath {
-    /// Purpose according to BIP-43 (e.g., 44 for legacy, 84 for SegWit, 86 for Taproot)
+    /// Purpose according to BIP-43 (44 for P2PKH)
     purpose: Purpose,
 
-    /// Coin type (0 = Bitcoin mainnet/testnet). Can be extended for altcoins.
+    /// Coin type (0 = Dogecoin mainnet/testnet). Can be extended for altcoins.
     coin_type: u32,
 
     /// Logical account identifier. Use this to separate multiple user accounts or roles.
@@ -271,7 +230,7 @@ impl DerivationPath {
     /// - `address_index`: Address index within the account (increment for new addresses)
     ///
     /// Fixed values:
-    /// - `coin_type`: Always 0 (Bitcoin mainnet/testnet)
+    /// - `coin_type`: Always 0 (Dogecoin mainnet/testnet)
     /// - `change`: Always 0 (external/receiving addresses, not internal change addresses)
     fn new(purpose: Purpose, account: u32, address_index: u32) -> Self {
         Self {
@@ -283,7 +242,7 @@ impl DerivationPath {
         }
     }
 
-    /// Convenience constructor for P2PKH (legacy) addresses.
+    /// Convenience constructor for P2PKH addresses.
     pub fn p2pkh(account: u32, address_index: u32) -> Self {
         Self::new(Purpose::P2PKH, account, address_index)
     }
