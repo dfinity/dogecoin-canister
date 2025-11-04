@@ -1,9 +1,13 @@
-use crate::{common::{get_fee_per_byte, DerivationPath, PrimaryOutput}, dogecoin_get_utxos, dogecoin_send_transaction, ecdsa::{get_ecdsa_public_key, sign_with_ecdsa}, p2pkh::{self}, SendRequest, DOGE_CONTEXT};
+use crate::{
+    common::{get_fee_per_byte, DerivationPath, PrimaryOutput},
+    dogecoin_get_utxos, dogecoin_send_transaction,
+    ecdsa::{get_ecdsa_public_key, sign_with_ecdsa},
+    p2pkh::{self},
+    SendRequest, DOGE_CONTEXT,
+};
 use bitcoin::{consensus::serialize, dogecoin::Address, PublicKey};
 use ic_cdk::{
-    bitcoin_canister::{
-        GetUtxosRequest, SendTransactionRequest,
-    },
+    bitcoin_canister::{GetUtxosRequest, SendTransactionRequest},
     trap, update,
 };
 use std::str::FromStr;

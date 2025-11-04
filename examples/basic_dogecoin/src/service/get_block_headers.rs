@@ -1,8 +1,6 @@
 use crate::{dogecoin_get_block_headers, DOGE_CONTEXT};
 use ic_cdk::{
-    bitcoin_canister::{
-        GetBlockHeadersRequest, GetBlockHeadersResponse,
-    },
+    bitcoin_canister::{GetBlockHeadersRequest, GetBlockHeadersResponse},
     update,
 };
 

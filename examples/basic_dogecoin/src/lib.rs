@@ -3,13 +3,16 @@ mod ecdsa;
 mod p2pkh;
 mod service;
 
-use ic_cdk::{bitcoin_canister, init, post_upgrade};
-use std::cell::Cell;
 use bitcoin::dogecoin;
 use candid::{CandidType, Deserialize, Principal};
-use ic_cdk::bitcoin_canister::{GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse, GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, SendTransactionRequest};
+use ic_cdk::bitcoin_canister::{
+    GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
+    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, SendTransactionRequest,
+};
 use ic_cdk::call::{Call, CallResult};
+use ic_cdk::{bitcoin_canister, init, post_upgrade};
 use serde::Serialize;
+use std::cell::Cell;
 
 type Amount = candid::Nat;
 
@@ -191,11 +194,13 @@ pub async fn dogecoin_get_block_headers(
     let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network));
     // same cycles cost as for the Bitcoin canister
     let cycles = bitcoin_canister::cost_get_block_headers(arg);
-    Ok(Call::bounded_wait(canister_id, "dogecoin_get_block_headers")
-        .with_arg(arg)
-        .with_cycles(cycles)
-        .await?
-        .candid()?)
+    Ok(
+        Call::bounded_wait(canister_id, "dogecoin_get_block_headers")
+            .with_arg(arg)
+            .with_cycles(cycles)
+            .await?
+            .candid()?,
+    )
 }
 
 /// Gets the canister ID of the Dogecoin canister for the specified network.

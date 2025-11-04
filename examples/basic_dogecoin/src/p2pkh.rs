@@ -4,11 +4,12 @@ use crate::{
     DogecoinContext,
 };
 use bitcoin::{
+    dogecoin::Address,
     hashes::Hash,
     script::{Builder, PushBytesBuf},
     secp256k1::ecdsa::Signature as SecpSignature,
     sighash::{EcdsaSighashType, SighashCache},
-    dogecoin::Address, AddressType, PublicKey, Transaction,
+    AddressType, PublicKey, Transaction,
 };
 use ic_cdk::{
     bitcoin_canister::{MillisatoshiPerByte, Utxo},

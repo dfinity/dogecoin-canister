@@ -4,12 +4,10 @@
 
 use crate::{dogecoin_get_fee_percentiles, DogecoinContext};
 use bitcoin::{
-    self, absolute::LockTime, blockdata::witness::Witness, hashes::Hash, transaction::Version,
-    dogecoin::Address, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
+    self, absolute::LockTime, blockdata::witness::Witness, dogecoin::Address, hashes::Hash,
+    transaction::Version, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
 };
-use ic_cdk::bitcoin_canister::{
-    GetCurrentFeePercentilesRequest, Utxo,
-};
+use ic_cdk::bitcoin_canister::{GetCurrentFeePercentilesRequest, Utxo};
 use std::fmt;
 
 /// Selects UTXOs using a greedy algorithm to cover the required amount plus fee.
@@ -54,6 +52,7 @@ pub enum PrimaryOutput {
     /// Pay someone (spendable output).
     Address(Address, u64), // destination address, amount in koinus
     /// Embed data (unspendable OP_RETURN output).
+    #[allow(dead_code)]
     OpReturn(ScriptBuf), // script already starts with OP_RETURN
 }
 
@@ -130,14 +129,12 @@ pub fn build_transaction_with_fee(
 
     // --- Assemble Transaction ---
     // Create the final unsigned transaction.
-    Ok(
-        Transaction {
-            input: inputs,
-            output: outputs,
-            lock_time: LockTime::ZERO, // No absolute timelock
-            version: Version::ONE,     // Standard for Dogecoin transactions
-        },
-    )
+    Ok(Transaction {
+        input: inputs,
+        output: outputs,
+        lock_time: LockTime::ZERO, // No absolute timelock
+        version: Version::ONE,     // Standard for Dogecoin transactions
+    })
 }
 
 /// Estimates a reasonable fee rate for Dogecoin transactions based on network conditions.
@@ -179,7 +176,7 @@ pub async fn get_fee_per_byte(ctx: &DogecoinContext) -> u64 {
 ///
 /// In BIP-44, the purpose field is a constant set to 44' (or 0x8000002C) for P2PKH addresses.
 pub enum Purpose {
-    P2PKH,  // BIP-44
+    P2PKH, // BIP-44
 }
 
 impl Purpose {
