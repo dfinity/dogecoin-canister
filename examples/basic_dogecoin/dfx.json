@@ -15,7 +15,7 @@
       "package": "basic_dogecoin",
       "type": "custom",
       "wasm": "target/wasm32-unknown-unknown/release/basic_dogecoin.wasm",
-      "init_arg": "(variant { regtest })"
+      "init_arg": "(variant { mainnet })"
     }
   },
   "defaults": {
