@@ -1,6 +1,6 @@
 type koinu = nat64;
 
-type millikoinu_per_vbyte = nat64;
+type millikoinu_per_byte = nat64;
 
 type dogecoin_address = text;
 
