@@ -35,7 +35,7 @@ For background on the ICP<>BTC integration, refer to the [Learn Hub](https://lea
 
 This example can be deployed directly to the Internet Computer using ICP Ninja, where it connects to Dogecoin **testnet**. Note: Canisters deployed via ICP Ninja remain live for 50 minutes after signing in with your Internet Identity.
 
-[![](https://icp.ninja/assets/open.svg)](https://icp.ninja/editor?g=https://github.com/dfinity/examples/tree/master/rust/basic_bitcoin)
+[![](https://icp.ninja/assets/open.svg)](https://icp.ninja/editor?g=https://github.com/dfinity/examples/tree/master/rust/basic_dogecoin)
 
 ## Building and deploying the smart contract locally
 

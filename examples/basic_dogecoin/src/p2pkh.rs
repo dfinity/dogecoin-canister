@@ -8,7 +8,7 @@ use bitcoin::{
     script::{Builder, PushBytesBuf},
     secp256k1::ecdsa::Signature as SecpSignature,
     sighash::{EcdsaSighashType, SighashCache},
-    dogecoin::Address, AddressType, PublicKey, Transaction, Witness,
+    dogecoin::Address, AddressType, PublicKey, Transaction,
 };
 use ic_cdk::{
     bitcoin_canister::{MillisatoshiPerByte, Utxo},
@@ -16,7 +16,7 @@ use ic_cdk::{
 };
 use std::convert::TryFrom;
 
-// Builds a transaction to send the given `amount` of satoshis to the
+// Builds a transaction to send the given `amount` of koinus to the
 // destination address.
 pub async fn build_transaction(
     ctx: &DogecoinContext,
@@ -24,7 +24,7 @@ pub async fn build_transaction(
     own_address: &Address,
     own_utxos: &[Utxo],
     primary_output: &PrimaryOutput,
-    fee_per_vbyte: MillisatoshiPerByte,
+    fee_per_byte: MillisatoshiPerByte,
 ) -> Transaction {
     // We have a chicken-and-egg problem where we need to know the length
     // of the transaction in order to compute its proper fee, but we need
@@ -43,7 +43,7 @@ pub async fn build_transaction(
     let mut fee = 0;
     loop {
         let utxos_to_spend = select_utxos_greedy(own_utxos, amount, fee).unwrap();
-        let (transaction, _) =
+        let transaction =
             build_transaction_with_fee(utxos_to_spend, own_address, primary_output, fee).unwrap();
 
         // Sign the transaction. In this case, we only care about the size
@@ -60,10 +60,10 @@ pub async fn build_transaction(
 
         let tx_vsize = signed_transaction.vsize() as u64;
 
-        if (tx_vsize * fee_per_vbyte) / 1000 == fee {
+        if (tx_vsize * fee_per_byte) / 1000 == fee {
             return transaction;
         } else {
-            fee = (tx_vsize * fee_per_vbyte) / 1000;
+            fee = (tx_vsize * fee_per_byte) / 1000;
         }
     }
 }
@@ -122,8 +122,6 @@ where
             .push_slice(sig_bytes)
             .push_slice(pubkey_bytes)
             .into_script();
-
-        input.witness = Witness::new();
     }
 
     transaction

@@ -1,6 +1,6 @@
-type satoshi = nat64;
+type koinu = nat64;
 
-type millisatoshi_per_vbyte = nat64;
+type millikoinu_per_vbyte = nat64;
 
 type dogecoin_address = text;
 
@@ -20,7 +20,7 @@ type outpoint = record {
 
 type utxo = record {
   outpoint : outpoint;
-  value : satoshi;
+  value : koinu;
   height : nat32;
 };
 
@@ -42,18 +42,18 @@ type get_block_headers_response = record {
 service : (network) -> {
   "get_p2pkh_address" : () -> (dogecoin_address);
 
-  "get_balance" : (address : dogecoin_address) -> (satoshi);
+  "get_balance" : (address : dogecoin_address) -> (koinu);
 
   "get_utxos" : (dogecoin_address) -> (get_utxos_response);
 
   "get_block_headers" : (start_height : block_height, end_height : opt block_height) -> (get_block_headers_response);
 
-  "get_current_fee_percentiles" : () -> (vec millisatoshi_per_vbyte);
+  "get_current_fee_percentiles" : () -> (vec millikoinu_per_byte);
 
   "send_from_p2pkh_address" : (
     record {
       destination_address : dogecoin_address;
-      amount_in_satoshi : satoshi;
+      amount_in_koinu : koinu;
     }
   ) -> (transaction_id);
 };

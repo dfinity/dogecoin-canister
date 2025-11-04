@@ -2,7 +2,7 @@ use crate::{common::DerivationPath, ecdsa::get_ecdsa_public_key, DOGE_CONTEXT};
 use bitcoin::{dogecoin::Address, PublicKey};
 use ic_cdk::update;
 
-/// Returns a legacy P2PKH (Pay-to-PubKey-Hash) address for this smart contract.
+/// Returns a P2PKH (Pay-to-PubKey-Hash) address for this smart contract.
 ///
 /// This address uses an ECDSA public key and encodes it in the legacy Base58 format.
 /// It is supported by all dogecoin wallets and full nodes.
