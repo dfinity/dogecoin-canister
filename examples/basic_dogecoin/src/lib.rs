@@ -84,8 +84,11 @@ fn upgrade(network: Network) {
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, CandidType, Deserialize, Serialize)]
 pub enum Network {
+    #[serde(rename = "mainnet")]
     Mainnet,
+    #[serde(rename = "testnet")]
     Testnet,
+    #[serde(rename = "regtest")]
     Regtest,
 }
 
