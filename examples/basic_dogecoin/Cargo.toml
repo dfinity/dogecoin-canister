@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bitcoin = { workspace = true }
-candid = { workspace = true }
-ic-cdk = { workspace = true }
-serde = { workspace = true }
+bitcoin = { git = "https://github.com/dfinity/rust-dogecoin.git", rev = "851705aa88e0a2f0f8b5002173b4cdb1d218a4e5" }
+candid = "0.10.6"
+ic-cdk = "0.18.7"
+serde = "1.0.171"
