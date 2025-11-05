@@ -1,6 +1,6 @@
 # Basic Dogecoin
 
-This example demonstrates how to deploy a smart contract on the Internet Computer that can receive and send dogecoin with support for P2PKH address type.
+This example demonstrates how to deploy a smart contract on the Internet Computer that can send and receive dogecoins.
 
 ## Table of contents
 
@@ -14,7 +14,6 @@ This example demonstrates how to deploy a smart contract on the Internet Compute
   * [5. Deploy the smart contract](#4-deploy-the-smart-contract)
 * [Generating Dogecoin addresses](#generating-dogecoin-addresses)
 * [Receiving dogecoin](#receiving-dogecoin)
-* [Prerequisites](#prerequisites)
 * [Checking balance](#checking-balance)
 * [Sending dogecoin](#sending-dogecoin)
 * [Retrieving block headers](#retrieving-block-headers)
@@ -28,14 +27,14 @@ This example integrates with the Internet Computer's built-in:
 * [ECDSA API](https://internetcomputer.org/docs/current/references/ic-interface-spec/#ic-ecdsa_public_key)
 * [Dogecoin API](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md)
 
-For background on the ICP<>BTC integration, refer to the [Learn Hub](https://learn.internetcomputer.org/hc/en-us/articles/34211154520084-Bitcoin-Integration).
+For background on the ICP<>DOGE integration, refer to the [Learn Hub](https://learn.internetcomputer.org/hc/en-us/articles/34211154520084-Bitcoin-Integration).
 
 
 ## Deploying from ICP Ninja
 
-This example can be deployed directly to the Internet Computer using ICP Ninja, where it connects to Dogecoin **testnet**. Note: Canisters deployed via ICP Ninja remain live for 50 minutes after signing in with your Internet Identity.
+This example can be deployed directly to the Internet Computer using ICP Ninja, where it connects to Dogecoin **mainnet**. Note: Canisters deployed via ICP Ninja remain live for 50 minutes after signing in with your Internet Identity.
 
-[![](https://icp.ninja/assets/open.svg)](https://icp.ninja/editor?g=https://github.com/dfinity/examples/tree/master/rust/basic_dogecoin)
+[![](https://icp.ninja/assets/open.svg)](https://icp.ninja/editor?g=https://github.com/dfinity/dogecoin-canister/tree/master/examples/basic_dogecoin)
 
 ## Building and deploying the smart contract locally
 
@@ -43,23 +42,22 @@ This example can be deployed directly to the Internet Computer using ICP Ninja, 
 
 * [x] [Rust toolchain](https://www.rust-lang.org/tools/install)
 * [x] [Internet Computer SDK](https://internetcomputer.org/docs/building-apps/getting-started/install)
-* [x] [Local Dogecoin testnet (regtest)](https://internetcomputer.org/docs/build-on-btc/btc-dev-env#create-a-local-bitcoin-testnet-regtest-with-bitcoind)
-* [x] On macOS, an `llvm` version that supports the `wasm32-unknown-unknown` target is required. The Rust `bitcoin` library relies on the `secp256k1-sys` crate, which requires `llvm` to build. The default `llvm` version provided by XCode does not meet this requirement. Install the [Homebrew version](https://formulae.brew.sh/formula/llvm) using `brew install llvm`.
+* [x] [Local Dogecoin regtest](https://dfinity.github.io/dogecoin-canister/regtest.html)
+* [x] On macOS, an `llvm` version that supports the `wasm32-unknown-unknown` target is required. The Rust `dogecoin` library relies on the `secp256k1-sys` crate, which requires `llvm` to build. The default `llvm` version provided by XCode does not meet this requirement. Install the [Homebrew version](https://formulae.brew.sh/formula/llvm) using `brew install llvm`.
 
 
 ### 2. Clone the examples repo
 
 ```bash
-git clone https://github.com/dfinity/examples
-cd examples/rust/basic_dogecoin
+git clone https://github.com/dfinity/dogecoin-canister/tree/master
+cd examples/basic_dogecoin
 ```
 
 ### 3. Start the ICP execution environment
 
-
 Open a terminal window (terminal 1) and run the following:
 ```bash
-dfx start --enable-bitcoin --bitcoin-node 127.0.0.1:18444
+dfx start --enable-dogecoin --dogecoin-node 127.0.0.1:18444
 ```
 This starts a local canister execution environment with Dogecoin support enabled.
 
@@ -85,9 +83,10 @@ What this does:
 - `--argument '(variant { regtest })'` passes the argument `regtest` to initialize the smart contract, telling it to connect to the local Dogecoin regtest network.
 
 Your smart contract is live and ready to use! You can interact with it using either the command line or the Candid UI (the link you see in the terminal).
+
 ## Generating Dogecoin addresses
 
-The example demonstrates how to generate and use P2PKH addresses using ECDSA and `sign_with_ecdsa`:
+The example demonstrates how to generate and use P2PKH addresses using ECDSA and `sign_with_ecdsa`. Start by generating a Dogecoin address:
 
 ```bash
 dfx canister call basic_dogecoin get_p2pkh_address
@@ -95,19 +94,20 @@ dfx canister call basic_dogecoin get_p2pkh_address
 
 ## Receiving dogecoin
 
-Use the `dogecoin-cli` to mine a Dogecoin block and send the block reward in the form of local testnet dogecoin to one of the smart contract addresses.
+Use the `dogecoin-cli` to mine a Dogecoin block and send the block reward in the form of local regtest to the Dogecoin address.
 ```bash
 dogecoin-cli -conf=$(pwd)/dogecoin.conf generatetoaddress 1 <dogecoin_address>
 ```
 
 ## Checking balance
 
-Check the balance of any Dogecoin address:
+Check the balance of the Dogecoin address:
 ```bash
 dfx canister call basic_dogecoin get_balance '("<dogecoin_address>")'
 ```
 
-This uses `dogecoin_get_balance` and works for any supported address type. The balance requires at least one confirmation to be reflected.
+This uses the `dogecoin_get_balance` endpoint of the canister. The balance requires at least one confirmation to be reflected.
+
 ## Sending dogecoin
 
 You can send dogecoin using the `send_from_p2pkh_address` endpoint.
@@ -124,8 +124,8 @@ Example:
 
 ```bash
 dfx canister call basic_dogecoin send_from_p2pkh_address '(record {
-  destination_address = "bcrt1qg8qknn6f3txqg97gt8ca0ctya0vw7ep6d02qmt";
-  amount_in_satoshi = 4321;
+  destination_address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
+  amount_in_koinu = 9876543210;
 })'
 ```
 
@@ -135,8 +135,6 @@ dfx canister call basic_dogecoin send_from_p2pkh_address '(record {
 > ```bash
 > dogecoin-cli -conf=$(pwd)/dogecoin.conf generatetoaddress 100 <dogecoin_address>
 > ```
-
-The function returns the transaction ID. When interacting with the contract deployed on IC mainnet, you can track testnet transactions on [mempool.space](https://mempool.space/testnet4/).
 
 ## Retrieving block headers
 
@@ -157,7 +155,6 @@ This example implements several important patterns for Dogecoin integration:
 - **Derivation paths**: Keys are derived using structured derivation paths according to BIP-32, ensuring reproducible key generation.
 - **Key caching**: Optimization is used to avoid repeated calls to `get_ecdsa_public_key`.
 - **Manual transaction construction**: Transactions are assembled and signed manually, ensuring maximum flexibility in construction and fee estimation.
-- **Cost optimization**: When testing on mainnet, the [chain-key testing canister](https://github.com/dfinity/chainkey-testing-canister) can be used to save on costs for calling the threshold signing APIs.
 
 ## Security considerations and best practices
 
@@ -172,4 +169,4 @@ For example, the following aspects are particularly relevant for this app:
 
 ---
 
-*Last updated: October 2025*
+*Last updated: November 2025*
