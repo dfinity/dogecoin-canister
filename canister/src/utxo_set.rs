@@ -576,7 +576,7 @@ mod test {
     use crate::{
         address_utxoset::AddressUtxoSet,
         runtime,
-        test_utils::{BlockBuilder, TransactionBuilder},
+        test_utils::{BlockBuilder, TestBlocksCache, TransactionBuilder},
         types::into_dogecoin_network,
         unstable_blocks::UnstableBlocks,
     };
@@ -733,7 +733,9 @@ mod test {
             .build();
         ingest_tx(&mut utxo, &coinbase_tx);
 
-        let unstable_blocks = UnstableBlocks::new(&utxo, 2, crate::genesis_block(network), network);
+        let cache = TestBlocksCache::new(network);
+        let unstable_blocks =
+            UnstableBlocks::new(cache, &utxo, 2, crate::genesis_block(network), network);
 
         let expected = vec![Utxo {
             outpoint: OutPoint {

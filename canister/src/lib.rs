@@ -95,7 +95,12 @@ pub fn init(init_config: InitConfig) {
     print("Running init...");
 
     let config = Config::from(init_config);
+    let cache = unstable_blocks::BlocksCacheInStableMem::new(
+        config.network,
+        memory::get_unstable_blocks_memory(),
+    );
     set_state(State::new(
+        cache,
         config
             .stability_threshold
             .try_into()
@@ -208,7 +213,7 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
 
     let memory = memory::get_upgrades_memory();
 
-    let state: State = {
+    let mut state: State = {
         // Buffered reader at offset 0
         let read_buffer_offset_0 = || {
             let reader = Reader::new(&memory, 0);
@@ -252,6 +257,13 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
             })
             .expect("Failed to read state into array.")
     };
+
+    // Reset cache to stable memory
+    let cache = unstable_blocks::BlocksCacheInStableMem::new(
+        state.network(),
+        memory::get_unstable_blocks_memory(),
+    );
+    state.replace_unstable_blocks_cache(cache);
 
     set_state(state);
 
@@ -378,9 +390,13 @@ mod test {
                 ..Default::default()
             });
 
+           let cache = unstable_blocks::BlocksCacheInStableMem::new(
+               network,
+               crate::memory::get_unstable_blocks_memory()
+            );
             with_state(|state| {
                 assert!(
-                    *state == State::new(stability_threshold as u32, network, genesis_block(network))
+                    *state == State::new(cache, stability_threshold as u32, network, genesis_block(network))
                 );
             });
         }

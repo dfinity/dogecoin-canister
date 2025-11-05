@@ -1,11 +1,13 @@
-use super::{Block, BlockTree};
+use super::{Block, BlockHash, BlockTree, BlocksCache, CachedBlock};
 use bitcoin::dogecoin::Block as DogecoinBlock;
 use serde::{
     de::{Deserializer, Error, SeqAccess, Visitor},
     ser::SerializeSeq,
     Deserialize, Serialize, Serializer,
 };
+use std::cell::RefCell;
 use std::fmt;
+use std::rc::Rc;
 
 /// Serialization helper to flatten a nested tree into a list.
 #[derive(Default)]
@@ -39,6 +41,23 @@ impl Serialize for BlockTree<Block> {
             #[cfg(feature = "canbench-rs")]
             let _p = canbench_rs::bench_scope("serialize_blocktree_flatten");
             flattened.map_from(self, &|block| block.internal_bitcoin_block());
+        }
+        {
+            #[cfg(feature = "canbench-rs")]
+            let _p = canbench_rs::bench_scope("serialize_blocktree_serialize_seq");
+            flattened.serialize(serializer)
+        }
+    }
+}
+
+/// Serialize `BlockTree<CachedBlock>` by flattening it into a list of `(BlockHash, Difficulty)` pairs.
+impl Serialize for BlockTree<CachedBlock> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut flattened = FlattenedTree(vec![]);
+        {
+            #[cfg(feature = "canbench-rs")]
+            let _p = canbench_rs::bench_scope("serialize_blocktree_flatten");
+            flattened.map_from(self, &|block| (&block.block_hash, &block.difficulty));
         }
         {
             #[cfg(feature = "canbench-rs")]
@@ -119,5 +138,45 @@ impl<'de> Deserialize<'de> for BlockTree<Block> {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_seq(BlockTreeVisitor)
+    }
+}
+
+/// Visitor for `BlockTree<CachedBlock>`
+struct CachedBlockTreeVisitor(Rc<RefCell<Box<dyn BlocksCache>>>);
+
+impl<'de> TreeVisitor<'de, CachedBlock> for CachedBlockTreeVisitor {
+    fn next<A: SeqAccess<'de>>(&self, seq: &mut A) -> Result<(CachedBlock, usize), A::Error> {
+        seq.next_element::<((BlockHash, u128), usize)>()?
+            .map(|((block_hash, difficulty), size)| {
+                let block = CachedBlock {
+                    cache: self.0.clone(),
+                    block_hash,
+                    difficulty,
+                };
+                (block, size)
+            })
+            .ok_or(A::Error::custom("reading next element must succeed"))
+    }
+}
+
+impl<'de> Visitor<'de> for CachedBlockTreeVisitor {
+    type Value = BlockTree<CachedBlock>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("A blocktree deserializer.")
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, seq: A) -> Result<Self::Value, A::Error> {
+        self.visit_sequence(seq)
+    }
+}
+
+impl<'de> Deserialize<'de> for BlockTree<CachedBlock> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let cache: Rc<RefCell<Box<dyn BlocksCache>>> = Rc::new(RefCell::new(Box::new(())));
+        deserializer.deserialize_seq(CachedBlockTreeVisitor(cache))
     }
 }
