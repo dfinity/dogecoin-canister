@@ -71,7 +71,7 @@ pub enum PrimaryOutput {
 ///
 /// Assumes that:
 /// - Inputs are unspent and valid (caller's responsibility)
-/// - Dust threshold is 1,000 satoshis (outputs below this are omitted)
+/// - Dust threshold is 1,000,000 koinu (outputs below this are omitted)
 /// - UTXOs are already filtered to be spendable (confirmed, mature, etc.)
 pub fn build_transaction_with_fee(
     utxos_to_spend: Vec<&Utxo>,
