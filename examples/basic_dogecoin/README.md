@@ -164,7 +164,7 @@ If you base your application on this example, we recommend you familiarize yours
 
 For example, the following aspects are particularly relevant for this app:
 
-- [Certify query responses if they are relevant for security](https://internetcomputer.org/docs/building-apps/security/data-integrity-and-authenticity#using-certified-variables-for-secure-queries), since the app e.g. offers a method to read balances.
+- [Certify query responses if they are relevant for security](https://internetcomputer.org/docs/building-apps/security/data-integrity-and-authenticity#using-certified-variables-for-secure-queries), since the app, for example, offers a method to read balances.
 - [Use a decentralized governance system like SNS to make a smart contract have a decentralized controller](https://internetcomputer.org/docs/building-apps/security/decentralization), since decentralized control may be essential for smart contracts holding dogecoins on behalf of users.
 
 ---

@@ -17,7 +17,7 @@ use ic_cdk::{
 };
 use std::convert::TryFrom;
 
-// Builds a transaction to send the given `amount` of koinus to the
+// Builds a transaction to send the given `amount` of koinu to the
 // destination address.
 pub async fn build_transaction(
     ctx: &DogecoinContext,
@@ -69,7 +69,7 @@ pub async fn build_transaction(
     }
 }
 
-// Sign a P2PKH dogecoin transaction.
+// Sign a P2PKH Dogecoin transaction.
 //
 // IMPORTANT: This method is for demonstration purposes only and it only
 // supports signing transactions if:

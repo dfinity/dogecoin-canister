@@ -50,7 +50,7 @@ pub fn select_utxos_greedy(
 /// dogecoin to an address (normal payment) or embed data using OP_RETURN.
 pub enum PrimaryOutput {
     /// Pay someone (spendable output).
-    Address(Address, u64), // destination address, amount in koinus
+    Address(Address, u64), // destination address, amount in koinu
     /// Embed data (unspendable OP_RETURN output).
     #[allow(dead_code)]
     OpReturn(ScriptBuf), // script already starts with OP_RETURN
@@ -141,14 +141,14 @@ pub fn build_transaction_with_fee(
 ///
 /// This function queries the Dogecoin network for recent fee percentiles and returns
 /// the median (50th percentile) fee rate, which provides a good balance between
-/// confirmation time and cost. The fee rate is returned in millikoinus per byte.
+/// confirmation time and cost. The fee rate is returned in millikoinu per byte.
 ///
 /// On regtest networks (local development), fee data is typically unavailable since
 /// there are no standard transactions, so the function falls back to a static rate
-/// of 2,000,000 millikoinus/byte (2,000 koinus/B or 0.02 DOGE/kB) which is reasonable for testing.
+/// of 2,000,000 millikoinu/byte (2,000 koinu/B or 0.02 DOGE/kB) which is reasonable for testing.
 ///
 /// # Returns
-/// Fee rate in millikoinus per byte (1,000 millikoinus = 1 koinu).
+/// Fee rate in millikoinu per byte (1,000 millikoinu = 1 koinu).
 pub async fn get_fee_per_byte(ctx: &DogecoinContext) -> u64 {
     // Query recent fee percentiles from the Dogecoin network.
     // This gives us real-time fee data based on recent transaction activity.
@@ -161,7 +161,7 @@ pub async fn get_fee_per_byte(ctx: &DogecoinContext) -> u64 {
     if fee_percentiles.is_empty() {
         // Empty percentiles indicate that we're likely on regtest with no standard transactions.
         // Use a reasonable fallback that works for development and testing.
-        2_000_000 // 2,000 koinus/B in millikoinus
+        2_000_000 // 2,000 koinu/B in millikoinu
     } else {
         // Use the 50th percentile (median) for balanced confirmation time and cost.
         // This avoids both overpaying (high percentiles) and slow confirmation (low percentiles).
@@ -171,8 +171,8 @@ pub async fn get_fee_per_byte(ctx: &DogecoinContext) -> u64 {
 
 /// Purpose field for BIP-32 hierarchical deterministic wallet derivation paths.
 ///
-/// Dogecoin does not implement the purpose scheme for deterministic wallet. However, for
-/// compatibility with Bitcoin, we follow BIP-44 for P2PKH address.
+/// Dogecoin does not implement the purpose scheme for deterministic wallets. However, for
+/// compatibility with Bitcoin, we follow BIP-44 for P2PKH addresses.
 ///
 /// In BIP-44, the purpose field is a constant set to 44' (or 0x8000002C) for P2PKH addresses.
 pub enum Purpose {
