@@ -25,7 +25,7 @@ type outpoint = record {
 type utxo = record {
   outpoint : outpoint;
   value : koinu;
-  height : nat32;
+  height : block_height;
 };
 
 type get_utxos_response = record {
