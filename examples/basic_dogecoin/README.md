@@ -27,7 +27,7 @@ This example integrates with the Internet Computer's built-in:
 * [ECDSA API](https://internetcomputer.org/docs/current/references/ic-interface-spec/#ic-ecdsa_public_key)
 * [Dogecoin API](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md)
 
-For background on the ICP<>DOGE integration, refer to the [Learn Hub](https://learn.internetcomputer.org/hc/en-us/articles/34211154520084-Bitcoin-Integration).
+For background on the Bitcoin integration, which underpins the ICP<>DOGE integration, refer to the [Learn Hub](https://learn.internetcomputer.org/hc/en-us/articles/34211154520084-Bitcoin-Integration).
 
 
 ## Deploying from ICP Ninja
