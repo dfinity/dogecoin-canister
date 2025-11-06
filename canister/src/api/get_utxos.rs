@@ -176,7 +176,7 @@ fn get_utxos_internal(
 // ```
 fn get_stability_count(
     blocks_with_depths_on_the_same_height: &[(&Block, u32)],
-    target_block: BlockHash,
+    target_block: &BlockHash,
 ) -> i32 {
     let mut max_depth_of_the_other_blocks = 0;
     let mut target_block_depth = 0;
@@ -194,7 +194,7 @@ fn get_utxos_from_chain(
     state: &State,
     address: &str,
     min_confirmations: u32,
-    chain: BlockChain,
+    chain: BlockChain<Block>,
     offset: Option<Utxo>,
     utxo_limit: usize,
 ) -> Result<(GetUtxosResponse, Stats), GetUtxosError> {
@@ -261,7 +261,7 @@ fn get_utxos_from_chain(
     let rest = utxos.split_off(utxos.len().min(utxo_limit));
     let next_page = rest.first().map(|next| {
         Page {
-            tip_block_hash: tip_block_hash.clone(),
+            tip_block_hash: *tip_block_hash,
             height: next.height,
             outpoint: OutPoint::new(Txid::from(next.outpoint.txid), next.outpoint.vout),
         }
@@ -1054,7 +1054,7 @@ mod test {
 
             assert_eq!(response.utxos.len(), 3);
             assert!(response.utxos.len() < utxo_set.len());
-            assert_eq!(response.tip_block_hash, tip_block_hash.clone().to_vec());
+            assert_eq!(response.tip_block_hash, tip_block_hash.to_vec());
             assert_eq!(response.tip_height, 0);
             assert!(response.next_page.is_some());
 
@@ -1072,7 +1072,7 @@ mod test {
 
             assert_eq!(response.utxos.len(), 4);
             assert!(response.utxos.len() < utxo_set.len());
-            assert_eq!(response.tip_block_hash, tip_block_hash.clone().to_vec());
+            assert_eq!(response.tip_block_hash, tip_block_hash.to_vec());
             assert_eq!(response.tip_height, 0);
             assert!(response.next_page.is_some());
 
@@ -1083,7 +1083,7 @@ mod test {
 
             assert_eq!(response.utxos.len(), num_transactions as usize);
             assert_eq!(response.utxos.len(), utxo_set.len());
-            assert_eq!(response.tip_block_hash, tip_block_hash.clone().to_vec());
+            assert_eq!(response.tip_block_hash, tip_block_hash.to_vec());
             assert_eq!(response.tip_height, 0);
             assert!(response.next_page.is_none());
         }
@@ -1330,7 +1330,7 @@ mod test {
     }
 
     // Asserts that the given block hash is the tip at the given number of confirmations.
-    fn assert_tip_at_confirmations(confirmations: u32, expected_tip: BlockHash) {
+    fn assert_tip_at_confirmations(confirmations: u32, expected_tip: &BlockHash) {
         // To fetch the tip, we call `get_utxos` using a random address.
         let address = random_p2pkh_address(bitcoin::dogecoin::Network::Regtest).to_string();
         assert_eq!(
