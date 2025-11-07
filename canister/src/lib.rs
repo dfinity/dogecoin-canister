@@ -856,7 +856,6 @@ mod test {
         // Serialize the state to bytes
         let mut state_bytes = vec![];
         ciborium::ser::into_writer(&old_state, &mut state_bytes).unwrap();
-        eprintln!("state_bytes.len = {}", state_bytes.len());
 
         // Write state into stable memory using old format
         let memory = memory::get_upgrades_memory();
