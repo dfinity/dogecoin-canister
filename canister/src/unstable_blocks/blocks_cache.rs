@@ -9,6 +9,8 @@ pub trait BlocksCache {
     fn is_empty(&self) -> bool;
     fn len(&self) -> u64;
     fn network(&self) -> Network;
+    #[cfg(test)]
+    fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block>;
 }
 
 /// Dummy implementation that panics!
@@ -29,6 +31,10 @@ impl BlocksCache for () {
         unimplemented!()
     }
     fn network(&self) -> Network {
+        unimplemented!()
+    }
+    #[cfg(test)]
+    fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block> {
         unimplemented!()
     }
 }
@@ -70,5 +76,19 @@ impl BlocksCache for BlocksCacheInStableMem {
     }
     fn network(&self) -> Network {
         self.network
+    }
+    #[cfg(test)]
+    fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block> {
+        self.map
+            .iter()
+            .map(|entry| {
+                use bitcoin::consensus::Decodable;
+                let (hash, bytes) = entry.into_pair();
+                let block = bitcoin::dogecoin::Block::consensus_decode(&mut bytes.as_slice())
+                    .ok()
+                    .unwrap();
+                (hash, Block::new(block))
+            })
+            .collect()
     }
 }

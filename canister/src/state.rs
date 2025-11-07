@@ -117,6 +117,17 @@ impl State {
         }
     }
 
+    /// Returns the UTXO set of a given dogecoin address.
+    pub fn get_utxos(&self, address: Address) -> AddressUtxoSet<'_> {
+        AddressUtxoSet::new(address, &self.utxos, &self.unstable_blocks)
+    }
+
+    pub fn replace_unstable_blocks_cache<Cache: BlocksCache + 'static>(&mut self, cache: Cache) {
+        self.unstable_blocks.replace_blocks_cache(cache)
+    }
+}
+
+impl<A> StateT<A> {
     pub fn network(&self) -> Network {
         self.utxos.network()
     }
@@ -126,13 +137,38 @@ impl State {
         self.utxos.next_height()
     }
 
-    /// Returns the UTXO set of a given dogecoin address.
-    pub fn get_utxos(&self, address: Address) -> AddressUtxoSet<'_> {
-        AddressUtxoSet::new(address, &self.utxos, &self.unstable_blocks)
-    }
-
-    pub fn replace_unstable_blocks_cache<Cache: BlocksCache + 'static>(&mut self, cache: Cache) {
-        self.unstable_blocks.replace_blocks_cache(cache)
+    /// Mapping the tree type in unstable blocks to a different type.
+    pub fn map_tree<B, F: FnOnce(A) -> B>(self, f: F) -> StateT<B> {
+        let StateT {
+            utxos,
+            unstable_blocks,
+            syncing_state,
+            blocks_source,
+            fee_percentiles_cache,
+            stable_block_headers,
+            fees,
+            metrics,
+            api_access,
+            disable_api_if_not_fully_synced,
+            watchdog_canister,
+            burn_cycles,
+            lazily_evaluate_fee_percentiles,
+        } = self;
+        StateT {
+            utxos,
+            unstable_blocks: unstable_blocks.map_tree(f),
+            syncing_state,
+            blocks_source,
+            fee_percentiles_cache,
+            stable_block_headers,
+            fees,
+            metrics,
+            api_access,
+            disable_api_if_not_fully_synced,
+            watchdog_canister,
+            burn_cycles,
+            lazily_evaluate_fee_percentiles,
+        }
     }
 }
 

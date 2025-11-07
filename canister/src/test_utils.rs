@@ -15,6 +15,7 @@ use std::{
     str::FromStr,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TestBlocksCache {
     pub network: Network,
     map: BTreeMap<BlockHash, Block>,
@@ -47,6 +48,10 @@ impl BlocksCache for TestBlocksCache {
     }
     fn network(&self) -> Network {
         self.network
+    }
+    #[cfg(test)]
+    fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block> {
+        self.map.clone()
     }
 }
 

@@ -192,6 +192,22 @@ pub struct BlockTree<Block> {
     children: Vec<BlockTree<Block>>,
 }
 
+impl<A> BlockTree<A> {
+    pub fn map<B, F: Fn(A) -> B>(self, f: &F) -> BlockTree<B> {
+        BlockTree {
+            root: f(self.root),
+            children: self.children.into_iter().map(|t| t.map(f)).collect(),
+        }
+    }
+}
+
+impl BlockTree<Block> {
+    pub fn into_cached<C: BlocksCache + 'static>(self, cache: C) -> BlockTree<CachedBlock> {
+        let cache: Cache = Rc::new(RefCell::new(Box::new(cache)));
+        self.map(&|block| CachedBlock::new_cached(cache.clone(), block))
+    }
+}
+
 /// CachedBlock specific implementation
 impl BlockTree<CachedBlock> {
     /// Creates a new `BlockTree` with the given block as its root.
@@ -877,6 +893,33 @@ mod test {
         ciborium::ser::into_writer(&tree, &mut bytes).unwrap();
         let new_tree: BlockTree = ciborium::de::from_reader(&bytes[..]).unwrap();
         assert_eq!(tree, new_tree);
+    }
+
+    #[proptest]
+    fn serialize_deserialize_old_block_vs_cached_block(tree: BlockTree) {
+        let mut tree_bytes = vec![];
+        ciborium::ser::into_writer(&tree, &mut tree_bytes).unwrap();
+        let old_cache = tree.cache().clone();
+
+        // Create a BlockTree<Block> and test its serialization
+        let tree_of_block = tree.map(&|cached_block| cached_block.block());
+        let mut bytes = vec![];
+        ciborium::ser::into_writer(&tree_of_block, &mut bytes).unwrap();
+        let tree_of_block_1: super::BlockTree<Block> =
+            ciborium::de::from_reader(&bytes[..]).unwrap();
+        assert_eq!(tree_of_block, tree_of_block_1);
+
+        // Map BlockTree<Block> into BlockTree<CachedBlock>
+        let new_cache = TestBlocksCache::new(old_cache.borrow().network());
+        let new_tree = tree_of_block_1.into_cached(new_cache);
+        let mut new_tree_bytes = vec![];
+        ciborium::ser::into_writer(&new_tree, &mut new_tree_bytes).unwrap();
+
+        assert_eq!(tree_bytes, new_tree_bytes);
+        assert_eq!(
+            old_cache.borrow().collect(),
+            new_tree.cache().borrow().collect()
+        );
     }
 
     #[proptest]

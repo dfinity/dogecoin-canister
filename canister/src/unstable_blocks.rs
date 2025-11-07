@@ -75,6 +75,25 @@ pub struct UnstableBlocksT<Tree> {
     next_block_headers: NextBlockHeaders,
 }
 
+impl<A> UnstableBlocksT<A> {
+    pub fn map_tree<B, F: FnOnce(A) -> B>(self, f: F) -> UnstableBlocksT<B> {
+        let UnstableBlocksT {
+            stability_threshold,
+            tree,
+            outpoints_cache,
+            network,
+            next_block_headers,
+        } = self;
+        UnstableBlocksT {
+            stability_threshold,
+            tree: f(tree),
+            outpoints_cache,
+            network,
+            next_block_headers,
+        }
+    }
+}
+
 pub type UnstableBlocks = UnstableBlocksT<BlockTree<CachedBlock>>;
 
 impl UnstableBlocks {

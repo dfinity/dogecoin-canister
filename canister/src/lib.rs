@@ -213,12 +213,27 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
 
     let memory = memory::get_upgrades_memory();
 
-    let mut state: State = {
+    let state: State = {
         // Buffered reader at offset 0
         let read_buffer_offset_0 = || {
             let reader = Reader::new(&memory, 0);
             let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
             ciborium::de::from_reader(&mut buffered_reader)
+        };
+
+        // Read Old State type
+        let read_buffer_offset_0_old_state = || {
+            let reader = Reader::new(&memory, 0);
+            let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+            ciborium::de::from_reader(&mut buffered_reader).map(
+                |state: state::StateT<blocktree::BlockTree<Block>>| {
+                    let cache = unstable_blocks::BlocksCacheInStableMem::new(
+                        state.network(),
+                        memory::get_unstable_blocks_memory(),
+                    );
+                    state.map_tree(|tree| tree.into_cached(cache))
+                },
+            )
         };
 
         // Buffered reader at offset 4
@@ -243,7 +258,7 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
         read_buffer_offset_0()
             .or_else(|e| {
                 print(&format!(
-                    "Failed to read state with buffered reader: {:?}. Trying different format...",
+                    "Failed to read old state with buffered reader: {:?}. Trying different format...",
                     e
                 ));
                 read_buffer_offset_4()
@@ -255,15 +270,24 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
                 ));
                 read_array()
             })
+            .map(|mut state: State| {
+                let cache = unstable_blocks::BlocksCacheInStableMem::new(
+                    state.network(),
+                    memory::get_unstable_blocks_memory(),
+                );
+                // Reset cache to stable memory
+                state.replace_unstable_blocks_cache(cache);
+                state
+            })
+            .or_else(|e| {
+                print(&format!(
+                    "Failed to read state with buffered reader: {:?}. Trying different format...",
+                    e
+                ));
+                read_buffer_offset_0_old_state()
+            })
             .expect("Failed to read state into array.")
     };
-
-    // Reset cache to stable memory
-    let cache = unstable_blocks::BlocksCacheInStableMem::new(
-        state.network(),
-        memory::get_unstable_blocks_memory(),
-    );
-    state.replace_unstable_blocks_cache(cache);
 
     set_state(state);
 
