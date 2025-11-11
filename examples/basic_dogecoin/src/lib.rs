@@ -50,12 +50,11 @@ thread_local! {
 fn init_upgrade(network: Network) {
     let key_name = match network {
         Network::Regtest => "dfx_test_key",
-        Network::Mainnet | Network::Testnet => "test_key_1",
+        Network::Mainnet => "test_key_1",
     };
 
     let dogecoin_network = match network {
         Network::Mainnet => dogecoin::Network::Dogecoin,
-        Network::Testnet => dogecoin::Network::Testnet,
         Network::Regtest => dogecoin::Network::Regtest,
     };
 
@@ -86,8 +85,6 @@ fn upgrade(network: Network) {
 pub enum Network {
     #[serde(rename = "mainnet")]
     Mainnet,
-    #[serde(rename = "testnet")]
-    Testnet,
     #[serde(rename = "regtest")]
     Regtest,
 }
@@ -96,7 +93,6 @@ impl From<Network> for bitcoin_canister::Network {
     fn from(network: Network) -> Self {
         match network {
             Network::Mainnet => bitcoin_canister::Network::Mainnet,
-            Network::Testnet => bitcoin_canister::Network::Testnet,
             Network::Regtest => bitcoin_canister::Network::Regtest,
         }
     }
@@ -105,8 +101,8 @@ impl From<Network> for bitcoin_canister::Network {
 fn into_dogecoin_network(network: bitcoin_canister::Network) -> Network {
     match network {
         bitcoin_canister::Network::Mainnet => Network::Mainnet,
-        bitcoin_canister::Network::Testnet => Network::Testnet,
         bitcoin_canister::Network::Regtest => Network::Regtest,
+        bitcoin_canister::Network::Testnet => panic!("testnet is not supported"),
     }
 }
 
@@ -209,12 +205,10 @@ pub async fn dogecoin_get_block_headers(
 /// Gets the canister ID of the Dogecoin canister for the specified network.
 pub fn get_dogecoin_canister_id(network: &Network) -> Principal {
     const MAINNET_ID: Principal = Principal::from_slice(&[0_u8, 0, 0, 0, 1, 160, 0, 7, 1, 1]); // "gordg-fyaaa-aaaan-aaadq-cai"
-    const TESTNET_ID: Principal = Principal::from_slice(&[0, 0, 0, 0, 1, 160, 0, 8, 1, 1]); // "hd7hi-kqaaa-aaaan-aaaea-cai"
     const REGTEST_ID: Principal = Principal::from_slice(&[0_u8, 0, 0, 0, 1, 160, 0, 7, 1, 1]); // "gordg-fyaaa-aaaan-aaadq-cai"
 
     match network {
         Network::Mainnet => MAINNET_ID,
-        Network::Testnet => TESTNET_ID,
         Network::Regtest => REGTEST_ID,
     }
 }
