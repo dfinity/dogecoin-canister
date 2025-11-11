@@ -210,7 +210,7 @@ pub async fn dogecoin_get_block_headers(
 pub fn get_dogecoin_canister_id(network: &Network) -> Principal {
     const MAINNET_ID: Principal = Principal::from_slice(&[0_u8, 0, 0, 0, 1, 160, 0, 7, 1, 1]); // "gordg-fyaaa-aaaan-aaadq-cai"
     const TESTNET_ID: Principal = Principal::from_slice(&[0, 0, 0, 0, 1, 160, 0, 8, 1, 1]); // "hd7hi-kqaaa-aaaan-aaaea-cai"
-    const REGTEST_ID: Principal = Principal::from_slice(&[0, 0, 0, 0, 1, 160, 0, 8, 1, 1]); // "hd7hi-kqaaa-aaaan-aaaea-cai"
+    const REGTEST_ID: Principal = Principal::from_slice(&[0_u8, 0, 0, 0, 1, 160, 0, 7, 1, 1]); // "gordg-fyaaa-aaaan-aaadq-cai"
 
     match network {
         Network::Mainnet => MAINNET_ID,
