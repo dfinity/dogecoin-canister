@@ -80,7 +80,7 @@ do
             ;;
         *)
             echo "ERROR: unknown argument '$1'"
-            echo "Valid canisters are: uploader, ic-doge-canister
+            echo "Valid canisters are: uploader, ic-doge-canister"
             usage
             echo
             echo "Use '$0 --help' for more information"
