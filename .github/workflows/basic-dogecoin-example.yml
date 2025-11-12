@@ -1,0 +1,82 @@
+name: basic-dogecoin-example
+
+env:
+  RUST_VERSION: 1.90.0
+  DFX_VERSION: 0.29.2
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths: [examples/basic_dogecoin/**]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            examples/basic_dogecoin/target
+          key: ${{ runner.os }}-cargo-basic-dogecoin-${{ hashFiles('examples/basic_dogecoin/Cargo.lock') }}
+
+      - name: Install Rust
+        run: |
+          rustup update ${RUST_VERSION} --no-self-update
+          rustup default ${RUST_VERSION}
+          rustup target add wasm32-unknown-unknown
+
+      - name: Install brew packages (mac)
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm
+
+      - name: Install dfx
+        uses: dfinity/setup-dfx@main
+        with:
+          dfx-version: ${{ env.DFX_VERSION }}
+
+      - name: Test deployment
+        run: |
+          dfx start --background --clean
+          cd examples/basic_dogecoin
+          make deploy
+          dfx stop
+
+  build-artifact:
+    runs-on: ubuntu-22.04
+    needs: test  # Only if tests pass
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            examples/basic_dogecoin/target
+          key: ${{ runner.os }}-cargo-basic-dogecoin-${{ hashFiles('examples/basic_dogecoin/Cargo.lock') }}
+
+      - name: Install Rust
+        run: |
+          rustup update ${RUST_VERSION} --no-self-update
+          rustup default ${RUST_VERSION}
+          rustup target add wasm32-unknown-unknown
+
+      - name: Build release
+        run: |
+          cd examples/basic_dogecoin
+          bash build.sh
+          cp target/wasm32-unknown-unknown/release/basic_dogecoin.wasm .
+          gzip -9 basic_dogecoin.wasm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: basic_dogecoin.wasm.gz
+          path: examples/basic_dogecoin/basic_dogecoin.wasm.gz
