@@ -17,7 +17,7 @@ See the Dogecoin canister [interface specification](https://github.com/dfinity/d
 
 ### `dogecoin_get_utxos`
 
-Returns UTXOs for a Dogecoin address. UTXOs can be filtered by minimum confirmations (`min_confirmations`, which may be at most 144) or via a `page` reference.
+Returns UTXOs for a Dogecoin address. UTXOs can be filtered by minimum confirmations (`min_confirmations`, with some upper bound which varies with the current difficulty target) or via a `page` reference.
 
 ### `dogecoin_get_utxos_query`
 

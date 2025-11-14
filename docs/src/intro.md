@@ -31,7 +31,7 @@ First, set up your [development environment](./environment.md). Then, to build s
 
 - [Sign the transaction](./doge-transactions/sign_transactions.md) using one of the supported [threshold signature](https://internetcomputer.org/docs/references/t-sigs-how-it-works) APIs. All inputs of a transaction must be signed before the transaction can be submitted to the Dogecoin network.
 
-- [Submit the transaction](./doge-transactions/submit_transactions.md) by sending a request to the Dogecoin API that specifies the `blob` of the transaction and the target Dogecoin network (mainnet or testnet4).
+- [Submit the transaction](./doge-transactions/submit_transactions.md) by sending a request to the Dogecoin API that specifies the `blob` of the transaction and the target Dogecoin network (mainnet or regtest).
 
 - [Read information from the Dogecoin network](./read.md), such as transaction details or address balances.
 
