@@ -2,13 +2,9 @@
 keywords: [advanced, dogecoin, doge, addresses, signing, btc addresses, signing transactions, p2pkh, p2sh]
 ---
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
-import useBaseUrl from "@docusaurus/useBaseUrl";
-
 # Generating a Dogecoin address
 
-Dogecoin, in the same way as Bitcoin, doesn't use accounts; instead, it uses a UTXO model. A UTXO is an unspent transaction output.
+Dogecoin, like Bitcoin, doesn't use accounts; instead, it uses a UTXO model. A UTXO is an unspent transaction output.
 
 Each UTXO is associated with a Dogecoin address that is derived from either a public key or a script that defines the conditions under which the UTXO can be spent. A Dogecoin address is often used as a single-use invoice instead of a persistent address to increase privacy.
 
@@ -27,12 +23,12 @@ To generate a Bitcoin address that can only be spent by a specific smart contrac
 <Tabs groupId="language">
 <TabItem value="rust" label="Rust" default>
 
-```rust reference
-https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_p2pkh_address.rs#L9-L26
+```rust
+{{#include ../../../examples/basic_dogecoin/src/service/get_p2pkh_address.rs:9:26}}
 ```
 
-</TabItem>
-</Tabs>
+Source:
+<https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_p2pkh_address.rs#L9-L26>
 
 ## Resources
 
