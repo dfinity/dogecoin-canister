@@ -6,9 +6,7 @@ Each UTXO is associated with a Dogecoin address that is derived from either a pu
 
 ## Dogecoin P2PKH addresses
 
-:::info
 Pay to public key hash (P2PKH) addresses are the most common types of addresses in Dogecoin. On mainnet, they start with the prefix `D` and are 34 characters long. They encode the hash of an ECDSA public key.
-:::
 
 ## Dogecoin P2SH addresses
 
@@ -18,13 +16,11 @@ There is also another type of address that starts with a `A` or `9` called Pay t
 
 To generate a Bitcoin address that can only be spent by a specific smart contract or a specific caller of a smart contract, you need to derive the address from the smart contract's public key.
 
-:::tip
 ```rust
 {{#include ../../../examples/basic_dogecoin/src/service/get_p2pkh_address.rs:9:26}}
 ```
 
 View the source on GitHub: [get_p2pkh_address.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_p2pkh_address.rs)
-:::
 
 ## Resources
 
