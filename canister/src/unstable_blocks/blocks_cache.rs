@@ -1,47 +1,43 @@
 use ic_doge_interface::Network;
 use ic_doge_types::{Block, BlockHash};
 use ic_stable_structures::StableBTreeMap;
+use std::fmt;
 
-pub trait BlocksCache {
+pub trait BlocksCache: std::fmt::Debug {
+    /// Insert a block of the given block_hash into the cache.
+    /// Return true if the insertion is successful, or false if block_hash already exists in he cache.
     fn insert(&mut self, block_hash: BlockHash, block: Block) -> bool;
-    fn remove(&mut self, block_hash: &BlockHash) -> bool;
-    fn get(&self, block_hash: &BlockHash) -> Option<Block>;
-    fn is_empty(&self) -> bool;
-    fn len(&self) -> u64;
-    fn network(&self) -> Network;
-    #[cfg(test)]
-    fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block>;
-}
 
-/// Dummy implementation that panics!
-impl BlocksCache for () {
-    fn insert(&mut self, _block_hash: BlockHash, _block: Block) -> bool {
-        unimplemented!()
-    }
-    fn remove(&mut self, _block_hash: &BlockHash) -> bool {
-        unimplemented!()
-    }
-    fn get(&self, _block_hash: &BlockHash) -> Option<Block> {
-        unimplemented!()
-    }
-    fn is_empty(&self) -> bool {
-        unimplemented!()
-    }
-    fn len(&self) -> u64 {
-        unimplemented!()
-    }
-    fn network(&self) -> Network {
-        unimplemented!()
-    }
-    #[cfg(test)]
-    fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block> {
-        unimplemented!()
-    }
+    /// Remove the block associated with block_cache from the cache.
+    /// Return true if the removal is successful, or false if it does not exist in he cache.
+    fn remove(&mut self, block_hash: &BlockHash) -> bool;
+
+    /// Look up the block of given block_hash in the cache.
+    /// Return the block if it exists, or None if it does not.
+    fn get(&self, block_hash: &BlockHash) -> Option<Block>;
+
+    /// Return true if the cache is empty, or false otherwise.
+    fn is_empty(&self) -> bool;
+
+    /// Return the number of blocks in the cache.
+    fn len(&self) -> u64;
+
+    /// Return the network of the blocks in the cache.
+    fn network(&self) -> Network;
+
+    /// Return all block hashes and their associated blocks as a BTreeMap.
+    fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block>;
 }
 
 pub struct BlocksCacheInStableMem {
     pub network: Network,
     map: StableBTreeMap<BlockHash, Vec<u8>, crate::memory::Memory>,
+}
+
+impl fmt::Debug for BlocksCacheInStableMem {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "BlocksCacheInStableMem {{ network = {} }}", self.network)
+    }
 }
 
 impl BlocksCacheInStableMem {
@@ -77,7 +73,6 @@ impl BlocksCache for BlocksCacheInStableMem {
     fn network(&self) -> Network {
         self.network
     }
-    #[cfg(test)]
     fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block> {
         self.map
             .iter()

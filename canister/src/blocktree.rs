@@ -10,17 +10,12 @@ use std::rc::Rc;
 type Cache = Rc<RefCell<Box<dyn BlocksCache>>>;
 
 /// Represent a block stored in a shared cache.
+#[derive(Debug)]
 pub struct CachedBlock {
     cache: Cache,
     difficulty: u128,
     block_hash: BlockHash,
     header: Header,
-}
-
-impl std::fmt::Debug for CachedBlock {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.block_hash.fmt(f)
-    }
 }
 
 impl PartialEq for CachedBlock {
@@ -109,6 +104,8 @@ impl<'a, Block> BlockChain<'a, Block> {
         chain
     }
 
+    /// Return the Block at the given index in the chain if the index is in range.
+    /// Otherwise return None.
     pub fn get(&self, index: usize) -> Option<&'a Block> {
         if index == 0 {
             Some(self.first)
@@ -119,6 +116,7 @@ impl<'a, Block> BlockChain<'a, Block> {
         }
     }
 
+    /// Return an iterator of all blocks in the chain starting from the first one.
     pub fn iter(&self) -> impl Iterator<Item = &'a Block> + '_ {
         std::iter::once(self.first).chain(self.successors.iter().copied())
     }
@@ -587,7 +585,7 @@ mod test {
                 }
 
                 for _ in 0..num_children[0] {
-                    let mut block_builder = BlockBuilder::with_prev_header(&tree.root.header());
+                    let mut block_builder = BlockBuilder::with_prev_header(tree.root.header());
                     block_builder = block_builder.with_auxpow(use_auxpow);
 
                     let mut subtree =

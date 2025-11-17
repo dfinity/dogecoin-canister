@@ -171,8 +171,7 @@ impl UnstableBlocks {
         self.network
     }
 
-    /// Returns all blocks in the tree with their respective depths
-    /// separated by heights.
+    /// Returns the hashes of all blocks in the tree with their respective depths separated by heights.
     pub fn block_hashes_with_depths_by_heights(&self) -> Vec<Vec<(&BlockHash, u32)>> {
         self.tree.block_hashes_with_depths_by_heights()
     }

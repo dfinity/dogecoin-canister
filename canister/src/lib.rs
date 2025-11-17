@@ -849,6 +849,7 @@ mod test {
         }
 
         // Take out the state (which also clears the `STATE` singleton).
+        // The state here explicitly uses BlockTree<Block> instead of BlockTree<CachedBlock>.
         let old_state: state::StateT<blocktree::BlockTree<Block>> = STATE
             .with(|cell| cell.take().unwrap())
             .map_tree(|tree| tree.map(&|block: blocktree::CachedBlock| block.block()));
@@ -857,14 +858,16 @@ mod test {
         let mut state_bytes = vec![];
         ciborium::ser::into_writer(&old_state, &mut state_bytes).unwrap();
 
-        // Write state into stable memory using old format
+        // Write state (of BlockTree<Block>) into stable memory
         let memory = memory::get_upgrades_memory();
         memory::write(&memory, 0, &state_bytes);
 
         // Run postupgrade hook
         post_upgrade(None);
 
-        // The new and old states should be equivalent
+        // The state after going through proper post_upgrade handling is using
+        // BlockTree<CachedBlock> internally. To assert equivalence to old_state
+        // we need to convert it to the same type as the old state.
         let new_state = STATE
             .with(|cell| cell.take().unwrap())
             .map_tree(|tree| tree.map(&|block: blocktree::CachedBlock| block.block()));
