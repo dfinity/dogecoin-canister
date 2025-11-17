@@ -14,6 +14,7 @@ pub struct CachedBlock {
     cache: Cache,
     difficulty: u128,
     block_hash: BlockHash,
+    header: Header,
 }
 
 impl std::fmt::Debug for CachedBlock {
@@ -34,17 +35,14 @@ impl CachedBlock {
     fn new_cached(cache: Cache, block: Block) -> CachedBlock {
         let difficulty = block.difficulty(cache.borrow().network());
         let block_hash = *block.block_hash();
+        let header = *block.header();
         cache.borrow_mut().insert(block_hash, block);
         CachedBlock {
             cache,
             difficulty,
             block_hash,
+            header,
         }
-    }
-
-    pub fn header(&self) -> Header {
-        let block = self.cache.borrow().get(&self.block_hash).unwrap();
-        *block.header()
     }
 
     pub fn block(&self) -> Block {
@@ -353,12 +351,16 @@ impl<Block> BlockTree<Block> {
 }
 
 pub trait ChainBlock {
+    fn header(&self) -> &Header;
     fn block_hash(&self) -> &BlockHash;
     fn prev_block_hash(&self) -> BlockHash;
     fn difficulty(&self) -> u128;
 }
 
 impl ChainBlock for CachedBlock {
+    fn header(&self) -> &Header {
+        &self.header
+    }
     fn block_hash(&self) -> &BlockHash {
         &self.block_hash
     }

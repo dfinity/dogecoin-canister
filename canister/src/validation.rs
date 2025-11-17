@@ -1,8 +1,4 @@
-use crate::{
-    blocktree::{BlockChain, CachedBlock, ChainBlock},
-    state::State,
-    unstable_blocks,
-};
+use crate::{blocktree::ChainBlock, state::State, unstable_blocks};
 use bitcoin::{block::Header, hashes::Hash};
 use ic_doge_types::BlockHash;
 use ic_doge_validation::HeaderStore;
@@ -10,8 +6,9 @@ use ic_doge_validation::HeaderStore;
 /// A structure passed to the validation crate to validate a specific block header.
 pub struct ValidationContext<'a> {
     state: &'a State,
-    unstable_blocks_chain: BlockChain<'a, CachedBlock>,
-    headers_chain: Vec<(&'a Header, ic_doge_types::BlockHash)>,
+    // BlockHash is stored in order to avoid repeatedly calling to
+    // Header::block_hash() which is expensive.
+    chain: Vec<(&'a Header, ic_doge_types::BlockHash)>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -27,7 +24,7 @@ impl<'a> ValidationContext<'a> {
         // The given header must extend one of the unstable blocks.
         let prev_block_hash = header.prev_blockhash.into();
         let current_block_hash = ic_doge_types::BlockHash::from(header.block_hash());
-        let (unstable_blocks_chain, tip_successors) =
+        let (chain, tip_successors) =
             unstable_blocks::get_chain_with_tip(&state.unstable_blocks, &prev_block_hash).ok_or(
                 ValidationContextError::BlockDoesNotExtendTree(current_block_hash),
             )?;
@@ -37,11 +34,13 @@ impl<'a> ValidationContext<'a> {
         {
             return Err(ValidationContextError::AlreadyKnown(current_block_hash));
         }
-        Ok(Self {
-            state,
-            unstable_blocks_chain,
-            headers_chain: vec![],
-        })
+        let chain = chain
+            .into_chain()
+            .iter()
+            .map(|block| (block.header(), *block.block_hash()))
+            .collect();
+
+        Ok(Self { state, chain })
     }
 
     /// Initialize a `ValidationContext` for the given block header.
@@ -58,22 +57,11 @@ impl<'a> ValidationContext<'a> {
             Self::new(state, header)
         } else {
             let mut context = Self::new(state, next_block_headers_chain[0].0)?;
-            context.headers_chain = next_block_headers_chain;
+            for item in next_block_headers_chain.iter() {
+                context.chain.push(*item)
+            }
             Ok(context)
         }
-    }
-
-    #[cfg(test)]
-    fn chain(self) -> Vec<(Header, BlockHash)> {
-        self.unstable_blocks_chain
-            .iter()
-            .map(|block| (block.header(), *block.block_hash()))
-            .chain(
-                self.headers_chain
-                    .iter()
-                    .map(|&(header, hash)| (*header, hash)),
-            )
-            .collect::<Vec<_>>()
     }
 }
 
@@ -82,37 +70,20 @@ impl HeaderStore for ValidationContext<'_> {
     fn get_with_block_hash(&self, hash: &bitcoin::BlockHash) -> Option<Header> {
         // Check if the header is in the chain.
         let hash = ic_doge_types::BlockHash::from(hash.as_raw_hash().as_byte_array().to_vec());
-        self.headers_chain
-            .iter()
-            .find_map(|(&header, block_hash)| {
-                if block_hash == &hash {
-                    Some(header)
-                } else {
-                    None
-                }
-            })
-            .or_else(|| {
-                self.unstable_blocks_chain.iter().find_map(|block| {
-                    if block.block_hash() == &hash {
-                        Some(block.header())
-                    } else {
-                        None
-                    }
-                })
-            })
-            .or_else(|| {
-                // The header is in the stable store.
-                self.state.stable_block_headers.get_with_block_hash(&hash)
-            })
+        for item in self.chain.iter() {
+            if item.1 == hash {
+                return Some(*item.0);
+            }
+        }
+
+        // The header is in the stable store.
+        self.state.stable_block_headers.get_with_block_hash(&hash)
     }
 
     fn height(&self) -> u32 {
         // The `next_height` method returns the height of the UTXOs + 1, so we
         // subtract 1 to account for that.
-        self.state.utxos.next_height()
-            + self.unstable_blocks_chain.len() as u32
-            + self.headers_chain.len() as u32
-            - 1
+        self.state.utxos.next_height() + self.chain.len() as u32 - 1
     }
 
     fn get_with_height(&self, height: u32) -> Option<Header> {
@@ -123,15 +94,7 @@ impl HeaderStore for ValidationContext<'_> {
         } else if height <= self.height() {
             // The height requested is for an unstable block.
             // Retrieve the block header from the chain.
-            let mut index = (height - self.state.utxos.next_height()) as usize;
-            if index < self.unstable_blocks_chain.len() {
-                self.unstable_blocks_chain
-                    .get(index)
-                    .map(|block| block.header())
-            } else {
-                index -= self.unstable_blocks_chain.len();
-                self.headers_chain.get(index).map(|(&header, _)| header)
-            }
+            Some(*self.chain[(height - self.state.utxos.next_height()) as usize].0)
         } else {
             // The height requested is higher than the tip.
             None
@@ -179,12 +142,12 @@ mod test {
             ValidationContext::new_with_next_block_headers(&state, block_3.header()).unwrap();
 
         assert_eq!(
-            validation_context.chain(),
+            validation_context.chain,
             vec![
-                (*genesis.header(), *genesis.block_hash()),
-                (*block_0.header(), *block_0.block_hash()),
-                (*block_1.header(), *block_1.block_hash()),
-                (*block_2.header(), *block_2.block_hash()),
+                (genesis.header(), *genesis.block_hash()),
+                (block_0.header(), *block_0.block_hash()),
+                (block_1.header(), *block_1.block_hash()),
+                (block_2.header(), *block_2.block_hash()),
             ]
         );
 

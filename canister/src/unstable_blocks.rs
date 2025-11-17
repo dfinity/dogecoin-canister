@@ -252,7 +252,7 @@ impl UnstableBlocks {
         &self,
         stable_height: Height,
         heights: std::ops::RangeInclusive<Height>,
-    ) -> impl Iterator<Item = Header> {
+    ) -> impl Iterator<Item = &Header> {
         if *heights.end() < stable_height {
             // `stable_height` is larger than any height from the range, which implies none of the requested
             // blocks are in unstable blocks, hence the result should be an empty iterator.
@@ -1315,7 +1315,7 @@ mod test {
                 let mut result = unstable_blocks.get_block_headers_in_range(0, std::ops::RangeInclusive::new(start_range as u32, end_range as u32)).peekable();
 
                 for expected_result in headers.iter().take(end_range + 1).skip(start_range){
-                    assert_eq!(expected_result, result.peek().unwrap());
+                    assert_eq!(&expected_result, result.peek().unwrap());
                     result.next();
                 }
             }

@@ -1,4 +1,5 @@
 use super::{Block, BlockHash, BlockTree, BlocksCache, CachedBlock};
+use bitcoin::block::Header;
 use bitcoin::dogecoin::Block as DogecoinBlock;
 use serde::{
     de::{Deserializer, Error, SeqAccess, Visitor},
@@ -57,7 +58,7 @@ impl Serialize for BlockTree<CachedBlock> {
         {
             #[cfg(feature = "canbench-rs")]
             let _p = canbench_rs::bench_scope("serialize_blocktree_flatten");
-            flattened.map_from(self, &|block| (&block.block_hash, &block.difficulty));
+            flattened.map_from(self, &|block| (&block.header, &block.block_hash, &block.difficulty));
         }
         {
             #[cfg(feature = "canbench-rs")]
@@ -146,12 +147,13 @@ struct CachedBlockTreeVisitor(Rc<RefCell<Box<dyn BlocksCache>>>);
 
 impl<'de> TreeVisitor<'de, CachedBlock> for CachedBlockTreeVisitor {
     fn next<A: SeqAccess<'de>>(&self, seq: &mut A) -> Result<(CachedBlock, usize), A::Error> {
-        seq.next_element::<((BlockHash, u128), usize)>()?
-            .map(|((block_hash, difficulty), size)| {
+        seq.next_element::<((Header, BlockHash, u128), usize)>()?
+            .map(|((header, block_hash, difficulty), size)| {
                 let block = CachedBlock {
                     cache: self.0.clone(),
                     block_hash,
                     difficulty,
+                    header,
                 };
                 (block, size)
             })
