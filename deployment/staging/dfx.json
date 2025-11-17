@@ -9,9 +9,8 @@
     },
     "watchdog": {
       "type": "custom",
-      "candid": "../../watchdog/candid.did",
-      "build": "../../scripts/build-canister.sh watchdog",
-      "wasm": "../../target/wasm32-unknown-unknown/release/watchdog.wasm.gz"
+      "candid": "https://github.com/dfinity/bitcoin-canister/blob/master/watchdog/candid.did",
+      "wasm": "https://github.com/dfinity/bitcoin-canister/releases/download/release%2F2025-10-02/watchdog.wasm.gz"
     }
   },
   "defaults": {

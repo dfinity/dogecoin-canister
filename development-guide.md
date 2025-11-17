@@ -4,8 +4,6 @@
 
 The canisters in this repository are deployed in production by submitting proposals to the Internet Computer's [Network Nervous System](https://internetcomputer.org/nns).
 
-Due to limitations in GitHub's release handling, we cannot create separate latest releases for the Bitcoin canister and the Watchdog canister. Therefore, we include both artifacts in each latest release. 
-
 Only after all the expected canisters were deployed the `pre-release` can be turned into a proper `latest release`.
 
 ## Steps to Cut a Release
@@ -25,15 +23,14 @@ Only after all the expected canisters were deployed the `pre-release` can be tur
         cd dogecoin-canister &&\
         git checkout aff3eef  # <- make sure the right commit is provided.
 
-    # Use docker to reproducibly build ic-doge-canister and watchdog canister WASMs.
+    # Use docker to reproducibly build ic-doge-canister canister WASMs.
     $ ./scripts/docker-build
 
     # Compute checksums.
     $ sha256sum *.wasm.gz
     09f5647a45ff6d5d05b2b0ed48613fb2365b5fe6573ba0e901509c39fb9564ac  ic-doge-canister.wasm.gz
-    cc58b2a32517f9907f0d3c77bc8c099d0a65d8194a8d9bc0ad7df357ee867a07  watchdog.wasm.gz
     ```
-4. Attach the Dogecoin Canister's and Watchdog's WASM to the release notes.
+4. Attach the Dogecoin Canister's WASM to the release notes.
     - Add calculated checksums into release notes
 5. Attach the candid file of the Dogecoin Canister to the release notes.
 6. Finalize the release once all the expected canisters were upgraded
