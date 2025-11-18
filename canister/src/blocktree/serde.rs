@@ -180,7 +180,7 @@ impl<'de> Visitor<'de> for CachedBlockTreeVisitor {
     }
 }
 
-/// The deserialization of a BlockTree<CachedBlock> would construct all CchedBlock
+/// The deserialization of a BlockTree<CachedBlock> would construct all CachedBlock
 /// using a dummy cache. This is a hack because it is difficult to pass an existing
 /// cache into the deserialization process, especially when the BlockTree is
 /// serveral levels down in a nested struct that derives Deserialize. The caller

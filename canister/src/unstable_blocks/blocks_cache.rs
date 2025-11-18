@@ -5,11 +5,11 @@ use std::fmt;
 
 pub trait BlocksCache: std::fmt::Debug {
     /// Insert a block of the given block_hash into the cache.
-    /// Return true if the insertion is successful, or false if block_hash already exists in he cache.
+    /// Return true if the insertion is successful, or false if block_hash already exists in the cache.
     fn insert(&mut self, block_hash: BlockHash, block: Block) -> bool;
 
-    /// Remove the block associated with block_cache from the cache.
-    /// Return true if the removal is successful, or false if it does not exist in he cache.
+    /// Remove the block with the given hash from the cache.
+    /// Return true if the removal is successful, or false if it does not exist in the cache.
     fn remove(&mut self, block_hash: &BlockHash) -> bool;
 
     /// Look up the block of given block_hash in the cache.
