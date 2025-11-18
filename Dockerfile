@@ -4,7 +4,6 @@
 # these specific WebAssembly canisters:
 #  - ic-doge-canister
 #  - uploader
-#  - watchdog
 #
 # Each canister is built, compressed, and checksum-verified, ensuring 
 # reproducibility and consistency of builds within this isolated setup.
@@ -17,11 +16,9 @@
 #
 # docker run --rm --entrypoint cat canisters /ic-doge-canister.wasm.gz > ic-doge-canister.wasm.gz
 # docker run --rm --entrypoint cat canisters /uploader.wasm.gz > uploader.wasm.gz
-# docker run --rm --entrypoint cat canisters /watchdog.wasm.gz > watchdog.wasm.gz
 #
 # sha256sum ic-doge-canister.wasm.gz
 # sha256sum uploader.wasm.gz
-# sha256sum watchdog.wasm.gz
 
 # The docker image. To update, run `docker pull ubuntu` locally, and update the
 # sha256:... accordingly.
@@ -69,7 +66,3 @@ RUN if [ -n "$CHUNK_HASHES_PATH" ]; then export CHUNK_HASHES_PATH="$CHUNK_HASHES
 # Building uploader canister...
 RUN scripts/build-canister.sh uploader "" "release-lto" && \
     cp target/wasm32-unknown-unknown/release-lto/uploader.wasm.gz uploader.wasm.gz
-
-# Building watchdog canister...
-RUN scripts/build-canister.sh watchdog && \
-    cp target/wasm32-unknown-unknown/release/watchdog.wasm.gz watchdog.wasm.gz

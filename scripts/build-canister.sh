@@ -46,13 +46,6 @@ if [[ "$STATUS" -eq "0" ]]; then
       metadata candid:service -f "$SCRIPT_DIR/../canister/candid.did" -v public
     fi
 
-    if [[ "$CANISTER" == "watchdog" ]]; then
-      ./target/bin/ic-wasm \
-      "./target/$TARGET/${PROFILE}/$CANISTER.wasm" \
-      -o "./target/$TARGET/${PROFILE}/$CANISTER.wasm" \
-      metadata candid:service -f "$SCRIPT_DIR/../watchdog/candid.did" -v public
-    fi
-
   true
 else
   echo Could not install ic-wasm

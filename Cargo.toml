@@ -6,7 +6,6 @@ members = [
     "interface",
     "types",
     "validation",
-    "watchdog",
     # Crates for bootstrapping the state
     "bootstrap/state-builder",
     "bootstrap/uploader",
