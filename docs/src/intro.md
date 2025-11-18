@@ -35,17 +35,17 @@ The Dogecoin canister relays the request to the Dogecoin network, which receives
 
 ## Getting Started
 
-First, set up your [development environment](./environment.md). Then, to build smart contracts interacting with the Dogecoin blockchain, you will need to know how to
+First, set up your [development environment](./environment.md). Then, to build canisters interacting with the Dogecoin blockchain, you will need to know how to
 
-- [Generate a Dogecoin address](./doge-transactions/generate_address.md). Dogecoin addresses are necessary for your dapp to sign transactions and hold DOGE. An ICP smart contract can have multiple addresses.
+- [Generate a Dogecoin address](./doge-transactions/generate_address.md). Dogecoin addresses are necessary for your canister to sign transactions and hold DOGE. A canister can have multiple addresses.
 
 - [Create a Dogecoin transaction](./doge-transactions/create_transactions.md). Dogecoin transactions spend unspent transaction outputs (UTXOs) and create new UTXOs. A UTXO is the output of a Dogecoin transaction. It exists until it is used as the input of another transaction.
 
 - [Sign the transaction](./doge-transactions/sign_transactions.md) using [threshold ECDSA API](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa). All inputs of a transaction must be signed before the transaction can be submitted to the Dogecoin network.
 
-- [Submit the transaction](./doge-transactions/submit_transactions.md) by sending a request to the Dogecoin API that specifies the `blob` of the transaction and the target Dogecoin network (mainnet or regtest).
+- [Submit the transaction](./doge-transactions/submit_transactions.md) by sending a request to the Dogecoin API that specifies the blob of the transaction and the target Dogecoin network (mainnet or regtest).
 
-- [Read information from the Dogecoin network](./read.md), such as transaction details or address balances.
+- [Read information from the Dogecoin network](./read.md), such as UTXOs, address balances, or block headers.
 
 ## Additional resources
 
