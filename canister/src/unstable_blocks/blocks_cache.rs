@@ -36,7 +36,12 @@ pub struct BlocksCacheInStableMem {
 
 impl fmt::Debug for BlocksCacheInStableMem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "BlocksCacheInStableMem {{ network = {} }}", self.network)
+        write!(
+            f,
+            "BlocksCacheInStableMem {{ network = {}, len = {} }}",
+            self.network,
+            self.map.len()
+        )
     }
 }
 
