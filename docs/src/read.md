@@ -7,7 +7,7 @@ ICP canisters can query information about the Dogecoin mainnet programmatically.
 To read unspent transaction outputs (UTXOs) associated with an address from the Dogecoin network, make a call to the `dogecoin_get_utxos` Dogecoin API method.
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/service/get_utxos.rs:1:19}}
+{{#include ../../examples/basic_dogecoin/src/service/get_utxos.rs:1:19}}
 ```
 
 View the source on GitHub: [get_utxo.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_utxos.rs)
@@ -17,7 +17,7 @@ View the source on GitHub: [get_utxo.rs](https://github.com/dfinity/dogecoin-can
 To read the current balance of a Dogecoin address, make a call to the `dogecoin_get_balance` Dogecoin API method.
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/service/get_balance.rs:1:16}}
+{{#include ../../examples/basic_dogecoin/src/service/get_balance.rs:1:16}}
 ```
 
 View the source on GitHub: [get_balance.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_balance.rs)
@@ -29,7 +29,7 @@ The transaction fees on the Dogecoin network change dynamically based on the num
 This endpoint returns 101 numbers that are fees measured in millikoinus (1,000 millikoinus = 1 koinu) per byte. The i-th element of the result corresponds to the i-th percentile fee. For example, to get the median fee over the last few blocks, look at the 50-th element of the result.
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs:1:15}}
+{{#include ../../examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs:1:15}}
 ```
 
 View the source on GitHub: [get_current_fee_percentiles.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs)
@@ -39,7 +39,7 @@ View the source on GitHub: [get_current_fee_percentiles.rs](https://github.com/d
 To read the block headers within a provided range of start and end heights, make a call to the `dogecoin_get_block_headers` Dogecoin API method.
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/service/get_block_headers.rs:1:22}}
+{{#include ../../examples/basic_dogecoin/src/service/get_block_headers.rs:1:22}}
 ```
 
 View the source on GitHub: [get_block_headers.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_block_headers.rs)

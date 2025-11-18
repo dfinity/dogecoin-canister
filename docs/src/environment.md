@@ -103,4 +103,6 @@ This command assumes that port `18444` on your machine is available. If it isn't
 
 ## Starting `dfx` with Dogecoin support
 
-TODO XC-527: add support for Regtest
+```admonish warning title="Work In Progress"
+🚧 This is not yet implemented. 
+```

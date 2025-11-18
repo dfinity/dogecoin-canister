@@ -1,3 +1,5 @@
 # Using Dogecoin Regtest
 
-TODO XC-527: add support for Regtest
+```admonish warning title="Work In Progress"
+🚧 This is not yet implemented.
+```
