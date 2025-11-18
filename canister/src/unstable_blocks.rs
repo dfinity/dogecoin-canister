@@ -66,7 +66,7 @@ pub fn testnet_unstable_max_depth_difference(
 ///   depth(block) ≥ stability_threshold
 ///   ∀ b', height(b') = height(b): depth(b) - depth(b’) ≥ stability_threshold
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct UnstableBlocksT<Tree> {
+pub struct GenericUnstableBlocks<Tree> {
     stability_threshold: u32,
     tree: Tree,
     outpoints_cache: OutPointsCache,
@@ -75,16 +75,16 @@ pub struct UnstableBlocksT<Tree> {
     next_block_headers: NextBlockHeaders,
 }
 
-impl<A> UnstableBlocksT<A> {
-    pub fn map_tree<B, F: FnOnce(A) -> B>(self, f: F) -> UnstableBlocksT<B> {
-        let UnstableBlocksT {
+impl<A> GenericUnstableBlocks<A> {
+    pub fn map_tree<B, F: FnOnce(A) -> B>(self, f: F) -> GenericUnstableBlocks<B> {
+        let GenericUnstableBlocks {
             stability_threshold,
             tree,
             outpoints_cache,
             network,
             next_block_headers,
         } = self;
-        UnstableBlocksT {
+        GenericUnstableBlocks {
             stability_threshold,
             tree: f(tree),
             outpoints_cache,
@@ -94,7 +94,7 @@ impl<A> UnstableBlocksT<A> {
     }
 }
 
-pub type UnstableBlocks = UnstableBlocksT<BlockTree<CachedBlock>>;
+pub type UnstableBlocks = GenericUnstableBlocks<BlockTree<CachedBlock>>;
 
 impl UnstableBlocks {
     pub fn new<Cache: blocks_cache::BlocksCache + 'static>(

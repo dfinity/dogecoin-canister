@@ -9,7 +9,7 @@ use crate::{
         into_dogecoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
         GetSuccessorsPartialResponse, Slicing,
     },
-    unstable_blocks::{self, BlocksCache, UnstableBlocks, UnstableBlocksT},
+    unstable_blocks::{self, BlocksCache, GenericUnstableBlocks, UnstableBlocks},
     validation::ValidationContext,
     UtxoSet,
 };
@@ -27,12 +27,12 @@ use serde::{Deserialize, Serialize};
 // expensive in production.
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct StateT<Tree> {
+pub struct GenericState<Tree> {
     /// The UTXOs of all stable blocks since genesis.
     pub utxos: UtxoSet,
 
     /// Blocks inserted, but are not considered stable yet.
-    pub unstable_blocks: UnstableBlocksT<Tree>,
+    pub unstable_blocks: GenericUnstableBlocks<Tree>,
 
     /// State used for syncing new blocks.
     pub syncing_state: SyncingState,
@@ -76,7 +76,7 @@ pub struct StateT<Tree> {
     pub lazily_evaluate_fee_percentiles: Flag,
 }
 
-pub type State = StateT<BlockTree<CachedBlock>>;
+pub type State = GenericState<BlockTree<CachedBlock>>;
 
 impl State {
     /// Create a new blockchain.
@@ -127,7 +127,7 @@ impl State {
     }
 }
 
-impl<A> StateT<A> {
+impl<A> GenericState<A> {
     pub fn network(&self) -> Network {
         self.utxos.network()
     }
@@ -138,8 +138,8 @@ impl<A> StateT<A> {
     }
 
     /// Mapping the tree type in unstable blocks to a different type.
-    pub fn map_tree<B, F: FnOnce(A) -> B>(self, f: F) -> StateT<B> {
-        let StateT {
+    pub fn map_tree<B, F: FnOnce(A) -> B>(self, f: F) -> GenericState<B> {
+        let GenericState {
             utxos,
             unstable_blocks,
             syncing_state,
@@ -154,7 +154,7 @@ impl<A> StateT<A> {
             burn_cycles,
             lazily_evaluate_fee_percentiles,
         } = self;
-        StateT {
+        GenericState {
             utxos,
             unstable_blocks: unstable_blocks.map_tree(f),
             syncing_state,

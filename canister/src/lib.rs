@@ -229,7 +229,7 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
             let reader = Reader::new(&memory, 0);
             let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
             ciborium::de::from_reader(&mut buffered_reader).map(
-                |state: state::StateT<blocktree::BlockTree<Block>>| {
+                |state: state::GenericState<blocktree::BlockTree<Block>>| {
                     let cache = unstable_blocks::BlocksCacheInStableMem::new(
                         state.network(),
                         memory::get_unstable_blocks_memory(),
@@ -850,7 +850,7 @@ mod test {
 
         // Take out the state (which also clears the `STATE` singleton).
         // The state here explicitly uses BlockTree<Block> instead of BlockTree<CachedBlock>.
-        let old_state: state::StateT<blocktree::BlockTree<Block>> = STATE
+        let old_state: state::GenericState<blocktree::BlockTree<Block>> = STATE
             .with(|cell| cell.take().unwrap())
             .map_tree(|tree| tree.map(&|block: blocktree::CachedBlock| block.block()));
 
