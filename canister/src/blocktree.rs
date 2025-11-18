@@ -888,6 +888,19 @@ mod test {
     }
 
     #[proptest]
+    fn test_replace_blocks_cache(mut tree: BlockTree) {
+        tree.get_child_blocks()
+            .iter()
+            .for_each(|block| assert_eq!(block.cache.borrow().network(), Network::Testnet));
+        let blocks = tree.cache().borrow().collect();
+        let new_cache = TestBlocksCache::new_with(Network::Mainnet, blocks);
+        tree.replace_blocks_cache(new_cache);
+        tree.get_child_blocks()
+            .iter()
+            .for_each(|block| assert_eq!(block.cache.borrow().network(), Network::Mainnet));
+    }
+
+    #[proptest]
     fn serialize_deserialize(tree: BlockTree) {
         let mut bytes = vec![];
         ciborium::ser::into_writer(&tree, &mut bytes).unwrap();

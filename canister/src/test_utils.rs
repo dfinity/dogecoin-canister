@@ -28,6 +28,9 @@ impl TestBlocksCache {
             map: Default::default(),
         }
     }
+    pub fn new_with(network: Network, map: BTreeMap<BlockHash, Block>) -> Self {
+        Self { network, map }
+    }
 }
 
 impl BlocksCache for TestBlocksCache {
@@ -49,7 +52,6 @@ impl BlocksCache for TestBlocksCache {
     fn network(&self) -> Network {
         self.network
     }
-    #[cfg(test)]
     fn collect(&self) -> std::collections::BTreeMap<BlockHash, Block> {
         self.map.clone()
     }
