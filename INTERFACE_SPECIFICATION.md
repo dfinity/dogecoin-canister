@@ -70,7 +70,7 @@ If the address is malformed, the call is rejected.
 The optional `filter` parameter can be used to restrict the set of returned UTXOs, either providing a minimum number of confirmations or a page reference when pagination is used for addresses with many UTXOs. In the first case, only UTXOs with at least the provided number of confirmations are returned, i.e., transactions with fewer than this number of confirmations are not considered. In other words, if the number of confirmations is `c`, an output is returned if it occurred in a transaction with at least `c` confirmations and there is no transaction that spends the same output with at least `c` confirmations.
 
 There is an upper bound on the minimum number of confirmations, which varies with the difficulty target.
- If a larger minimum number of confirmations is specified, the call is rejected. Note that this is not a severe restriction as the minimum number of confirmations used in practice is around 60, which is approximately an order of magnitude lower than the upper bound under normal operation.
+ If a larger minimum number of confirmations is specified, the call is rejected. Note that this is not a severe restriction as the minimum number of confirmations used in practice is around 60, which is approximately an order of magnitude lower than the number that the Dogecoin canister normally accepts.
 
 It is important to note that the validity of transactions is not verified in the Dogecoin canister. The Dogecoin canister relies on the proof of work that goes into the blocks and the verification of the blocks in the Dogecoin network. For a newly discovered block, a regular Dogecoin (full) node therefore provides a higher level of security than the Dogecoin canister, which implies that it is advisable to set the number of confirmations to a reasonably large value, such as 60, to gain confidence in the correctness of the returned UTXOs.
 
@@ -169,7 +169,7 @@ An error is returned when an end height is specified that is greater than the ti
 
 If no end height is specified, all blocks until the tip height, i.e., the largest available height, are returned. However, if the range from the start height to the end height or the tip height is large, only a prefix of the requested block headers may be returned in order to bound the size of the response.
 
-The response is guaranteed to contain the block headers in order: if it contains any block headers, the first block header occurs at the start height, the second block header occurs at the start height plus one and so forth.
+The response is guaranteed to contain the block headers in order: if it contains any block headers, the first block header occurs at the start height, the second block header occurs at the start height plus one and so forth. However, at most 100 block headers are returned per request.
 
 The response is a record consisting of the tip height and the vector of block headers.
 The block headers are 80-byte blobs in the [standard Bitcoin format](https://developer.bitcoin.org/reference/block_chain.html#block-headers). Note that auxiliary proof-of-work ([AuxPoW](https://dogecoin.com/dogepedia/articles/what-is-a-miner/)) data is **not** included.
@@ -230,12 +230,12 @@ get_config : () -> (config) query;
 This endpoint returns the current configuration of the Dogecoin canister.
 It specifies the following parameters:
 
-* `stability_threshold`: This is the threshold that defines the level of "difficulty-based stability" that a Dogecoin block before it is considered stable. When a block becomes stable, its transactions are applied to the UTXO set. Subsequently, the block can be discarded to free up memory. Details about the stability mechanism can be found on the Bitcoin integration [wiki page](https://wiki.internetcomputer.org/wiki/Bitcoin_Integration) under "Fork Resolution".
+* `stability_threshold`: This is the threshold that defines the level of "difficulty-based stability" that a Dogecoin block must reach before it is considered stable. When a block becomes stable, its transactions are applied to the UTXO set. Subsequently, the block can be discarded to free up memory. Details about the stability mechanism can be found on the Bitcoin integration [wiki page](https://wiki.internetcomputer.org/wiki/Bitcoin_Integration) under "Fork Resolution".
 * `network`: This parameter indicates whether the Dogecoin canister is connected to Dogecoin `mainnet`, `testnet`, or `regtest`.
 * `syncing`: This flag indicates whether the Dogecoin canister is actively ingesting blocks to update its state.
 * `fees`: This record specifies how many cycles must be attached when invoking the individual endpoints. More information about API fees can be found in the [Bitcoin integration documentation](https://internetcomputer.org/docs/current/references/bitcoin-how-it-works#api-fees-and-pricing).
 * `api_access`: This flag indicates whether access to the endpoints is enabled.
-* `disable_api_if_not_fully_synced`: This flag indicates whether access to the endpoints is automatically disabled if the _watchdog canister_ indicates that the Dogecoin canister is lagging behind in the sense that its state is more than 2 blocks behind the Dogecoin blockchain. 
+* `disable_api_if_not_fully_synced`: This flag indicates whether access to the endpoints is automatically disabled when the Dogecoin canister detects that it is lagging behind, i.e., when it does not have the blocks for the greatest heights for which it has block headers.
 * `watchdog_canister`: This is the principal ID of the watchdog canister. If this canister observes that the Dogecoin canister is lagging behind, it is authorized to disable API access.
 * `burn_cycles`: This flag indicates whether received cycles are burned.
 * `lazily_evaluate_fee_percentiles`: This flag indicates whether fee percentiles are only evaluated when fees are requested, rather than updating them automatically whenever a newly received block is processed.
