@@ -13,7 +13,7 @@ To read unspent transaction outputs (UTXOs) associated with an address from the 
 View the source on GitHub: [get_utxo.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_utxos.rs)
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/lib.rs:119:128}}
+{{#include ../../examples/basic_dogecoin/src/lib.rs:119:128}}
 ```
 
 View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs)
@@ -29,7 +29,7 @@ To read the current balance of a Dogecoin address, make a call to the `dogecoin_
 View the source on GitHub: [get_balance.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_balance.rs)
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/lib.rs:169:183}}
+{{#include ../../examples/basic_dogecoin/src/lib.rs:169:183}}
 ```
 
 View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs)
@@ -47,7 +47,7 @@ This endpoint returns 101 numbers that are fees measured in millikoinus (1,000 m
 View the source on GitHub: [get_current_fee_percentiles.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs)
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/lib.rs:135:148}}
+{{#include ../../examples/basic_dogecoin/src/lib.rs:135:148}}
 ```
 
 View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs)
@@ -63,7 +63,7 @@ To read the block headers within a provided range of start and end heights, make
 View the source on GitHub: [get_block_headers.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_block_headers.rs)
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/lib.rs:190:203}}
+{{#include ../../examples/basic_dogecoin/src/lib.rs:190:203}}
 ```
 
 View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs)
