@@ -45,11 +45,9 @@ Sends a raw Dogecoin transaction to the specified network (mainnet or regtest).
 
 ## Cycles Cost
 
-The costs of API calls in [cycles](https://internetcomputer.org/docs/building-apps/getting-started/tokens-and-cycles) and USD for the Dogecoin Mainnet APIs are presented in the following tables. As a general principle for the Dogecoin API, some API calls must have a minimum number of cycles attached to them, as indicated in the column *Minimum cycles to send with call*. Cycles not consumed by the call are returned to the caller. Requiring a relatively large minimum number of cycles makes it possible to change the pricing of API calls without breaking existing canisters when the Dogecoin subnet grows in terms of its replication factor in the future. The call for submitting a Dogecoin transaction to the Dogecoin network does not require extra cycles to be attached as the charged cost is independent of the replication factor of the subnet.
+The costs of API calls in [cycles](https://internetcomputer.org/docs/building-apps/getting-started/tokens-and-cycles) and USD for the Dogecoin Mainnet APIs are presented in the following table. As a general principle for the Dogecoin API, some API calls must have a minimum number of cycles attached to them, as indicated in the column *Minimum cycles to send with call*. Cycles not consumed by the call are returned to the caller. Requiring a relatively large minimum number of cycles makes it possible to change the pricing of API calls without breaking existing canisters when the Dogecoin subnet grows in terms of its replication factor in the future. The call for submitting a Dogecoin transaction to the Dogecoin network does not require extra cycles to be attached as the charged cost is independent of the replication factor of the subnet.
 
 The cost per API call in USD uses the USD/XDR exchange rate of May 22, 2025 ($1.354820 USD).
-
-### Dogecoin Mainnet
 
 | Transaction                         | Description                                                                                   | Price (Cycles)                          | Price (USD)                          | Minimum cycles to send with call |
 |-----------------------------------|-----------------------------------------------------------------------------------------------|---------------------------------------|------------------------------------|---------------------------------|
