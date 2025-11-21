@@ -43,7 +43,7 @@ First, set up your [development environment](./environment.md). Then, to build c
 
 - [Sign the transaction](./doge-transactions/sign_transactions.md) using [threshold ECDSA API](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa). All inputs of a transaction must be signed before the transaction can be submitted to the Dogecoin network.
 
-- [Submit the transaction](./doge-transactions/submit_transactions.md) by sending a request to the Dogecoin API that specifies the blob of the transaction and the target Dogecoin network (mainnet or regtest).
+- [Submit the transaction](./doge-transactions/complete_flow.md) by sending a request to the Dogecoin API that specifies the blob of the transaction and the target Dogecoin network (mainnet or regtest).
 
 - [Read information from the Dogecoin network](./read.md), such as UTXOs, address balances, or block headers.
 

@@ -40,11 +40,13 @@ To get the available UTXOs for a Dogecoin address, use the `dogecoin_get_utxos` 
 {{#include ../../../examples/basic_dogecoin/src/service/get_utxos.rs:1:19}}
 ```
 
+View the source on GitHub: [get_utxo.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_utxos.rs)
+
 ```rust
 {{#include ../../../examples/basic_dogecoin/src/lib.rs:119:128}}
 ```
 
-View the source on GitHub: [get_utxo.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_utxos.rs)
+View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs)
 
 ## Calculate transaction fee per byte
 
@@ -54,11 +56,13 @@ The transaction fee of a Dogecoin transaction is calculated based on the size of
 {{#include ../../../examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs:1:15}}
 ```
 
+View the source on GitHub: [get_current_fee_percentiles.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs)
+
 ```rust
 {{#include ../../../examples/basic_dogecoin/src/lib.rs:135:148}}
 ```
 
-View the source on GitHub: [get_current_fee_percentiles.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs)
+View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs)
 
 ## Build the transaction
 
