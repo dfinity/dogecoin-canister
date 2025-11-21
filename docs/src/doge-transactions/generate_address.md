@@ -6,7 +6,7 @@ Each UTXO is associated with a Dogecoin address that is derived from either a pu
 
 ### Dogecoin P2PKH addresses
 
-Pay to public key hash (P2PKH) addresses are the most common types of addresses in Dogecoin. On mainnet, they start with the prefix `D`. They encode the hash of an ECDSA public key.
+Pay-to-public-key-hash (P2PKH) addresses are the most common types of addresses in Dogecoin. On mainnet, they start with the prefix `D`. They encode the hash of an ECDSA public key.
 
 ### Dogecoin P2SH addresses
 
