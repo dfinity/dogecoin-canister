@@ -2,7 +2,7 @@
 
 To be able to reach the Dogecoin network, your canister needs to target one of the available endpoints on the Dogecoin canister.
 
-```admonish note title="Dogecoin Canister"
+```admonish example title="Dogecoin Canister"
 * Mainnet: [gordg-fyaaa-aaaan-aaadq-cai](https://dashboard.internetcomputer.org/canister/gordg-fyaaa-aaaan-aaadq-cai)
 ```
 
@@ -11,8 +11,6 @@ Dogecoin testnet is **not** supported.
 ```
 
 ## Available Endpoints
-
-See the Dogecoin canister [interface specification](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md) for more details.
 
 ### `dogecoin_get_utxos`
 
@@ -41,6 +39,11 @@ Returns raw block headers for a given range of heights.
 ### `dogecoin_send_transaction`
 
 Sends a raw Dogecoin transaction to the specified network (mainnet or regtest).
+
+
+```admonish info title="Further references"
+See the Dogecoin canister [interface specification](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md) for more details.
+```
 
 
 ## Cycles Cost

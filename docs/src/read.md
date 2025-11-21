@@ -1,6 +1,6 @@
 # Reading the Dogecoin State
 
-ICP canisters can query information about the Dogecoin mainnet programmatically.
+Canisters can query information about the Dogecoin mainnet programmatically.
 
 ## Reading unspent transaction outputs (UTXOs)
 
