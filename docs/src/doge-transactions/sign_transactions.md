@@ -14,6 +14,14 @@ The following snippet shows a simplified example of how to sign a Dogecoin trans
 
 View the source on GitHub: [p2pkh.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/p2pkh.rs)
 
+The signature function passed as argument is shown below.
+
+```rust
+{{#include ../../../examples/basic_dogecoin/src/ecdsa.rs:48:69}}
+```
+
+View the source on GitHub: [ecdsa.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/ecdsa.rs)
+
 ## Resources
 
 - [Learn more about the threshold ECDSA](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa).

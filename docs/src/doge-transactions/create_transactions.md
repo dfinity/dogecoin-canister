@@ -40,6 +40,10 @@ To get the available UTXOs for a Dogecoin address, use the `dogecoin_get_utxos` 
 {{#include ../../../examples/basic_dogecoin/src/service/get_utxos.rs:1:19}}
 ```
 
+```rust
+{{#include ../../../examples/basic_dogecoin/src/lib.rs:119:128}}
+```
+
 View the source on GitHub: [get_utxo.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_utxos.rs)
 
 ## Calculate transaction fee per byte
@@ -48,6 +52,10 @@ The transaction fee of a Dogecoin transaction is calculated based on the size of
 
 ```rust
 {{#include ../../../examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs:1:15}}
+```
+
+```rust
+{{#include ../../../examples/basic_dogecoin/src/lib.rs:135:148}}
 ```
 
 View the source on GitHub: [get_current_fee_percentiles.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs)
