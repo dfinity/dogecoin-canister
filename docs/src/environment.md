@@ -2,38 +2,15 @@
 
 To develop Dogecoin applications to be deployed on ICP, your local developer environment will need to include:
 
-- Necessary tools and packages for the language you’d like to build your dapp in:
-
-    - The Rust toolchain for installing Rust packages and compiling Rust code.
-
-    - The IC SDK for creating, deploying, and managing smart contracts.
-
 - A local Dogecoin regtest node.
 
-- A local Dogecoin canister instance.
+- The [Rust toolchain](https://doc.rust-lang.org/book/ch01-01-installation.html) for installing Rust packages and compiling Rust code.
 
-## Install tooling
-
-### Rust toolchain
-
-Before developing DOGE applications in Rust, you will need to install the [Rust toolchain](https://doc.rust-lang.org/book/ch01-01-installation.html).
-
-### IC SDK
+- The IC SDK for creating, deploying, and managing canisters.
 
 The IC SDK includes a CLI tool called `dfx` that is used for creating, managing, and deploying dapps on ICP. You can install it natively on macOS and Linux; however, Windows users will need to set up WSL 2 before installing the IC SDK.
 
 [Learn more about installing the IC SDK](https://internetcomputer.org/docs/building-apps/getting-started/install)
-
-
-## Create or download an example project
-
-To set up and test your local Dogecoin regtest, you will need a canister that implements methods that call the local Dogecoin canister.
-
-Create a new project using `dfx new my_project` or check out the [examples](https://github.com/dfinity/dogecoin-canister/tree/master/examples) that already implements basic methods for calling the Dogecoin canister.
-
-```admonish info
-The Rust [Dogecoin crate](https://crates.io/crates/bitcoin-dogecoin) provides the tools needed to work with Dogecoin-related types.
-```
 
 ## Create a local Dogecoin network (regtest) with `dogecoind`
 
@@ -100,9 +77,3 @@ dogecoind -datadir=$(pwd)/dogecoin_data --port=18444
 ```
 
 This command assumes that port `18444` on your machine is available. If it isn't, change the specified port accordingly.
-
-## Starting `dfx` with Dogecoin support
-
-```admonish warning title="Work In Progress"
-🚧 This is not yet implemented. 
-```

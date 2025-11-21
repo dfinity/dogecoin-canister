@@ -1,5 +1,5 @@
-# Using Dogecoin Regtest
+# Deploy your first app
 
 ```admonish warning title="Work In Progress"
-🚧 This is not yet implemented.
+🚧 Coming soon!
 ```
