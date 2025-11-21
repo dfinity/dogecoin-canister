@@ -24,7 +24,7 @@ To generate a Dogecoin address, you need to generate an ECDSA public key. An ECD
 {{#include ../../../examples/basic_dogecoin/src/ecdsa.rs:16:46}}
 ```
 
-View the source on GitHub: [get_p2pkh_address.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_p2pkh_address.rs)
+*View the source on GitHub: [get_p2pkh_address.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_p2pkh_address.rs)*
 
 ## Resources
 
