@@ -10,7 +10,7 @@ Pay-to-public-key-hash (P2PKH) addresses are the most common types of addresses 
 
 ### Dogecoin P2SH addresses
 
-Another type of address is Pay to script hash (P2SH) address. It encodes the hash of a Dogecoin script and starts with a `A` or `9` on mainnet. The script can define complex locking conditions such as multisig or timelocks.
+Another type of address is pay-to-script-hash (P2SH) address. It encodes the hash of a Dogecoin script and starts with a `A` or `9` on mainnet. The script can define complex locking conditions such as multisig or timelocks.
 
 ## Generating addresses with threshold ECDSA
 
