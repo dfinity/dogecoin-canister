@@ -16,8 +16,8 @@ Previous proposal: https://dashboard.internetcomputer.org/proposal/139080
 
 ## Motivation
 
-This proposal contains a new feature that stores unstable blocks in stable memory, to mitigate the risk of running out of heap memory.
-It also raises stability threashold from 360 to 720.
+This proposal contains a new feature that stores unstable blocks in stable memory to mitigate the risk of running out of heap memory.
+It also raises stability threshold from 360 to 720.
 
 
 ## Release Notes
@@ -54,4 +54,4 @@ UPGRADE_ARG="(opt record {
 didc encode -d canister/candid.did -t '(opt set_config_request)' "$UPGRADE_ARG" | xxd -r -p | sha256sum
 ```
 
-* `stability_threshold`: set to 720, which corresponds to 12 hours of blocks produced on the Dogecoin network (on average). This number was lowed to 360 in the previous upgrade due to concerns of running out of heap memory in extreme situations, which is now addressed by the fix contained in this proposal.
+* `stability_threshold`: set to 720, which corresponds to 12 hours of blocks produced on the Dogecoin network (on average). This number was lowered to 360 in the previous upgrade due to concerns of running out of heap memory in extreme situations, which is now addressed by the fix contained in this proposal.
