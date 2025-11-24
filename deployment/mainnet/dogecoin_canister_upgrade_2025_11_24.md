@@ -51,7 +51,7 @@ git checkout c947b5c7be61c1b860a8a4cdf5fdd6a5054c61b3
 UPGRADE_ARG="(record {
     stability_threshold = opt (720 : nat);
 })"
-didc encode -d canister/candid.did -t '(set_config_request)' "$UPGRADE_ARG" | xxd -r -p | sha256sum
+didc encode -d canister/candid.did -t '(init_config)' "$UPGRADE_ARG" | xxd -r -p | sha256sum
 ```
 
 * `stability_threshold`: set to 720, which corresponds to 12 hours of blocks produced on the Dogecoin network (on average). This number was lowed to 360 in the previous upgrade due to concerns of running out of heap memory in extreme situations, which is now addressed by the fix contained in this proposal.
