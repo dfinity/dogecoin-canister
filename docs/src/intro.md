@@ -18,7 +18,7 @@ Through a protocol-level integration with the Dogecoin network, canisters deploy
 
 To interact with the Dogecoin blockchain, your canister will make use of the following:
 
-- **[Dogecoin canister](https://github.com/dfinity/dogecoin-canister)**: Think of it as your decentralized gateway to reach the Dogecoin blockchain. This canister provides an API that can be used by others to query information about the network state, e.g., UTXOs, block header information, or the balance of any Dogecoin address; and to send signed transactions to the network.
+- **[Dogecoin canister](https://github.com/dfinity/dogecoin-canister)**: Think of it as your decentralized gateway to reach the Dogecoin blockchain. This canister provides an API that can be used by others to query information about the Dogecoin network state, e.g. UTXOs, block headers, or the balance of any Dogecoin address; and to send transactions to the network.
 
 - **[Threshold ECDSA](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa)**: Your canister can have a secret key that is stored in a secure and decentralized manner using chain-key cryptography (several such keys can be computed by key derivation). Messages sent by the canister can be signed using this key, enabling your canister to [send signed transactions](./doge-transactions/complete_flow.md) to the Dogecoin network through the Dogecoin canister.
 
@@ -31,11 +31,9 @@ To submit a Dogecoin transaction from a canister, the following steps are typica
 - Sign the transaction using the threshold ECDSA API
 - Submit the transaction to the Dogecoin API
 
-The Dogecoin canister relays the request to the Dogecoin network, which receives and processes the request asynchronously.
-
 ## Getting Started
 
-First, set up your [development environment](./environment.md). Then, to build canisters interacting with the Dogecoin blockchain, you will need to know how to
+First, set up your [development environment](./environment.md). Then, to build canisters interacting with the Dogecoin network, you will need to know how to:
 
 - [Generate a Dogecoin address](./doge-transactions/generate_address.md). Dogecoin addresses are necessary for your canister to sign transactions and hold DOGE. A canister can have multiple addresses.
 

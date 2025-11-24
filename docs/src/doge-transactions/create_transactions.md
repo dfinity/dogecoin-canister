@@ -2,7 +2,7 @@
 
 Unspent transaction outputs (UTXOs) are used as inputs to build Dogecoin transactions. Every Dogecoin transaction spends one or more UTXOs and in return creates new UTXOs. A UTXO exists until it is used as input for a future transaction. In order to create a Dogecoin transaction, you need to:
 
-1. Get the available UTXOs corresponding to a Dogecoin address controlled by your ICP canister using the `dogecoin_get_utxos` API endpoint.
+1. Get the available UTXOs corresponding to a Dogecoin address controlled by your canister using the `dogecoin_get_utxos` API endpoint.
 
 2. Calculate an appropriate transaction fee using the `dogecoin_get_current_fee_percentiles` API endpoint.
 
@@ -46,11 +46,11 @@ To get the available UTXOs for a Dogecoin address, use the `dogecoin_get_utxos` 
 {{#include ../../../examples/basic_dogecoin/src/lib.rs:119:128}}
 ```
 
-*View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs)*
+*View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs#L119)*
 
 ## Calculate transaction fee per byte
 
-The transaction fee of a Dogecoin transaction is calculated based on the size of the transaction in bytes. An appropriate fee per byte can be determined by looking at the fees of recent transactions on the Dogecoin mainnet. The following snippet shows how to estimate the fee per byte for a transaction using the dogecoin_get_current_fee_percentiles API endpoint and choosing the 50th percentile.
+The transaction fee of a Dogecoin transaction is calculated based on the size of the transaction in bytes. An appropriate fee per byte can be determined by looking at the fees of recent transactions on the Dogecoin mainnet. The following snippet shows how to estimate the fee per byte for a transaction using the `dogecoin_get_current_fee_percentiles` API endpoint and choosing the 50th percentile.
 
 ```rust
 {{#include ../../../examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs:1:15}}
@@ -62,7 +62,7 @@ The transaction fee of a Dogecoin transaction is calculated based on the size of
 {{#include ../../../examples/basic_dogecoin/src/lib.rs:135:148}}
 ```
 
-*View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs)*
+*View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs#L135)*
 
 ## Build the transaction
 
@@ -74,4 +74,4 @@ The following snippet shows a simplified version of how to build a transaction t
 {{#include ../../../examples/basic_dogecoin/src/p2pkh.rs:20:70}}
 ```
 
-*View the source on GitHub: [p2pkh.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/p2pkh.rs)*
+*View the source on GitHub: [p2pkh.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/p2pkh.rs#L20)*
