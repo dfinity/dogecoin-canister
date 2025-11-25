@@ -29,7 +29,7 @@
 //! # }
 //! #
 //! /// Apply a transform function to the HTTP response.
-//! #[ic_cdk_macros::query]
+//! #[ic_cdk::query]
 //! fn transform(raw: TransformArgs) -> HttpRequestResult {
 //!     let mut response = HttpRequestResult {
 //!         status: raw.response.status.clone(),
@@ -63,7 +63,7 @@
 //! }
 //!
 //! /// Fetch a quote from the dummyjson.com API.
-//! #[ic_cdk_macros::update]
+//! #[ic_cdk::update]
 //! async fn fetch() -> String {
 //!     let request = build_request();
 //!     let cycles = 0;

@@ -2,7 +2,7 @@ use bitcoin::consensus::Decodable;
 use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::{block::Header, consensus::Encodable, dogecoin, dogecoin::Block as DogecoinBlock};
 use canbench_rs::{bench, bench_fn, BenchResult};
-use ic_cdk_macros::init;
+use ic_cdk::init;
 use ic_doge_canister::{types::BlockHeaderBlob, with_state, with_state_mut};
 use ic_doge_interface::{InitConfig, Network};
 use ic_doge_test_utils::{build_regtest_chain, BlockBuilder, TransactionBuilder};
