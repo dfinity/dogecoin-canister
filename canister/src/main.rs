@@ -1,5 +1,7 @@
-use ic_cdk::api::{msg_reject, msg_reply};
-use ic_cdk_macros::{heartbeat, init, inspect_message, post_upgrade, pre_upgrade, query, update};
+use ic_cdk::{
+    api::{msg_reject, msg_reply},
+    heartbeat, init, inspect_message, post_upgrade, pre_upgrade, query, update,
+};
 use ic_doge_canister::types::{HttpRequest, HttpResponse};
 use ic_doge_interface::{
     Config, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
