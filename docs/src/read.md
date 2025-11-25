@@ -54,7 +54,7 @@ This endpoint returns 101 numbers that are fees measured in millikoinus (1,000 m
 
 ## Reading the block headers
 
-To read the block headers within a provided range of start and end heights, make a call to the `dogecoin_get_block_headers` Dogecoin API method.
+To read the block headers within a provided range of start and end heights, make a call to the `dogecoin_get_block_headers` Dogecoin API method. Note that at most 100 block headers are returned per request.
 
 ```rust
 {{#include ../../examples/basic_dogecoin/src/service/get_block_headers.rs:1:22}}
