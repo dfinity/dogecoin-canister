@@ -4,8 +4,8 @@ use ic_cdk::update;
 
 /// Returns a P2PKH (Pay-to-PubKey-Hash) address for this smart contract.
 ///
-/// This address uses an ECDSA public key and encodes it in the legacy Base58 format.
-/// It is supported by all dogecoin wallets and full nodes.
+/// This address uses an ECDSA public key and encodes it in the Base58 format.
+/// It is supported by all Dogecoin wallets and full nodes.
 #[update]
 pub async fn get_p2pkh_address() -> String {
     let ctx = DOGE_CONTEXT.with(|ctx| ctx.get());
@@ -20,7 +20,7 @@ pub async fn get_p2pkh_address() -> String {
     // Convert the public key to the format used by the Dogecoin library
     let public_key = PublicKey::from_slice(&public_key).unwrap();
 
-    // Generate a legacy P2PKH address from the public key.
+    // Generate a P2PKH address from the public key.
     // The address encoding (Base58) depends on the network type.
     Address::p2pkh(public_key, ctx.dogecoin_network).to_string()
 }
