@@ -14,8 +14,10 @@
 //! ## Canister
 //!
 //! ```rust
-//! # use ic_cdk::management_canister::{
-//! #     HttpHeader, HttpRequestArgs, HttpRequestResult, TransformArgs,
+//! # use ic_cdk::{
+//! #     management_canister::{HttpHeader, HttpRequestArgs, HttpRequestResult, TransformArgs},
+//! #     update,
+//! #     query,
 //! # };
 //! #
 //! # pub fn print(msg: &str) {
@@ -29,7 +31,7 @@
 //! # }
 //! #
 //! /// Apply a transform function to the HTTP response.
-//! #[ic_cdk::query]
+//! #[query]
 //! fn transform(raw: TransformArgs) -> HttpRequestResult {
 //!     let mut response = HttpRequestResult {
 //!         status: raw.response.status.clone(),
@@ -63,7 +65,7 @@
 //! }
 //!
 //! /// Fetch a quote from the dummyjson.com API.
-//! #[ic_cdk::update]
+//! #[update]
 //! async fn fetch() -> String {
 //!     let request = build_request();
 //!     let cycles = 0;
