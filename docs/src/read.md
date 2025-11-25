@@ -36,7 +36,7 @@ To read the current balance of a Dogecoin address, make a call to the `dogecoin_
 
 ## Reading the fee percentiles
 
-The transaction fees on the Dogecoin network change dynamically based on the number of pending transactions. In order to get fee percentiles of the last 10,000 transactions, call the `dogecoin_get_current_fee_percentiles` Dogecoin API method.
+The transaction fees on the Dogecoin network change dynamically based on the number of pending transactions. In order to get fee percentiles of the last 1,000 transactions, call the `dogecoin_get_current_fee_percentiles` Dogecoin API method.
 
 This endpoint returns 101 numbers that are fees measured in millikoinus (1,000 millikoinus = 1 koinu; 100,000,000 koinus = 1 DOGE) per byte. The ith element of the result corresponds to the ith percentile fee. For example, to get the median fee over the last few blocks, look at the 50th element of the result.
 

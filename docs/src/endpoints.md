@@ -30,7 +30,7 @@ Queries `dogecoin_get_balance` using a [query call](https://internetcomputer.org
 
 ### `dogecoin_get_current_fee_percentiles`
 
-Returns fee percentiles (in millikoinus/byte) from the most recent 10,000 Dogecoin transactions.
+Returns fee percentiles (in millikoinus/byte) from the most recent 1,000 Dogecoin transactions.
 
 ### `dogecoin_get_block_headers`
 
