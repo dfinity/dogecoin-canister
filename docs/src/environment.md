@@ -27,7 +27,7 @@ export PATH="$(pwd)/dogecoin-1.14.9/bin:$PATH"
 ```
 
 ```admonish note title="Mac OS X users"
-There are currently no released binary for Mac OS X. You will need to build Dogecoin Core from source. Follow the instructions in the [Dogecoin Core repository](https://github.com/dogecoin/dogecoin/blob/master/doc/build-macos.md).
+There are currently no released binaries for Mac OS X. You will need to build Dogecoin Core from source. Follow the instructions in the [Dogecoin Core repository](https://github.com/dogecoin/dogecoin/blob/master/doc/build-macos.md).
 ```
 
 - #### Step 2: Create a subdirectory for Dogecoin data.

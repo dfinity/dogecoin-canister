@@ -1,6 +1,6 @@
 # Creating Dogecoin Transactions
 
-Unspent transaction outputs (UTXOs) are used as inputs to build Dogecoin transactions. Every Dogecoin transaction spends one or more UTXOs and in return creates new UTXOs. A UTXO exists until it is used as input for a future transaction. In order to create a Dogecoin transaction, you need to:
+Unspent transaction outputs (UTXOs) are used as inputs to build Dogecoin transactions. Every Dogecoin transaction spends one or more UTXOs and in return creates new UTXOs. A UTXO exists until it is used as input in a transaction. In order to create a Dogecoin transaction, you need to:
 
 1. Get the available UTXOs corresponding to a Dogecoin address controlled by your canister using the `dogecoin_get_utxos` API endpoint.
 

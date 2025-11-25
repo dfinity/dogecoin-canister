@@ -18,7 +18,7 @@ Returns the UTXOs associated with a Dogecoin address. UTXOs can be filtered by m
 
 ### `dogecoin_get_utxos_query`
 
-Queries `dogecoin_get_utxos` using [query call](https://internetcomputer.org/docs/building-apps/interact-with-canisters/query-calls). Since this is a query call, it returns quickly but results are not trustworthy.
+Queries `dogecoin_get_utxos` using a [query call](https://internetcomputer.org/docs/building-apps/interact-with-canisters/query-calls). Since this is a query call, it returns quickly but results are not trustworthy.
 
 ### `dogecoin_get_balance`
 
@@ -26,7 +26,7 @@ Returns the balance of a Dogecoin address in koinus (1 DOGE = 100,000,000 koinus
 
 ### `dogecoin_get_balance_query`
 
-Queries `dogecoin_get_balance` using [query call](https://internetcomputer.org/docs/building-apps/interact-with-canisters/query-calls). Since this is a query call, it returns quickly but results are not trustworthy.
+Queries `dogecoin_get_balance` using a [query call](https://internetcomputer.org/docs/building-apps/interact-with-canisters/query-calls). Since this is a query call, it returns quickly but results are not trustworthy.
 
 ### `dogecoin_get_current_fee_percentiles`
 
@@ -52,16 +52,16 @@ The costs of API calls in [cycles](https://internetcomputer.org/docs/building-ap
 
 The call for submitting a Dogecoin transaction to the Dogecoin network does not require a minimum number of cycles to send with the call as the charged cost is independent of the replication factor of the subnet.
 
-The cost per API call in USD uses the USD/XDR exchange rate of May 22, 2025 ($1.354820 USD).
+The cost per API call in USD uses the XDR/USD exchange rate of November 25, 2025 (1 XDR = 1.411492 USD).
 
 | API call                               | Description                                                                | Price (Cycles)                          | Price (USD)                          | Minimum cycles to send with call |
 |----------------------------------------|----------------------------------------------------------------------------|---------------------------------------|------------------------------------|---------------------------------|
-| `dogecoin_get_utxos`                   | Retrieve the UTXO set for a Dogecoin address                               | 50_000_000 + 1 cycle per Wasm instruction | $0.00006774 + Wasm instruction cost | 10_000_000_000                 |
-| `dogecoin_get_current_fee_percentiles` | Obtain the fee percentiles of the most recent transactions                 | 10_000_000                            | $0.00001355                       | 100_000_000                    |
-| `dogecoin_get_balance`                 | Retrieve the balance of a given Dogecoin address                           | 10_000_000                            | $0.00001355                       | 100_000_000                    |
-| `dogecoin_send_transaction`            | Submit a Dogecoin transaction to the Dogecoin network, per transaction     | 5_000_000_000                        | $0.00677                         | N/A                           |
-| `dogecoin_send_transaction`            | Submit a Dogecoin transaction to the Dogecoin network, per byte of payload | 20_000_000                           | $0.00002710                      | N/A                           |
-| `dogecoin_get_block_headers`           | Retrieve the block headers in specified range                              | 50_000_000 + 1 cycle per Wasm instruction | $0.00006774 + Wasm instruction cost | 10_000_000_000                 |
+| `dogecoin_get_utxos`                   | Retrieve the UTXO set for a Dogecoin address                               | 50_000_000 + 1 cycle per Wasm instruction | $0.00007058 + Wasm instruction cost | 10_000_000_000                 |
+| `dogecoin_get_current_fee_percentiles` | Obtain the fee percentiles of the most recent transactions                 | 10_000_000                            | $0.00001412                       | 100_000_000                    |
+| `dogecoin_get_balance`                 | Retrieve the balance of a given Dogecoin address                           | 10_000_000                            | $0.00001412                      | 100_000_000                    |
+| `dogecoin_send_transaction`            | Submit a Dogecoin transaction to the Dogecoin network, per transaction     | 5_000_000_000                        | $0.00706                         | N/A                           |
+| `dogecoin_send_transaction`            | Submit a Dogecoin transaction to the Dogecoin network, per byte of payload | 20_000_000                           | $0.00002823                      | N/A                           |
+| `dogecoin_get_block_headers`           | Retrieve the block headers in specified range                              | 50_000_000 + 1 cycle per Wasm instruction | $0.00007058 + Wasm instruction cost | 10_000_000_000                 |
 
 ```admonish note
 Fees for calling the `dogecoin_get_utxos` and `dogecoin_get_block_headers` endpoints depend on the number of Wasm instructions that the Dogecoin canister consumes when processing the requests to ensure fair charging.

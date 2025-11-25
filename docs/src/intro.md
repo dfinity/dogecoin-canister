@@ -18,7 +18,7 @@ Through a protocol-level integration with the Dogecoin network, canisters deploy
 
 To interact with the Dogecoin blockchain, your canister will make use of the following:
 
-- **[Dogecoin canister](https://github.com/dfinity/dogecoin-canister)**: Think of it as your decentralized gateway to reach the Dogecoin blockchain. This canister provides an API that can be used by others to query information about the Dogecoin network state, e.g. UTXOs, block headers, or the balance of any Dogecoin address; and to send transactions to the network.
+- **[Dogecoin canister](https://github.com/dfinity/dogecoin-canister)**: Think of it as your decentralized gateway to reach the Dogecoin blockchain. This canister provides an API that can be used by others to query information about the Dogecoin network state, for example, unspent transaction outputs (UTXOs), block headers, or the balance of any Dogecoin address; and to send transactions to the network.
 
 - **[Threshold ECDSA](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa)**: Your canister can have a secret key that is stored in a secure and decentralized manner using chain-key cryptography (several such keys can be computed by key derivation). Messages sent by the canister can be signed using this key, enabling your canister to [send signed transactions](./doge-transactions/complete_flow.md) to the Dogecoin network through the Dogecoin canister.
 
@@ -37,7 +37,7 @@ First, set up your [development environment](./environment.md). Then, to build c
 
 - [Generate a Dogecoin address](./doge-transactions/generate_address.md). Dogecoin addresses are necessary for your canister to sign transactions and hold DOGE. A canister can have multiple addresses.
 
-- [Create a Dogecoin transaction](./doge-transactions/create_transactions.md). Dogecoin transactions spend unspent transaction outputs (UTXOs) and create new UTXOs. A UTXO is the output of a Dogecoin transaction. It exists until it is used as the input of another transaction.
+- [Create a Dogecoin transaction](./doge-transactions/create_transactions.md). Dogecoin transactions spend UTXOs and create new UTXOs. A UTXO is the output of a Dogecoin transaction. It exists until it is used as the input of another transaction.
 
 - [Sign the transaction](./doge-transactions/sign_transactions.md) using [threshold ECDSA API](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa). All inputs of a transaction must be signed before the transaction can be submitted to the Dogecoin network.
 
@@ -47,7 +47,7 @@ First, set up your [development environment](./environment.md). Then, to build c
 
 ## Additional resources
 
-Building Dogecoin applications is not trivial. It’s beneficial to understand core Bitcoin concepts which underpins Dogecoin's, including transactions, UTXOs, the Script language, and hash formats.
+Building Dogecoin applications is not trivial. It’s beneficial to understand core Bitcoin concepts which underpin Dogecoin, including transactions, UTXOs, the Script language, and hash formats.
 
 - [Mastering Bitcoin: Programming the open blockchain](https://github.com/bitcoinbook/bitcoinbook/blob/develop/BOOK.md)
 - [Learn me a Bitcoin](https://learnmeabitcoin.com)
