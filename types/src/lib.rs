@@ -531,25 +531,5 @@ mod test {
             ),
             18_415_156_832_118
         );
-
-        // // Testnet block 2412153.
-        // // Data pulled from https://www.blockchain.com/explorer/blocks/btc-testnet/2412153
-        // assert_eq!(
-        //     Block::target_difficulty(
-        //         Network::Testnet,
-        //         Target::from_compact(CompactTarget::from_consensus(422681968))
-        //     ),
-        //     86_564_599
-        // );
-        //
-        // // Testnet block 1500000.
-        // // Data pulled from https://www.blockchain.com/explorer/blocks/btc-testnet/1500000
-        // assert_eq!(
-        //     Block::target_difficulty(
-        //         Network::Testnet,
-        //         Target::from_compact(CompactTarget::from_consensus(457142912))
-        //     ),
-        //     1_032
-        // );
     }
 }
