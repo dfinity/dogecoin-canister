@@ -72,7 +72,6 @@ async fn process_chain(network: Network, blocks_file: &str, num_blocks: u32) {
             magic,
             match network {
                 Network::Mainnet => DogecoinNetwork::Dogecoin,
-                Network::Testnet => DogecoinNetwork::Testnet,
                 Network::Regtest => DogecoinNetwork::Regtest,
             }
             .magic()
@@ -378,62 +377,6 @@ async fn mainnet_14k_blocks() {
             4990,
             "234a88a35a404e5810b25774842e1adb1c14a377c443bb822076b59e743a7ea7",
         );
-    });
-}
-
-#[async_std::test]
-async fn testnet_200k_blocks() {
-    crate::init(crate::InitConfig {
-        stability_threshold: Some(2),
-        network: Some(Network::Testnet),
-        ..Default::default()
-    });
-
-    // Set a reasonable performance counter step to trigger time-slicing.
-    runtime::set_performance_counter_step(100_000);
-
-    process_chain(
-        Network::Testnet,
-        "test-data/testnet_200k_blocks.dat",
-        200_000,
-    )
-    .await; // Blocks from height 158100 have AuxPow enabled
-
-    // Validate we've ingested all the blocks.
-    assert_eq!(with_state(main_chain_height), 200_000);
-
-    // Check the block headers/heights of a few random blocks.
-    crate::with_state(|state| {
-        // https://blockexplorer.one/dogecoin/testnet/blockId/0
-        verify_block_header(
-            state,
-            0,
-            &genesis_block(Network::Testnet).block_hash().to_string(),
-        );
-        // https://blockexplorer.one/dogecoin/testnet/blockId/10
-        verify_block_header(
-            state,
-            10,
-            "322c32b158917980db0fe30c1b8b9c921db9e1b851bf925b5729ede16ab37f60",
-        );
-        // https://blockexplorer.one/dogecoin/testnet/blockId/718
-        verify_block_header(
-            state,
-            718,
-            "9b4110c3c7203f7febc04fae07aca7a7f7dfa394e3aae0ee2cd92efe709cb257",
-        );
-        // https://blockexplorer.one/dogecoin/testnet/blockId/4997
-        verify_block_header(
-            state,
-            4997,
-            "6c3cbd14fb7cacb18b6aa6e3f386ebecdaae040e4f41653183ad1f3bf9868b5b",
-        );
-        // https://blockexplorer.one/dogecoin/testnet/blockId/193200
-        verify_block_header(
-            state,
-            193_200,
-            "4f9788b495ae3e50a7348d84648460594ce4c3884c0e40b78ad39e242c990b83",
-        )
     });
 }
 

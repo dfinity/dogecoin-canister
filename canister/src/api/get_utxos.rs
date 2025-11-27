@@ -1007,7 +1007,7 @@ mod test {
 
     #[test]
     fn get_utxos_for_address_with_many_of_them_respects_utxo_limit() {
-        for network in [Network::Mainnet, Network::Testnet, Network::Regtest] {
+        for network in [Network::Mainnet, Network::Regtest] {
             let doge_network = into_dogecoin_network(network);
             // Generate an address.
             let address = random_p2pkh_address(doge_network).into();

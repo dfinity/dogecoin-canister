@@ -424,7 +424,7 @@ fn get_stable_child(blocks: &UnstableBlocks) -> Option<usize> {
         testnet_unstable_max_depth_difference(blocks_count(blocks), blocks.stability_threshold());
 
     // Prevent excessive chain growth in testnets where difficulty resets.
-    if network == Network::Testnet || network == Network::Regtest {
+    if network == Network::Regtest {
         // The difficulty in the Dogecoin testnet/regtest can be reset to the minimum
         // in case a block hasn't been found for 20 minutes. This can be problematic.
         // Consider the following scenario:

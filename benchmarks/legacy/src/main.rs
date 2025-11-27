@@ -42,7 +42,7 @@ fn init() {
 #[bench(raw)]
 fn insert_300_blocks() -> BenchResult {
     ic_doge_canister::init(InitConfig {
-        network: Some(Network::Testnet),
+        network: Some(Network::Mainnet),
         stability_threshold: Some(144),
         ..Default::default()
     });
@@ -64,7 +64,7 @@ fn insert_300_blocks() -> BenchResult {
 #[bench(raw)]
 fn get_metrics() -> BenchResult {
     ic_doge_canister::init(InitConfig {
-        network: Some(Network::Testnet),
+        network: Some(Network::Mainnet),
         stability_threshold: Some(3000),
         ..Default::default()
     });
@@ -91,7 +91,7 @@ fn insert_block_headers() -> BenchResult {
     let block_headers_to_insert = 100;
 
     ic_doge_canister::init(InitConfig {
-        network: Some(Network::Testnet),
+        network: Some(Network::Mainnet),
         ..Default::default()
     });
 
@@ -148,7 +148,7 @@ fn insert_block_headers_multiple_times() -> BenchResult {
     let block_headers_to_insert = 900;
 
     ic_doge_canister::init(InitConfig {
-        network: Some(Network::Testnet),
+        network: Some(Network::Mainnet),
         ..Default::default()
     });
 

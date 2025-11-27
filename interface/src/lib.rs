@@ -40,8 +40,6 @@ impl From<NetworkInRequest> for NetworkAdapter {
         match network {
             NetworkInRequest::Mainnet => Self::Mainnet,
             NetworkInRequest::mainnet => Self::Mainnet,
-            NetworkInRequest::Testnet => Self::Testnet,
-            NetworkInRequest::testnet => Self::Testnet,
             NetworkInRequest::Regtest => Self::Regtest,
             NetworkInRequest::regtest => Self::Regtest,
         }
@@ -52,7 +50,6 @@ impl From<Network> for NetworkAdapter {
     fn from(network: Network) -> Self {
         match network {
             Network::Mainnet => Self::Mainnet,
-            Network::Testnet => Self::Testnet,
             Network::Regtest => Self::Regtest,
         }
     }
@@ -64,10 +61,6 @@ pub enum Network {
     #[serde(rename = "mainnet")]
     Mainnet,
 
-    /// Dogecoin Testnet.
-    #[serde(rename = "testnet")]
-    Testnet,
-
     /// Dogecoin Regtest.
     #[serde(rename = "regtest")]
     Regtest,
@@ -77,7 +70,6 @@ impl fmt::Display for Network {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Mainnet => write!(f, "mainnet"),
-            Self::Testnet => write!(f, "testnet"),
             Self::Regtest => write!(f, "regtest"),
         }
     }
@@ -89,7 +81,6 @@ impl FromStr for Network {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "mainnet" => Ok(Network::Mainnet),
-            "testnet" => Ok(Network::Testnet),
             "regtest" => Ok(Network::Regtest),
             _ => Err("Bad network".to_string()),
         }
@@ -100,7 +91,6 @@ impl From<Network> for NetworkInRequest {
     fn from(network: Network) -> Self {
         match network {
             Network::Mainnet => Self::Mainnet,
-            Network::Testnet => Self::Testnet,
             Network::Regtest => Self::Regtest,
         }
     }
@@ -111,8 +101,6 @@ impl From<NetworkInRequest> for Network {
         match network {
             NetworkInRequest::Mainnet => Self::Mainnet,
             NetworkInRequest::mainnet => Self::Mainnet,
-            NetworkInRequest::Testnet => Self::Testnet,
-            NetworkInRequest::testnet => Self::Testnet,
             NetworkInRequest::Regtest => Self::Regtest,
             NetworkInRequest::regtest => Self::Regtest,
         }
@@ -130,12 +118,6 @@ pub enum NetworkInRequest {
     #[allow(non_camel_case_types)]
     mainnet,
 
-    /// Dogecoin Testnet.
-    Testnet,
-    /// Dogecoin Testnet.
-    #[allow(non_camel_case_types)]
-    testnet,
-
     /// Dogecoin Regtest.
     Regtest,
     /// Dogecoin Regtest.
@@ -147,10 +129,8 @@ impl fmt::Display for NetworkInRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Mainnet => write!(f, "mainnet"),
-            Self::Testnet => write!(f, "testnet"),
             Self::Regtest => write!(f, "regtest"),
             Self::mainnet => write!(f, "mainnet"),
-            Self::testnet => write!(f, "testnet"),
             Self::regtest => write!(f, "regtest"),
         }
     }
@@ -706,7 +686,6 @@ impl From<InitConfig> for Config {
         if !fees_explicitly_set {
             config.fees = match config.network {
                 Network::Mainnet => Fees::mainnet(),
-                Network::Testnet => Fees::testnet(),
                 Network::Regtest => config.fees, // Keep unchanged for regtest.
             };
         }
@@ -779,28 +758,6 @@ pub struct Fees {
 }
 
 impl Fees {
-    pub fn testnet() -> Self {
-        // https://internetcomputer.org/docs/references/bitcoin-how-it-works#bitcoin-testnet
-        Self {
-            get_utxos_base: 20_000_000,
-            get_utxos_cycles_per_ten_instructions: 4,
-            get_utxos_maximum: 4_000_000_000,
-
-            get_current_fee_percentiles: 4_000_000,
-            get_current_fee_percentiles_maximum: 40_000_000,
-
-            get_balance: 4_000_000,
-            get_balance_maximum: 40_000_000,
-
-            send_transaction_base: 2_000_000_000,
-            send_transaction_per_byte: 8_000_000,
-
-            get_block_headers_base: 20_000_000,
-            get_block_headers_cycles_per_ten_instructions: 4,
-            get_block_headers_maximum: 4_000_000_000,
-        }
-    }
-
     pub fn mainnet() -> Self {
         // https://internetcomputer.org/docs/references/bitcoin-how-it-works#bitcoin-mainnet
         Self {

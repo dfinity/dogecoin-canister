@@ -560,7 +560,7 @@ mod test {
     type BlockTree = super::BlockTree<CachedBlock>;
 
     fn test_tree(root: Block) -> BlockTree {
-        let cache = TestBlocksCache::new(Network::Testnet);
+        let cache = TestBlocksCache::new(Network::Mainnet);
         BlockTree::new_with_cache(cache, root)
     }
 
@@ -598,7 +598,7 @@ mod test {
             // Each depth can have up to 3 children, up to a depth of 10.
             (pvec(1..3u8, 0..10), any::<bool>())
                 .prop_map(|(num_children, use_auxpow)| {
-                    let cache = TestBlocksCache::new(Network::Testnet);
+                    let cache = TestBlocksCache::new(Network::Mainnet);
                     let mut tree =
                         BlockTree::new_with_cache(cache, BlockBuilder::genesis().build());
                     build_block_tree(&mut tree, &num_children, use_auxpow);
@@ -891,7 +891,7 @@ mod test {
     fn test_replace_blocks_cache(mut tree: BlockTree) {
         tree.get_child_blocks()
             .iter()
-            .for_each(|block| assert_eq!(block.cache.borrow().network(), Network::Testnet));
+            .for_each(|block| assert_eq!(block.cache.borrow().network(), Network::Mainnet));
         let blocks = tree.cache().borrow().collect();
         let new_cache = TestBlocksCache::new_with(Network::Mainnet, blocks);
         tree.replace_blocks_cache(new_cache);
