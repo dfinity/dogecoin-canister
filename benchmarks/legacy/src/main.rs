@@ -11,15 +11,15 @@ use std::cell::RefCell;
 use std::str::FromStr;
 
 thread_local! {
-    static TESTNET_BLOCKS: RefCell<Vec<Block>> =  const { RefCell::new(vec![])};
+    static MAINNET_BLOCKS: RefCell<Vec<Block>> =  const { RefCell::new(vec![])};
 }
 
 #[init]
 fn init() {
     // Load the testnet blocks.
-    TESTNET_BLOCKS.with(|blocks| {
+    MAINNET_BLOCKS.with(|blocks| {
         blocks.replace(
-            include_str!("../testnet_blocks_5k.txt")
+            include_str!("../dogecoin_blocks_0_5000.hex")
                 .trim()
                 .split('\n')
                 .map(|block_hex| {
@@ -52,7 +52,7 @@ fn insert_300_blocks() -> BenchResult {
             for i in 0..300 {
                 ic_doge_canister::state::insert_block(
                     s,
-                    TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
+                    MAINNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
                 )
                 .unwrap();
             }
@@ -73,7 +73,7 @@ fn get_metrics() -> BenchResult {
         for i in 0..3000 {
             ic_doge_canister::state::insert_block(
                 s,
-                TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
+                MAINNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
             )
             .unwrap();
         }
@@ -100,14 +100,14 @@ fn insert_block_headers() -> BenchResult {
         for i in 0..blocks_to_insert {
             ic_doge_canister::state::insert_block(
                 s,
-                TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
+                MAINNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
             )
             .unwrap();
         }
     });
 
     // Compute the next block headers.
-    let next_block_headers = TESTNET_BLOCKS.with(|b| {
+    let next_block_headers = MAINNET_BLOCKS.with(|b| {
         let blocks = b.borrow();
         let mut next_block_headers = vec![];
         for i in blocks_to_insert..blocks_to_insert + block_headers_to_insert {
@@ -153,7 +153,7 @@ fn insert_block_headers_multiple_times() -> BenchResult {
     });
 
     // Compute the next block headers.
-    let next_block_headers = TESTNET_BLOCKS.with(|b| {
+    let next_block_headers = MAINNET_BLOCKS.with(|b| {
         let blocks = b.borrow();
         let mut next_block_headers = vec![];
         for i in 0..block_headers_to_insert {
