@@ -23,7 +23,7 @@ Canister:
 
 ```rust
 /// Apply a transform function to the HTTP response.
-#[ic_cdk_macros::query]
+#[query]
 fn transform(raw: TransformArgs) -> HttpRequestResult {
     let mut response = HttpRequestResult {
         status: raw.response.status.clone(),
@@ -57,7 +57,7 @@ fn build_request() -> HttpRequestArgs {
 }
 
 /// Fetch a quote from the dummyjson.com API.
-#[ic_cdk_macros::update]
+#[update]
 async fn fetch() -> String {
     let request = build_request();
     let result = ic_http::http_request(request).await;

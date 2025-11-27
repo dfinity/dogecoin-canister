@@ -10,9 +10,9 @@ use ic_doge_interface::MillikoinuPerByte;
 use ic_doge_types::Transaction;
 
 /// The number of transactions to include in the percentiles calculation.
-const NUM_TRANSACTIONS: u32 = 10_000;
+const NUM_TRANSACTIONS: u32 = 1_000;
 
-/// Returns the 100 fee percentiles of the chain's 10,000 most recent transactions.
+/// Returns the 100 fee percentiles of the chain's 1,000 most recent transactions.
 pub fn get_current_fee_percentiles() -> Vec<MillikoinuPerByte> {
     verify_has_enough_cycles(with_state(|s| s.fees.get_current_fee_percentiles_maximum));
     charge_cycles(with_state(|s| s.fees.get_current_fee_percentiles));
