@@ -412,7 +412,6 @@ mod test {
             stability_threshold in 1..200u128,
             network in prop_oneof![
                 Just(Network::Mainnet),
-                Just(Network::Testnet),
                 Just(Network::Regtest),
             ],
         ) {
@@ -526,7 +525,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_balance_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -535,14 +534,14 @@ mod test {
         });
         get_balance(GetBalanceRequest {
             address: String::from(""),
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
             min_confirmations: None,
         })
         .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_balance_query_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -551,14 +550,14 @@ mod test {
         });
         get_balance_query(GetBalanceRequest {
             address: String::from(""),
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
             min_confirmations: None,
         })
         .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_utxos_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -567,14 +566,14 @@ mod test {
         });
         get_utxos(GetUtxosRequest {
             address: String::from(""),
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
             filter: None,
         })
         .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_utxos_query_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -583,14 +582,14 @@ mod test {
         });
         get_utxos_query(GetUtxosRequest {
             address: String::from(""),
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
             filter: None,
         })
         .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_current_fee_percentiles_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -598,12 +597,12 @@ mod test {
             ..Default::default()
         });
         get_current_fee_percentiles(GetCurrentFeePercentilesRequest {
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
         });
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_block_headers_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -613,7 +612,7 @@ mod test {
         get_block_headers(GetBlockHeadersRequest {
             start_height: 0,
             end_height: None,
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
         })
         .unwrap();
     }
@@ -779,10 +778,8 @@ mod test {
             ..Default::default()
         };
         let test_cases = [
-            (Network::Testnet, None, Fees::testnet()),
             (Network::Mainnet, None, Fees::mainnet()),
             (Network::Regtest, None, Fees::default()),
-            (Network::Testnet, Some(custom.clone()), custom.clone()),
             (Network::Mainnet, Some(custom.clone()), custom.clone()),
             (Network::Regtest, Some(custom.clone()), custom),
         ];

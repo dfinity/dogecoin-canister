@@ -146,6 +146,7 @@ impl<T: HeaderStore> HeaderValidator for DogecoinHeaderValidator<T> {
         prev_height: BlockHeight,
         timestamp: u32,
     ) -> Target {
+        // TODO(DEFI-2252): Fix the off-by-one error in height for Testnet.
         // Dogecoin core ref: <https://github.com/dogecoin/dogecoin/blob/1be681a1b97b686f838af90682a57f2030d26015/src/pow.cpp#L32>
         let height = prev_height + 1;
 
