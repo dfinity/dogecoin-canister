@@ -533,6 +533,45 @@ jobs:
         run: |
           ./e2e-tests/reproducibility.sh Dockerfile
 
+      - name: Archive WASMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasms
+          path: ./wasms
+          if-no-files-found: error
+          compression-level: 0
+
+  check-canister-wasm-endpoints:
+    runs-on: ubuntu-latest
+    needs: canister-build-reproducibility
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download WASMs
+        uses: actions/download-artifact@v4
+        with:
+          name: wasms
+          path: ./wasms
+
+      - name: Install `ic-wasm`
+        uses: taiki-e/install-action@v2
+        with:
+          tool: ic-wasm
+
+      - name: Check canister endpoints
+        run: |
+          echo "::group::Checking Dogecoin canister endpoints"
+          ic-wasm "$GITHUB_WORKSPACE/wasms/ic-doge-canister.wasm.gz" check-endpoints \
+            --hidden ./canister/hidden_endpoints.conf
+          echo "::endgroup::"
+
+          echo "::group::Checking uploader canister endpoints"
+          ic-wasm "$GITHUB_WORKSPACE/wasms/uploader.wasm.gz" check-endpoints \
+            --hidden ./bootstrap/uploader/hidden_endpoints.conf \
+            --candid ./bootstrap/uploader/candid.did
+          echo "::endgroup::"
+
   checks-pass:
     # Always run this job!
     if: always()
