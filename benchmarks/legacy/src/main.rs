@@ -19,7 +19,7 @@ fn init() {
     // Load the testnet blocks.
     MAINNET_BLOCKS.with(|blocks| {
         blocks.replace(
-            include_str!("../dogecoin_blocks_0_5000.hex")
+            include_str!("../dogecoin_blocks_1_5000.hex")
                 .trim()
                 .split('\n')
                 .map(|block_hex| {
