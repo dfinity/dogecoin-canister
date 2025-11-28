@@ -16,7 +16,7 @@ thread_local! {
 
 #[init]
 fn init() {
-    // Load the testnet blocks.
+    // Load the mainnet blocks.
     MAINNET_BLOCKS.with(|blocks| {
         blocks.replace(
             include_str!("../dogecoin_blocks_1_5000.hex")
@@ -38,7 +38,7 @@ fn init() {
     ic_doge_canister::runtime::mock_time::set_mock_time_secs(june_2025);
 }
 
-// Insert the first 300 blocks of the Dogecoin testnet.
+// Insert the first 300 blocks of the Dogecoin mainnet.
 #[bench(raw)]
 fn insert_300_blocks() -> BenchResult {
     ic_doge_canister::init(InitConfig {

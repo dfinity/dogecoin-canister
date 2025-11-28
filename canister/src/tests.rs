@@ -30,22 +30,6 @@ use std::{fs::File, panic::catch_unwind};
 
 mod confirmation_counts;
 
-/// Helper function to save a chain to a file in hex format.
-#[cfg(feature = "save_chain_as_hex")]
-fn save_chain_as_hex_file(chain: &[DogecoinBlock], file_name: &str) -> std::io::Result<()> {
-    use std::io::{BufWriter, Write};
-    let file = File::create(file_name)?;
-    let mut writer = BufWriter::new(file);
-
-    chain.iter().try_for_each(|block| {
-        let mut bytes = Vec::new();
-        block.consensus_encode(&mut bytes)?;
-        writeln!(writer, "{}", hex::encode(bytes))
-    })?;
-
-    Ok(())
-}
-
 async fn process_chain(network: Network, blocks_file: &str, num_blocks: u32) {
     let mut chain: Vec<DogecoinBlock> = vec![];
 
@@ -96,11 +80,6 @@ async fn process_chain(network: Network, blocks_file: &str, num_blocks: u32) {
     }
 
     println!("Built chain with length: {}", chain.len());
-
-    #[cfg(feature = "save_chain_as_hex")]
-    if network == Network::Testnet {
-        save_chain_as_hex_file(&chain, "../benchmarks/testnet_blocks_200k.txt").unwrap();
-    }
 
     // Map the blocks into responses that are given to the hearbeat.
     let responses: Vec<_> = chain
