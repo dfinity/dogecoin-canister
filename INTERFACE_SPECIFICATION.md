@@ -11,7 +11,6 @@ The Dogecoin canister exposes the following endpoints.
 ```
 type network = variant {
   mainnet;
-  testnet;
   regtest;
 };
 
@@ -57,7 +56,7 @@ dogecoin_get_utxos : (get_utxos_request) -> (get_utxos_response);
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a `get_utxos_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet`, `testnet`, or `regtest`), the function returns all unspent transaction outputs (UTXOs) associated with the provided address in the specified Dogecoin network based on the current view of the Dogecoin blockchain available to the Dogecoin canister. The UTXOs are returned sorted by block height in descending order.
+Given a `get_utxos_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet` or `regtest`), the function returns all unspent transaction outputs (UTXOs) associated with the provided address in the specified Dogecoin network based on the current view of the Dogecoin blockchain available to the Dogecoin canister. The UTXOs are returned sorted by block height in descending order.
 
 The following address formats are supported:
 
@@ -106,7 +105,7 @@ dogecoin_get_balance : (get_balance_request) -> (amount);
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a `get_balance_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet`, `testnet`, or `regtest`), the function returns the current balance of this address in `koinu` (10^8 koinu = 1 dogecoin) in the specified Dogecoin network. The same address formats as for `dogecoin_get_utxos` are supported.
+Given a `get_balance_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet` or `regtest`), the function returns the current balance of this address in `koinu` (10^8 koinu = 1 dogecoin) in the specified Dogecoin network. The same address formats as for `dogecoin_get_utxos` are supported.
 
 If the address is malformed, the call is rejected.
 
@@ -164,7 +163,7 @@ dogecoin_get_block_headers : (get_block_headers_request) -> (get_block_headers_r
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a start height, an optional end height, and a Dogecoin network (`mainnet`, `testnet`, or `regtest`), the function returns the block headers in the provided range. The range is inclusive, i.e., the block headers at the start and end heights are returned as well.
+Given a start height, an optional end height, and a Dogecoin network (`mainnet` or `regtest`), the function returns the block headers in the provided range. The range is inclusive, i.e., the block headers at the start and end heights are returned as well.
 An error is returned when an end height is specified that is greater than the tip height.
 
 If no end height is specified, all blocks until the tip height, i.e., the largest available height, are returned. However, if the range from the start height to the end height or the tip height is large, only a prefix of the requested block headers may be returned in order to bound the size of the response.
@@ -186,7 +185,7 @@ dogecoin_send_transaction : (send_transaction_request) -> ();
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a `send_transaction_request`, which must specify a `blob` of a Dogecoin transaction and a Dogecoin network (`mainnet`, `testnet`, or `regtest`), the Dogecoin canister verifies that the transaction is well formed.
+Given a `send_transaction_request`, which must specify a `blob` of a Dogecoin transaction and a Dogecoin network (`mainnet` or `regtest`), the Dogecoin canister verifies that the transaction is well formed.
 If this is the case, the transaction is forwarded to the specified Dogecoin network. Note that the function does not provide any guarantees that the transaction will make it into the mempool or that the transaction will ever appear in a block.
 
 ### `get_config`
@@ -231,7 +230,7 @@ This endpoint returns the current configuration of the Dogecoin canister.
 It specifies the following parameters:
 
 * `stability_threshold`: This is the threshold that defines the level of "difficulty-based stability" that a Dogecoin block must reach before it is considered stable. When a block becomes stable, its transactions are applied to the UTXO set. Subsequently, the block can be discarded to free up memory. Details about the stability mechanism can be found on the Bitcoin integration [wiki page](https://wiki.internetcomputer.org/wiki/Bitcoin_Integration) under "Fork Resolution".
-* `network`: This parameter indicates whether the Dogecoin canister is connected to Dogecoin `mainnet`, `testnet`, or `regtest`.
+* `network`: This parameter indicates whether the Dogecoin canister is connected to Dogecoin `mainnet` or `regtest`.
 * `syncing`: This flag indicates whether the Dogecoin canister is actively ingesting blocks to update its state.
 * `fees`: This record specifies how many cycles must be attached when invoking the individual endpoints. More information about API fees can be found in the [Bitcoin integration documentation](https://internetcomputer.org/docs/current/references/bitcoin-how-it-works#api-fees-and-pricing).
 * `api_access`: This flag indicates whether access to the endpoints is enabled.
