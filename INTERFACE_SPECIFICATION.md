@@ -1,17 +1,16 @@
 ## The Dogecoin Canister API
 
-The canister IDs of the Dogecoin canisters:
-
-* `mainnet`:  [gordg-fyaaa-aaaan-aaadq-cai](https://dashboard.internetcomputer.org/canister/gordg-fyaaa-aaaan-aaadq-cai)
+The canister ID of the Dogecoin canister is [gordg-fyaaa-aaaan-aaadq-cai](https://dashboard.internetcomputer.org/canister/gordg-fyaaa-aaaan-aaadq-cai).
 
 Information about Dogecoin and the IC Dogecoin integration can be found in the [Build on Dogecoin](https://dfinity.github.io/dogecoin-canister) book.
+
+The Dogecoin canister exposes the following endpoints.
 
 ### `dogecoin_get_utxos`
 
 ```
 type network = variant {
   mainnet;
-  testnet;
   regtest;
 };
 
@@ -57,7 +56,7 @@ dogecoin_get_utxos : (get_utxos_request) -> (get_utxos_response);
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a `get_utxos_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet` or `testnet`), the function returns all unspent transaction outputs (UTXOs) associated with the provided address in the specified Dogecoin network based on the current view of the Dogecoin blockchain available to the Dogecoin component. The UTXOs are returned sorted by block height in descending order.
+Given a `get_utxos_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet` or `regtest`), the function returns all unspent transaction outputs (UTXOs) associated with the provided address in the specified Dogecoin network based on the current view of the Dogecoin blockchain available to the Dogecoin canister. The UTXOs are returned sorted by block height in descending order.
 
 The following address formats are supported:
 
@@ -69,13 +68,14 @@ If the address is malformed, the call is rejected.
 
 The optional `filter` parameter can be used to restrict the set of returned UTXOs, either providing a minimum number of confirmations or a page reference when pagination is used for addresses with many UTXOs. In the first case, only UTXOs with at least the provided number of confirmations are returned, i.e., transactions with fewer than this number of confirmations are not considered. In other words, if the number of confirmations is `c`, an output is returned if it occurred in a transaction with at least `c` confirmations and there is no transaction that spends the same output with at least `c` confirmations.
 
-There is an upper bound of 144 on the minimum number of confirmations. If a larger minimum number of confirmations is specified, the call is rejected. Note that this is not a severe restriction as the minimum number of confirmations is typically set to a value around 60 in practice.
+There is an upper bound on the minimum number of confirmations, which varies with the difficulty target.
+ If a larger minimum number of confirmations is specified, the call is rejected. Note that this is not a severe restriction as the minimum number of confirmations used in practice is around 60, which is approximately an order of magnitude lower than the number that the Dogecoin canister normally accepts.
 
-It is important to note that the validity of transactions is not verified in the Dogecoin component. The Dogecoin component relies on the proof of work that goes into the blocks and the verification of the blocks in the Dogecoin network. For a newly discovered block, a regular Dogecoin (full) node therefore provides a higher level of security than the Dogecoin component, which implies that it is advisable to set the number of confirmations to a reasonably large value, such as 60, to gain confidence in the correctness of the returned UTXOs.
+It is important to note that the validity of transactions is not verified in the Dogecoin canister. The Dogecoin canister relies on the proof of work that goes into the blocks and the verification of the blocks in the Dogecoin network. For a newly discovered block, a regular Dogecoin (full) node therefore provides a higher level of security than the Dogecoin canister, which implies that it is advisable to set the number of confirmations to a reasonably large value, such as 60, to gain confidence in the correctness of the returned UTXOs.
 
 There is an upper bound of 10,000 UTXOs that can be returned in a single request. For addresses that contain sufficiently many UTXOs, a partial set of the address's UTXOs are returned along with a page reference.
 
-In the second case, a page reference (a series of bytes) must be provided, which instructs the Dogecoin component to collect UTXOs starting from the corresponding "page".
+In the second case, a page reference (a series of bytes) must be provided, which instructs the Dogecoin canister to collect UTXOs starting from the corresponding "page".
 
 A `get_utxos_request` without the optional `filter` results in a request that considers the full blockchain, which is equivalent to setting `min_confirmations` to 0.
 
@@ -105,7 +105,7 @@ dogecoin_get_balance : (get_balance_request) -> (amount);
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a `get_balance_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet` or `testnet`), the function returns the current balance of this address in `Koinu` (10^8 Koinu = 1 Dogecoin) in the specified Dogecoin network. The same address formats as for `dogecoin_get_utxos` are supported.
+Given a `get_balance_request`, which must specify a Dogecoin address and a Dogecoin network (`mainnet` or `regtest`), the function returns the current balance of this address in `koinu` (10^8 koinu = 1 dogecoin) in the specified Dogecoin network. The same address formats as for `dogecoin_get_utxos` are supported.
 
 If the address is malformed, the call is rejected.
 
@@ -138,7 +138,7 @@ This endpoint can only be called by canisters, i.e., it cannot be called by exte
 
 The transaction fees in the Dogecoin network change dynamically based on the number of pending transactions. It must be possible for a canister to determine an adequate fee when creating a Dogecoin transaction.
 
-This function returns fee percentiles, measured in millikoinu/byte (1000 millikoinu = 1 koinu), over the last 10,000 transactions in the specified network, i.e., over the transactions in the last approximately 4-10 blocks.
+This function returns fee percentiles, measured in millikoinu/byte (1000 millikoinu = 1 koinu), over the last 1000 transactions in the specified network, i.e., over the transactions in the last approximately 30-50 blocks.
 
 The [standard nearest-rank estimation method](https://en.wikipedia.org/wiki/Percentile#The_nearest-rank_method), inclusive, with the addition of a 0th percentile is used. Concretely, for any i from 1 to 100, the ith percentile is the fee with rank `⌈i * 100⌉`. The 0th percentile is defined as the smallest fee (excluding coinbase transactions).
 
@@ -163,15 +163,15 @@ dogecoin_get_block_headers : (get_block_headers_request) -> (get_block_headers_r
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a start height, an optional end height, and a Dogecoin network (`mainnet` or `testnet`), the function returns the block headers in the provided range. The range is inclusive, i.e., the block headers at the start and end heights are returned as well.
+Given a start height, an optional end height, and a Dogecoin network (`mainnet` or `regtest`), the function returns the block headers in the provided range. The range is inclusive, i.e., the block headers at the start and end heights are returned as well.
 An error is returned when an end height is specified that is greater than the tip height.
 
 If no end height is specified, all blocks until the tip height, i.e., the largest available height, are returned. However, if the range from the start height to the end height or the tip height is large, only a prefix of the requested block headers may be returned in order to bound the size of the response.
 
-The response is guaranteed to contain the block headers in order: if it contains any block headers, the first block header occurs at the start height, the second block header occurs at the start height plus one and so forth.
+The response is guaranteed to contain the block headers in order: if it contains any block headers, the first block header occurs at the start height, the second block header occurs at the start height plus one and so forth. However, at most 100 block headers are returned per request.
 
 The response is a record consisting of the tip height and the vector of block headers.
-The block headers are 80-byte blobs in the [standard Bitcoin format](https://developer.bitcoin.org/reference/block_chain.html#block-headers). Note that auxiliary proof-of-work ([AuxPoW](https://dogecoin.com/dogepedia/articles/what-is-a-miner/)) are **not** included.
+The block headers are 80-byte blobs in the [standard Bitcoin format](https://developer.bitcoin.org/reference/block_chain.html#block-headers). Note that auxiliary proof-of-work ([AuxPoW](https://dogecoin.com/dogepedia/articles/what-is-a-miner/)) data is **not** included.
 
 ### `dogecoin_send_transaction`
 ```
@@ -185,17 +185,8 @@ dogecoin_send_transaction : (send_transaction_request) -> ();
 
 This endpoint can only be called by canisters, i.e., it cannot be called by external users via ingress messages.
 
-Given a `send_transaction_request`, which must specify a `blob` of a Dogecoin transaction and a Dogecoin network (`mainnet` or `testnet`), several checks are performed:
-
--   The transaction is well formed.
-
--   The transaction only consumes unspent outputs with respect to the current (longest) blockchain, i.e., there is no block on the (longest) chain that consumes any of these outputs.
-
--   There is a positive transaction fee.
-
-If at least one of these checks fails, the call is rejected.
-
-If the transaction passes these tests, the transaction is forwarded to the specified Dogecoin network. Note that the function does not provide any guarantees that the transaction will make it into the mempool or that the transaction will ever appear in a block.
+Given a `send_transaction_request`, which must specify a `blob` of a Dogecoin transaction and a Dogecoin network (`mainnet` or `regtest`), the Dogecoin canister verifies that the transaction is well formed.
+If this is the case, the transaction is forwarded to the specified Dogecoin network. Note that the function does not provide any guarantees that the transaction will make it into the mempool or that the transaction will ever appear in a block.
 
 ### `get_config`
 ```
@@ -238,12 +229,12 @@ get_config : () -> (config) query;
 This endpoint returns the current configuration of the Dogecoin canister.
 It specifies the following parameters:
 
-* `stability_threshold`: This is the threshold that defines the level of "difficulty-based stability" that a Dogecoin block before it is considered stable. When a block becomes stable, its transactions are applied to the UTXO set. Subsequently, the block can be discarded to free up memory. Details about the stability mechanism can be found on the Dogecoin integration [wiki page](https://wiki.internetcomputer.org/wiki/Bitcoin_Integration) under "Fork Resolution".
-* `network`: This parameter indicates whether the Dogecoin canister is connected to Dogecoin mainnet, testnet (v4), or regtest.
+* `stability_threshold`: This is the threshold that defines the level of "difficulty-based stability" that a Dogecoin block must reach before it is considered stable. When a block becomes stable, its transactions are applied to the UTXO set. Subsequently, the block can be discarded to free up memory. Details about the stability mechanism can be found on the Bitcoin integration [wiki page](https://wiki.internetcomputer.org/wiki/Bitcoin_Integration) under "Fork Resolution".
+* `network`: This parameter indicates whether the Dogecoin canister is connected to Dogecoin `mainnet` or `regtest`.
 * `syncing`: This flag indicates whether the Dogecoin canister is actively ingesting blocks to update its state.
 * `fees`: This record specifies how many cycles must be attached when invoking the individual endpoints. More information about API fees can be found in the [Bitcoin integration documentation](https://internetcomputer.org/docs/current/references/bitcoin-how-it-works#api-fees-and-pricing).
 * `api_access`: This flag indicates whether access to the endpoints is enabled.
-* `disable_api_if_not_fully_synced`: This flag indicates whether access to the endpoints is automatically disabled if the _watchdog canister_ indicates that the Dogecoin canister is lagging behind in the sense that its state is more than 2 blocks behind the Dogecoin blockchain. 
+* `disable_api_if_not_fully_synced`: This flag indicates whether access to the endpoints is automatically disabled when the Dogecoin canister detects that it is lagging behind, i.e., when it does not have the blocks for the greatest heights for which it has block headers.
 * `watchdog_canister`: This is the principal ID of the watchdog canister. If this canister observes that the Dogecoin canister is lagging behind, it is authorized to disable API access.
 * `burn_cycles`: This flag indicates whether received cycles are burned.
 * `lazily_evaluate_fee_percentiles`: This flag indicates whether fee percentiles are only evaluated when fees are requested, rather than updating them automatically whenever a newly received block is processed.
@@ -268,20 +259,4 @@ This endpoint is used to update the configuration. The watchdog canister can onl
 
 ### Byte Order
 
-Since the Dogecoin canister provides a low-level interface, it uses the [same byte order as Dogecoin uses internally](https://learnmeabitcoin.com/technical/general/byte-order).
-
-A fun quirk of Dogecoin is that transaction hashes and block hashes have their byte orders reversed when you're displaying and searching for them.
-
-For example, the actual block hash for the block comes out of the hash function like this:
-
-```
-5e6ed4fdff39104b0a2fea7ffc606d9644d3144a2fc2aca60fd137c66914901e
-```
-
-It is displayed the same way on [BTC canister public dashboard](https://dashboard.internetcomputer.org/canister/g4xu7-jiaaa-aaaan-aaaaq-cai) if you call `dogecoin_get_utxos_query` for `testnet` and address `tb1q6cvfmeqhl3ckgsv3d9tzxpjlgec7smd32a9a3d`.
-
-But when you're searching for [this address](https://mempool.space/testnet4/address/tb1q6cvfmeqhl3ckgsv3d9tzxpjlgec7smd32a9a3d) or [this transaction](https://mempool.space/testnet4/tx/1e901469c637d10fa6acc22f4a14d344966d60fc7fea2f0a4b1039fffdd46e5e) in mempool or on a block explorer, you'll see this byte order:
-
-```
-1e901469c637d10fa6acc22f4a14d344966d60fc7fea2f0a4b1039fffdd46e5e
-```
+Note that Dogecoin inherits [Bitcoin's byte order quick](https://learnmeabitcoin.com/technical/general/byte-order), that is, the byte order is reversed for transaction and block hashes when displayed, for example, in logs and blockchain explorers.
