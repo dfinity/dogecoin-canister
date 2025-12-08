@@ -23,4 +23,3 @@ ic-doge-interface = { workspace = true }
 ic-doge-test-utils = { workspace = true }
 ic-doge-types = { workspace = true, features = ["doge"] }
 ic-cdk = { workspace = true }
-ic-cdk-macros = { workspace = true }

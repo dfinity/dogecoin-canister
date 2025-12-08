@@ -45,6 +45,9 @@ use std::io::Write;
 use std::{cell::RefCell, cmp::max};
 use utxo_set::UtxoSet;
 
+/// WASM page size is 64KB
+const WASM_PAGE_SIZE: u64 = 1 << 15;
+
 /// The maximum number of blocks the canister can be behind the tip to be considered synced.
 const SYNCED_THRESHOLD: u32 = 2;
 
@@ -95,7 +98,12 @@ pub fn init(init_config: InitConfig) {
     print("Running init...");
 
     let config = Config::from(init_config);
+    let cache = unstable_blocks::BlocksCacheInStableMem::new(
+        config.network,
+        memory::get_unstable_blocks_memory(),
+    );
     set_state(State::new(
+        cache,
         config
             .stability_threshold
             .try_into()
@@ -216,6 +224,21 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
             ciborium::de::from_reader(&mut buffered_reader)
         };
 
+        // Read Old State type
+        let read_buffer_offset_0_old_state = || {
+            let reader = Reader::new(&memory, 0);
+            let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
+            ciborium::de::from_reader(&mut buffered_reader).map(
+                |state: state::GenericState<blocktree::BlockTree<Block>>| {
+                    let cache = unstable_blocks::BlocksCacheInStableMem::new(
+                        state.network(),
+                        memory::get_unstable_blocks_memory(),
+                    );
+                    state.map_tree(|tree| tree.into_cached(cache))
+                },
+            )
+        };
+
         // Buffered reader at offset 4
         let read_buffer_offset_4 = || {
             let reader = Reader::new(&memory, 4);
@@ -228,7 +251,12 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
             let mut state_len_bytes = [0; 4];
             memory.read(0, &mut state_len_bytes);
             let state_len = u32::from_le_bytes(state_len_bytes) as usize;
-
+            if state_len as u64 + 4 > memory.size() * WASM_PAGE_SIZE {
+                return Err(ciborium::de::Error::Semantic(
+                    None,
+                    "Out of bounds".to_string(),
+                ));
+            }
             let mut state_bytes = vec![0; state_len];
             memory.read(4, &mut state_bytes);
 
@@ -249,6 +277,22 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
                     e
                 ));
                 read_array()
+            })
+            .map(|mut state: State| {
+                let cache = unstable_blocks::BlocksCacheInStableMem::new(
+                    state.network(),
+                    memory::get_unstable_blocks_memory(),
+                );
+                // Reset cache to stable memory
+                state.replace_unstable_blocks_cache(cache);
+                state
+            })
+            .or_else(|e| {
+                print(&format!(
+                    "Failed to read state with buffered reader: {:?}. Trying different format...",
+                    e
+                ));
+                read_buffer_offset_0_old_state()
             })
             .expect("Failed to read state into array.")
     };
@@ -368,7 +412,6 @@ mod test {
             stability_threshold in 1..200u128,
             network in prop_oneof![
                 Just(Network::Mainnet),
-                Just(Network::Testnet),
                 Just(Network::Regtest),
             ],
         ) {
@@ -378,9 +421,13 @@ mod test {
                 ..Default::default()
             });
 
+           let cache = unstable_blocks::BlocksCacheInStableMem::new(
+               network,
+               crate::memory::get_unstable_blocks_memory()
+            );
             with_state(|state| {
                 assert!(
-                    *state == State::new(stability_threshold as u32, network, genesis_block(network))
+                    *state == State::new(cache, stability_threshold as u32, network, genesis_block(network))
                 );
             });
         }
@@ -478,7 +525,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_balance_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -487,14 +534,14 @@ mod test {
         });
         get_balance(GetBalanceRequest {
             address: String::from(""),
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
             min_confirmations: None,
         })
         .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_balance_query_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -503,14 +550,14 @@ mod test {
         });
         get_balance_query(GetBalanceRequest {
             address: String::from(""),
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
             min_confirmations: None,
         })
         .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_utxos_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -519,14 +566,14 @@ mod test {
         });
         get_utxos(GetUtxosRequest {
             address: String::from(""),
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
             filter: None,
         })
         .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_utxos_query_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -535,14 +582,14 @@ mod test {
         });
         get_utxos_query(GetUtxosRequest {
             address: String::from(""),
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
             filter: None,
         })
         .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_current_fee_percentiles_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -550,12 +597,12 @@ mod test {
             ..Default::default()
         });
         get_current_fee_percentiles(GetCurrentFeePercentilesRequest {
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
         });
     }
 
     #[test]
-    #[should_panic(expected = "Network must be mainnet. Found testnet")]
+    #[should_panic(expected = "Network must be mainnet. Found regtest")]
     fn get_block_headers_incorrect_network() {
         init(InitConfig {
             stability_threshold: Some(0),
@@ -565,7 +612,7 @@ mod test {
         get_block_headers(GetBlockHeadersRequest {
             start_height: 0,
             end_height: None,
-            network: NetworkInRequest::Testnet,
+            network: NetworkInRequest::Regtest,
         })
         .unwrap();
     }
@@ -731,10 +778,8 @@ mod test {
             ..Default::default()
         };
         let test_cases = [
-            (Network::Testnet, None, Fees::testnet()),
             (Network::Mainnet, None, Fees::mainnet()),
             (Network::Regtest, None, Fees::default()),
-            (Network::Testnet, Some(custom.clone()), custom.clone()),
             (Network::Mainnet, Some(custom.clone()), custom.clone()),
             (Network::Regtest, Some(custom.clone()), custom),
         ];
@@ -777,5 +822,52 @@ mod test {
 
         // The new and old states should be equivalent
         with_state(|new_state| assert!(new_state == &previous_state));
+    }
+
+    #[test]
+    fn test_post_upgrade_state_conversion() {
+        memory::set_memory(ic_stable_structures::DefaultMemoryImpl::default());
+        let network = Network::Regtest;
+        init(InitConfig {
+            stability_threshold: Some(360),
+            network: Some(network),
+            ..Default::default()
+        });
+
+        let blocks = build_chain(network, 3, 4, false);
+
+        // Insert all the blocks. Note that we skip the genesis block, as that
+        // is already included as part of initializing the state.
+        for block in blocks[1..].iter() {
+            with_state_mut(|s| {
+                crate::state::insert_block(s, block.clone()).unwrap();
+                crate::state::ingest_stable_blocks_into_utxoset(s);
+            });
+        }
+
+        // Take out the state (which also clears the `STATE` singleton).
+        // The state here explicitly uses BlockTree<Block> instead of BlockTree<CachedBlock>.
+        let old_state: state::GenericState<blocktree::BlockTree<Block>> = STATE
+            .with(|cell| cell.take().unwrap())
+            .map_tree(|tree| tree.map(&|block: blocktree::CachedBlock| block.block()));
+
+        // Serialize the state to bytes
+        let mut state_bytes = vec![];
+        ciborium::ser::into_writer(&old_state, &mut state_bytes).unwrap();
+
+        // Write state (of BlockTree<Block>) into stable memory
+        let memory = memory::get_upgrades_memory();
+        memory::write(&memory, 0, &state_bytes);
+
+        // Run postupgrade hook
+        post_upgrade(None);
+
+        // The state after going through proper post_upgrade handling is using
+        // BlockTree<CachedBlock> internally. To assert equivalence to old_state
+        // we need to convert it to the same type as the old state.
+        let new_state = STATE
+            .with(|cell| cell.take().unwrap())
+            .map_tree(|tree| tree.map(&|block: blocktree::CachedBlock| block.block()));
+        assert!(new_state == old_state);
     }
 }

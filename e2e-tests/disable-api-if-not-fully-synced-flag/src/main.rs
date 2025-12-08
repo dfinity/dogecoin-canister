@@ -3,7 +3,7 @@ use bitcoin::{
     dogecoin::Block, dogecoin::Network as DogecoinNetwork,
 };
 use candid::CandidType;
-use ic_cdk_macros::{init, update};
+use ic_cdk::{init, update};
 use ic_doge_test_utils::{BlockBuilder, TransactionBuilder};
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};

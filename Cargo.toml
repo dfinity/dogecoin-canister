@@ -6,7 +6,6 @@ members = [
     "interface",
     "types",
     "validation",
-    "watchdog",
     # Crates for bootstrapping the state
     "bootstrap/state-builder",
     "bootstrap/uploader",
@@ -29,7 +28,7 @@ resolver = "2"
 assert_matches = "1.5.0"
 bitcoin = { git = "https://github.com/dfinity/rust-dogecoin.git", rev = "851705aa88e0a2f0f8b5002173b4cdb1d218a4e5" }
 byteorder = "1.4.3"
-canbench-rs = "0.3.0"
+canbench-rs = "0.4.0"
 candid = "0.10.6"
 candid_parser = "0.1.4"
 ciborium = "0.2.1"
@@ -43,8 +42,7 @@ ic-doge-interface = { path = "./interface" }
 ic-doge-test-utils = { path = "./test-utils" }
 ic-doge-types = { path = "./types", features = ["doge"] }
 ic-doge-validation = { path = "./validation" }
-ic-cdk = "0.18.7"
-ic-cdk-macros = "0.18"
+ic-cdk = "0.19.0"
 ic-http = { path = "./ic-http" }
 ic-metrics-encoder = "1.0.0"
 ic-stable-structures = "0.7.2"

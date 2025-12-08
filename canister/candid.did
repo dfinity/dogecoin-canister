@@ -1,6 +1,5 @@
 type network = variant {
   mainnet;
-  testnet;
   regtest;
 };
 
@@ -149,6 +148,7 @@ service dogecoin : (init_config) -> {
 
   dogecoin_send_transaction : (send_transaction_request) -> ();
 
+  /// This is a debug endpoint and may be unstable.
   get_config : () -> (config) query;
 
   set_config : (set_config_request) -> ();

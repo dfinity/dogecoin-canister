@@ -576,7 +576,7 @@ mod test {
     use crate::{
         address_utxoset::AddressUtxoSet,
         runtime,
-        test_utils::{BlockBuilder, TransactionBuilder},
+        test_utils::{BlockBuilder, TestBlocksCache, TransactionBuilder},
         types::into_dogecoin_network,
         unstable_blocks::UnstableBlocks,
     };
@@ -608,7 +608,7 @@ mod test {
 
     #[test]
     fn tx_without_outputs_leaves_utxo_set_unchanged() {
-        for network in [Network::Mainnet, Network::Regtest, Network::Testnet].iter() {
+        for network in [Network::Mainnet, Network::Regtest].iter() {
             let mut utxo = UtxoSet::new(*network);
 
             // no output coinbase
@@ -628,11 +628,6 @@ mod test {
     #[test]
     fn filter_mainnet_provably_unspendable_utxos() {
         test_filter_provably_unspendable_utxos(UtxoSet::new(Network::Mainnet));
-    }
-
-    #[test]
-    fn filter_testnet_provably_unspendable_utxos() {
-        test_filter_provably_unspendable_utxos(UtxoSet::new(Network::Testnet));
     }
 
     #[test]
@@ -712,11 +707,6 @@ mod test {
     }
 
     #[test]
-    fn spending_testnet() {
-        spending(Network::Testnet);
-    }
-
-    #[test]
     fn spending_regtest() {
         spending(Network::Regtest);
     }
@@ -733,7 +723,9 @@ mod test {
             .build();
         ingest_tx(&mut utxo, &coinbase_tx);
 
-        let unstable_blocks = UnstableBlocks::new(&utxo, 2, crate::genesis_block(network), network);
+        let cache = TestBlocksCache::new(network);
+        let unstable_blocks =
+            UnstableBlocks::new(cache, &utxo, 2, crate::genesis_block(network), network);
 
         let expected = vec![Utxo {
             outpoint: OutPoint {
@@ -809,7 +801,7 @@ mod test {
 
     #[test]
     fn utxos_are_sorted_by_height() {
-        let network = Network::Testnet;
+        let network = Network::Mainnet;
         let doge_network = into_dogecoin_network(network);
         let address: Address = random_p2pkh_address(doge_network).into();
 
@@ -849,7 +841,7 @@ mod test {
     #[test]
     #[should_panic]
     fn inserting_same_outpoint_panics() {
-        let network = Network::Testnet;
+        let network = Network::Mainnet;
         let doge_network = into_dogecoin_network(network);
         let mut utxo_set = UtxoSet::new(network);
         let address = random_p2pkh_address(doge_network).into();
@@ -876,7 +868,7 @@ mod test {
 
     #[test]
     fn addresses_with_empty_balances_are_removed() {
-        let network = Network::Testnet;
+        let network = Network::Mainnet;
         let doge_network = into_dogecoin_network(network);
         let mut utxo_set = UtxoSet::new(network);
         let address_1 = random_p2pkh_address(doge_network).into();
@@ -913,7 +905,7 @@ mod test {
     // This cannot happen on mainnet, but can and has happened on testnet.
     #[test]
     fn consuming_an_input_with_value_zero() {
-        let network = Network::Testnet;
+        let network = Network::Mainnet;
         let doge_network = into_dogecoin_network(network);
         let mut utxo_set = UtxoSet::new(network);
         let address_1 = random_p2pkh_address(doge_network).into();
@@ -959,7 +951,7 @@ mod test {
 
     #[test]
     fn ingest_block_test_block_ingestion_stats() {
-        let network = Network::Testnet;
+        let network = Network::Mainnet;
         let doge_network = into_dogecoin_network(network);
         let mut utxo_set = UtxoSet::new(network);
         let address_1 = random_p2pkh_address(doge_network).into();
@@ -1013,7 +1005,6 @@ mod test {
 
             network in prop_oneof![
                 Just(Network::Mainnet),
-                Just(Network::Testnet),
                 Just(Network::Regtest),
             ]) {
             let doge_network = into_dogecoin_network(network);

@@ -17,7 +17,6 @@ ic-doge-interface = { workspace = true }
 ic-doge-types = { workspace = true, features = ["doge"] }
 ic-doge-validation = { workspace = true, features = ["doge"] }
 ic-cdk = { workspace = true }
-ic-cdk-macros = { workspace = true }
 ic-metrics-encoder = { workspace = true }
 ic-stable-structures = { workspace = true }
 lazy_static = "1.4.0"
@@ -48,6 +47,5 @@ test-strategy = "0.3.1"
 
 [features]
 file_memory = []
-save_chain_as_hex = []
 mock_time = []
 canbench-rs = ["dep:canbench-rs", "ic-doge-validation/canbench-rs"]

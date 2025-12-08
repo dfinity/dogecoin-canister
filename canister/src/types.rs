@@ -579,7 +579,6 @@ impl PartialOrd for Utxo {
 pub fn into_dogecoin_network(network: Network) -> DogecoinNetwork {
     match network {
         Network::Mainnet => DogecoinNetwork::Dogecoin,
-        Network::Testnet => DogecoinNetwork::Testnet,
         Network::Regtest => DogecoinNetwork::Regtest,
     }
 }
@@ -693,7 +692,7 @@ mod test {
         ]); // Invalid script
 
         assert_eq!(
-            Address::from_script(script, Network::Testnet),
+            Address::from_script(script, Network::Mainnet),
             Err(InvalidAddress)
         );
     }

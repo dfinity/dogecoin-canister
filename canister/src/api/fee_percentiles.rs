@@ -1,4 +1,5 @@
 use crate::{
+    blocktree::{CachedBlock, ChainBlock},
     charge_cycles,
     runtime::{performance_counter, print},
     state::{FeePercentilesCache, State},
@@ -6,12 +7,12 @@ use crate::{
     verify_has_enough_cycles, with_state, with_state_mut,
 };
 use ic_doge_interface::MillikoinuPerByte;
-use ic_doge_types::{Block, Transaction};
+use ic_doge_types::Transaction;
 
 /// The number of transactions to include in the percentiles calculation.
-const NUM_TRANSACTIONS: u32 = 10_000;
+const NUM_TRANSACTIONS: u32 = 1_000;
 
-/// Returns the 100 fee percentiles of the chain's 10,000 most recent transactions.
+/// Returns the 100 fee percentiles of the chain's 1,000 most recent transactions.
 pub fn get_current_fee_percentiles() -> Vec<MillikoinuPerByte> {
     verify_has_enough_cycles(with_state(|s| s.fees.get_current_fee_percentiles_maximum));
     charge_cycles(with_state(|s| s.fees.get_current_fee_percentiles));
@@ -82,7 +83,7 @@ fn get_current_fee_percentiles_with_number_of_transactions(
 /// Fees are returned in a reversed order, starting with the most recent ones, followed by the older ones.
 /// Eg. for transactions [..., Tn-2, Tn-1, Tn] fees would be [Fn, Fn-1, Fn-2, ...].
 fn get_fees_per_byte(
-    main_chain: Vec<&Block>,
+    main_chain: Vec<&CachedBlock>,
     unstable_blocks: &UnstableBlocks,
     number_of_transactions: u32,
 ) -> Vec<MillikoinuPerByte> {
@@ -92,7 +93,7 @@ fn get_fees_per_byte(
         if tx_i >= number_of_transactions {
             break;
         }
-        for tx in block.txdata() {
+        for tx in block.block().txdata() {
             if tx_i >= number_of_transactions {
                 break;
             }
@@ -174,7 +175,7 @@ mod test {
     use bitcoin::Witness;
     use ic_doge_interface::{Fees, InitConfig, Koinu, Network};
     use ic_doge_test_utils::random_p2pkh_address;
-    use ic_doge_types::OutPoint;
+    use ic_doge_types::{Block, OutPoint};
     use std::iter::FromIterator;
 
     /// Covers an inclusive range of `[0, 100]` percentiles.

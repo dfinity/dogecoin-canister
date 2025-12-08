@@ -2,7 +2,7 @@ use bitcoin::consensus::Decodable;
 use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::{block::Header, consensus::Encodable, dogecoin, dogecoin::Block as DogecoinBlock};
 use canbench_rs::{bench, bench_fn, BenchResult};
-use ic_cdk_macros::init;
+use ic_cdk::init;
 use ic_doge_canister::{types::BlockHeaderBlob, with_state, with_state_mut};
 use ic_doge_interface::{InitConfig, Network};
 use ic_doge_test_utils::{build_regtest_chain, BlockBuilder, TransactionBuilder};
@@ -11,15 +11,15 @@ use std::cell::RefCell;
 use std::str::FromStr;
 
 thread_local! {
-    static TESTNET_BLOCKS: RefCell<Vec<Block>> =  const { RefCell::new(vec![])};
+    static MAINNET_BLOCKS: RefCell<Vec<Block>> =  const { RefCell::new(vec![])};
 }
 
 #[init]
 fn init() {
-    // Load the testnet blocks.
-    TESTNET_BLOCKS.with(|blocks| {
+    // Load the mainnet blocks.
+    MAINNET_BLOCKS.with(|blocks| {
         blocks.replace(
-            include_str!("../testnet_blocks_5k.txt")
+            include_str!("../dogecoin_blocks_1_5000.hex")
                 .trim()
                 .split('\n')
                 .map(|block_hex| {
@@ -38,11 +38,11 @@ fn init() {
     ic_doge_canister::runtime::mock_time::set_mock_time_secs(june_2025);
 }
 
-// Insert the first 300 blocks of the Dogecoin testnet.
+// Insert the first 300 blocks of the Dogecoin mainnet.
 #[bench(raw)]
 fn insert_300_blocks() -> BenchResult {
     ic_doge_canister::init(InitConfig {
-        network: Some(Network::Testnet),
+        network: Some(Network::Mainnet),
         stability_threshold: Some(144),
         ..Default::default()
     });
@@ -52,7 +52,7 @@ fn insert_300_blocks() -> BenchResult {
             for i in 0..300 {
                 ic_doge_canister::state::insert_block(
                     s,
-                    TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
+                    MAINNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
                 )
                 .unwrap();
             }
@@ -64,7 +64,7 @@ fn insert_300_blocks() -> BenchResult {
 #[bench(raw)]
 fn get_metrics() -> BenchResult {
     ic_doge_canister::init(InitConfig {
-        network: Some(Network::Testnet),
+        network: Some(Network::Mainnet),
         stability_threshold: Some(3000),
         ..Default::default()
     });
@@ -73,7 +73,7 @@ fn get_metrics() -> BenchResult {
         for i in 0..3000 {
             ic_doge_canister::state::insert_block(
                 s,
-                TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
+                MAINNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
             )
             .unwrap();
         }
@@ -91,7 +91,7 @@ fn insert_block_headers() -> BenchResult {
     let block_headers_to_insert = 100;
 
     ic_doge_canister::init(InitConfig {
-        network: Some(Network::Testnet),
+        network: Some(Network::Mainnet),
         ..Default::default()
     });
 
@@ -100,14 +100,14 @@ fn insert_block_headers() -> BenchResult {
         for i in 0..blocks_to_insert {
             ic_doge_canister::state::insert_block(
                 s,
-                TESTNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
+                MAINNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
             )
             .unwrap();
         }
     });
 
     // Compute the next block headers.
-    let next_block_headers = TESTNET_BLOCKS.with(|b| {
+    let next_block_headers = MAINNET_BLOCKS.with(|b| {
         let blocks = b.borrow();
         let mut next_block_headers = vec![];
         for i in blocks_to_insert..blocks_to_insert + block_headers_to_insert {
@@ -148,12 +148,12 @@ fn insert_block_headers_multiple_times() -> BenchResult {
     let block_headers_to_insert = 900;
 
     ic_doge_canister::init(InitConfig {
-        network: Some(Network::Testnet),
+        network: Some(Network::Mainnet),
         ..Default::default()
     });
 
     // Compute the next block headers.
-    let next_block_headers = TESTNET_BLOCKS.with(|b| {
+    let next_block_headers = MAINNET_BLOCKS.with(|b| {
         let blocks = b.borrow();
         let mut next_block_headers = vec![];
         for i in 0..block_headers_to_insert {
