@@ -111,13 +111,13 @@ dfx canister call basic_dogecoin get_block_headers '(0:nat32, opt (10:nat32))'
 
 It's often useful to delete the entire local Dogecoin state and start from scratch. To do this:
 
-In the terminal running `dfx`, stop the process using Ctrl+C, then delete the `.dfx` folder in your project directory which contains the local state of `dfx`.
+- In the terminal running `dfx`, stop the process using Ctrl+C, then delete the `.dfx` folder in your project directory which contains the local state of `dfx`.
 
 ```
 rm -rf .dfx
 ```
 
-In the terminal running `dogecoind`, stop the daemon using Ctrl+C, then delete the `regtest` data folder located inside `dogecoin_data`.
+- In the terminal running `dogecoind`, stop the daemon using Ctrl+C, then delete the `regtest` data folder located inside `dogecoin_data`.
 
 ```bash
 rm -r dogecoin_data/regtest
