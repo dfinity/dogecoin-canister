@@ -8,6 +8,21 @@ To develop Dogecoin applications to be deployed on ICP, your local developer env
 
 - The [IC SDK](https://internetcomputer.org/docs/building-apps/getting-started/install) for creating, deploying, and managing canisters. You can install it natively on macOS and Linux; however, Windows users will need to set up WSL 2 before installing the IC SDK.
 
+The IC SDK includes the `dfx` command-line tool, which is used to manage canisters and interact with the Internet Computer network.
+
+Interacting with Dogecoin requires `dfx` version 0.30.1-beta.0 or higher. You can check your installed version by running:
+
+```bash
+dfx --version
+```
+
+To install and switch to a specific `dfx` version, use:
+
+```bash
+dfxvm install <version>
+dfxvm default <version>
+```
+
 ## Create a local Dogecoin network (regtest) with `dogecoind`
 
 It is recommended to set up a local Dogecoin [regtest](https://developer.bitcoin.org/examples/testing.html#regtest-mode) network to mine blocks quickly and at will, which facilitates testing various cases without having to rely on the Dogecoin mainnet where blocks are produced every minute on average.
@@ -71,3 +86,60 @@ dogecoind -datadir=$(pwd)/dogecoin_data -printoconsole --port=18444
 ```
 
 This command assumes that port `18444` on your machine is available. If it isn't, change the specified port accordingly.
+
+## Starting `dfx` with Dogecoin support
+
+To deploy and test projects locally, first start `dfx` in your local development environment with Dogecoin support enabled.
+
+```bash
+dfx start --enable-dogecoin --background
+```
+
+`dfx` will run a local instance of the Dogecoin API deployed as a smart contract for your application to interact with. The `--enable-dogecoin` flag uses the default Dogecoin node configuration, `127.0.0.1:18444`. This address and port can be manually configured with the `--dogecoin-node` flag:
+
+```bash
+dfx start --enable-dogecoin --dogecoin-node 127.0.0.1:[port]
+```
+
+```admonish bug title="Troubleshooting connection issues"
+If you get a failure to connect error: Failed to connect to 127.0.0.1:18444 ::: Connecting to the stream timed out.
+
+This indicates that `dfx` isn't able to connect to your Dogecoin regtest network. Make sure your regtest is up and running and you're setting the correct port (default is `18444`).
+```
+
+### Configuring the local Dogecoin API
+
+The Dogecoin API can be configured either using the command line option provided to `dfx` (`dfx start --enable-dogecoin --dogecoin-node 127.0.0.1:[port]`) or by modifying the project’s `dfx.json` file.
+
+If both command line options and `dfx.json` configurations are provided, the command line options take precedence.
+
+The Dogecoin API configuration is specified under the `defaults` section of the `dfx.json` file. Below is an example configuration:
+
+```json
+{
+  "defaults": {
+    "dogecoin": {
+      "enabled": true,
+      "nodes": ["127.0.0.1:18444"]
+    }
+  }
+}
+```
+
+```admonish warning title="Important"
+That Dogecoin config in `dfx.json` adds fields under `defaults` as shown above. This configuration won't actually have any effect unless `dfx.json` also defines the local IC network, **and** `dfx start` is run within the project directory. Below is an example of a full configuration, including the local IC network definition:
+
+https://github.com/dfinity/dogecoin-canister/blob/06fbaecc1b7bcfa91f44fb1fcfabb55ee24c2ba1/examples/basic_dogecoin/dfx.json#L21
+```
+
+#### Configuration options
+
+- `enabled` (boolean): Determines whether the Dogecoin adapter is enabled.
+    - Default: `false`.
+
+- `nodes` (array of strings or null): Lists node addresses to connect to. Most likely, you may want to set this to the default IP and port of `dogecoind`, `127.0.0.1:18444`.
+    - Default: `null`.
+
+- `canister_init_arg` (string): Optional initialization arguments for the Dogecoin API. It sets up initial configuration parameters like stability threshold, network type, block sources, fees, syncing state, API access, and more. Details about these parameters can be found in the [Dogecoin canister interface specification](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md).
+
+By default, the local Dogecoin API mirrors the settings used in the production environment. You can view these settings by searching for the [Dogecoin canister](https://dashboard.internetcomputer.org/canister/gordg-fyaaa-aaaan-aaadq-cai) on the ICP Dashboard and calling its `get_config` endpoint.
