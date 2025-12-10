@@ -69,7 +69,7 @@ cd examples/basic_dogecoin
 
 ### 3. Start the ICP execution environment
 
-Open a terminal window (terminal 1) and run the following:
+Open a terminal window (terminal 1) and run the following command:
 ```bash
 dfx start --enable-dogecoin --dogecoin-node 127.0.0.1:18444
 ```
@@ -77,7 +77,7 @@ This starts a local canister execution environment with Dogecoin support enabled
 
 ### 4. Start Dogecoin regtest
 
-Open another terminal window (terminal 2) and run the following to start the local Dogecoin regtest network:
+Open another terminal window (terminal 2) and run the following command to start the local Dogecoin regtest network:
 
 ```bash
 dogecoind -datadir=$(pwd)/dogecoin_data --port=18444
@@ -85,7 +85,7 @@ dogecoind -datadir=$(pwd)/dogecoin_data --port=18444
 
 ### 5. Deploy the smart contract
 
-Open a third terminal (terminal 3) and run the following to deploy the smart contract:
+Open a third terminal (terminal 3) and run the following command to deploy the smart contract:
 
 ```bash
 dfx deploy basic_dogecoin --argument '(variant { regtest })'
@@ -110,7 +110,7 @@ dfx canister call basic_dogecoin get_p2pkh_address
 
 ## Receiving dogecoin
 
-Use the `dogecoin-cli` to mine a Dogecoin block and send the block reward in the form of local dogecoins to one of the smart contract addresses.
+Use the `dogecoin-cli` to mine a Dogecoin block and send the block reward in the form of local dogecoins to one of the smart contract addresses:
 ```bash
 dogecoin-cli -datadir=$(pwd)/dogecoin_data generatetoaddress 1 <dogecoin_address>
 ```
@@ -122,7 +122,7 @@ Check the balance of any Dogecoin address:
 dfx canister call basic_dogecoin get_balance '("<dogecoin_address>")'
 ```
 
-This uses the Dogecoin API endpoint `dogecoin_get_balance` and works for any supported address type. The balance requires at least one confirmation to be reflected.
+This uses the Dogecoin API endpoint `dogecoin_get_balance` and works for any supported address type. Any funding transaction requires at least one confirmation to be reflected in the balance.
 
 ## Sending dogecoin
 
@@ -144,7 +144,7 @@ dfx canister call basic_dogecoin send_from_p2pkh_address '(record {
 ```
 
 > [!IMPORTANT]
-> Newly mined dogecoin, like those you created with the above `dogecoin-cli` command, cannot be spent until 60 additional blocks have been added to the chain on regtest. To make your dogecoin spendable, create 60 additional blocks. Choose one of the smart contract addresses as receiver of the block reward or use any valid Dogecoin dummy address.
+> Newly mined dogecoins, like those you created with the above `dogecoin-cli` command, cannot be spent until 60 additional blocks have been added to the chain on regtest. To make your dogecoin spendable, create 60 additional blocks. Choose one of the smart contract addresses as receiver of the block reward or use any valid Dogecoin dummy address:
 >
 > ```bash
 > dogecoin-cli -datadir=$(pwd)/dogecoin_data generatetoaddress 60 <dogecoin_address>
@@ -160,7 +160,7 @@ dfx canister call basic_dogecoin get_block_headers '(10: nat32, null)'
 dfx canister call basic_dogecoin get_block_headers '(10: nat32, opt (11: nat32))'
 ```
 
-This calls the `dogecoin_get_block_headers` API endpoint, which is useful for blockchain validation or light client logic.
+These commands call the `dogecoin_get_block_headers` API endpoint, which is useful for blockchain validation or light-client logic.
 
 ## Notes on implementation
 
