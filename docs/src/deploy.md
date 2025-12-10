@@ -54,12 +54,12 @@ You can call this function from the command line:
 dfx canister call basic_dogecoin get_p2pkh_address
 ```
 
-### Receiving DOGE
+### Receiving dogecoins
 
-In order to generate and receive DOGE on your local Dogecoin regtest, you need to manually mine blocks. DOGE is issued as a reward for each new block mined.
+In order to generate and receive dogecoins on your local Dogecoin regtest, you need to manually mine blocks. Dogecoin is issued as a reward for each new block mined.
 
 ```admonish tip title="Mining blocks"
-Block rewards are subject to the [Coinbase maturity rule](https://github.com/dogecoin/dogecoin/blob/7237da74b8c356568644cbe4fba19d994704355b/src/chainparams.cpp#L423): newly mined DOGE can only be spent after 60 more blocks have been mined.
+Block rewards are subject to the [Coinbase maturity rule](https://github.com/dogecoin/dogecoin/blob/7237da74b8c356568644cbe4fba19d994704355b/src/chainparams.cpp#L423): newly mined dogecoins can only be spent after 60 more blocks have been mined.
 ```
 
 Use the following command to mine 61 blocks and distribute the block rewards to the Dogecoin address generated previously:
@@ -70,15 +70,15 @@ dogecoin-cli -datadir=$(pwd)/dogecoin_data generatetoaddress 61 <doge-address>
 
 After mining blocks, their hash will be returned. In the `dfx` logs, you will see log entries confirming that the Dogecoin canister which exposes the Dogecoin API has ingested the newly mined blocks.
 
-Then, check your DOGE balance:
+Then, check your dogecoin balance:
 
 ```bash
 dfx canister call basic_dogecoin get_balance '("<doge-address>")'
 ```
 
-### Sending DOGE
+### Sending dogecoins
 
-You can send DOGE using the `send_from_p2pkh_address` function of the `basic_dogecoin` canister. For example, to send 1 DOGE (100,000,000 koinus) to the address `mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM`, run the following command:
+You can send dogecoins using the `send_from_p2pkh_address` function of the `basic_dogecoin` canister. For example, to send 1 DOGE (100,000,000 koinus) to the address `mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM`, run the following command:
 
 ```bash
 dfx canister call basic_dogecoin send_from_p2pkh_address '(record { destination_address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"; amount_in_koinu = 100000000; })'
