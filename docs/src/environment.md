@@ -120,7 +120,7 @@ The Dogecoin API configuration is specified under the `defaults` section of the 
 }
 ```
 
-The Dogecoin configuration in `dfx.json` adds fields under `defaults` as shown above. This configuration won't actually have any effect unless `dfx.json` also defines the local IC network, **and** `dfx start` is run within the project directory. An example of a full configuration, including the local IC network definition, can be found in the `dfx.json` file of the [basic_dogecoin example project](https://github.com/dfinity/dogecoin-canister/blob/06fbaecc1b7bcfa91f44fb1fcfabb55ee24c2ba1/examples/basic_dogecoin/dfx.json#L21)
+The Dogecoin configuration in `dfx.json` adds fields under `defaults` as shown above. This configuration won't actually have any effect unless `dfx.json` also defines the local IC network, **and** `dfx start` is run within the project directory. An example of a full configuration, including the local IC network definition, can be found in the `dfx.json` file of the [basic_dogecoin example project](https://github.com/dfinity/dogecoin-canister/blob/06fbaecc1b7bcfa91f44fb1fcfabb55ee24c2ba1/examples/basic_dogecoin/dfx.json#L21).
 
 
 #### Configuration options

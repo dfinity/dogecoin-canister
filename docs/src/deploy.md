@@ -59,7 +59,7 @@ dfx canister call basic_dogecoin get_p2pkh_address
 In order to generate and receive dogecoins on your local Dogecoin regtest, you need to manually mine blocks. Dogecoin is issued as a reward for each new block mined.
 
 ```admonish tip title="Mining blocks"
-Block rewards are subject to the [Coinbase maturity rule](https://github.com/dogecoin/dogecoin/blob/7237da74b8c356568644cbe4fba19d994704355b/src/chainparams.cpp#L423): newly mined dogecoins can only be spent after 60 more blocks have been mined.
+Block rewards are subject to the [coinbase maturity rule](https://github.com/dogecoin/dogecoin/blob/7237da74b8c356568644cbe4fba19d994704355b/src/chainparams.cpp#L423): newly mined dogecoins can only be spent after 60 more blocks have been mined.
 ```
 
 Use the following command to mine 61 blocks and distribute the block rewards to the Dogecoin address generated previously:
@@ -68,7 +68,7 @@ Use the following command to mine 61 blocks and distribute the block rewards to 
 dogecoin-cli -datadir=$(pwd)/dogecoin_data generatetoaddress 61 <doge-address>
 ```
 
-After mining blocks, their hash will be returned. In the `dfx` logs, you will see log entries confirming that the Dogecoin canister which exposes the Dogecoin API has ingested the newly mined blocks.
+After mining blocks, their hash will be returned. In the `dfx` logs, you will see log entries confirming that the Dogecoin canister has ingested the newly mined blocks.
 
 Then, check your dogecoin balance:
 
