@@ -31,7 +31,7 @@ In another terminal, start `dfx` in your local development environment with the 
 
 ```bash
 dfx start --clean --enable-dogecoin
-````
+```
 
 In a third terminal, deploy the `basic_dogecoin` canister to your local development environment with the `dfx deploy` command and specify the `regtest` network as an init argument for the canister:
 
