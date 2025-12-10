@@ -95,7 +95,7 @@ To deploy and test projects locally, first start `dfx` in your local development
 dfx start --enable-dogecoin
 ```
 
-`dfx` will run a local instance of the Dogecoin API deployed as a smart contract for your application to interact with. The `--enable-dogecoin` flag uses the default Dogecoin node configuration, `127.0.0.1:18444`. This address and port can be manually configured with the `--dogecoin-node` flag:
+`dfx` will run a local instance of the Dogecoin API deployed as a canister for your application to interact with. The `--enable-dogecoin` flag uses the default Dogecoin node configuration, `127.0.0.1:18444`. This address and port can be manually configured with the `--dogecoin-node` flag:
 
 ```bash
 dfx start --enable-dogecoin --dogecoin-node <host_address>:<port>
