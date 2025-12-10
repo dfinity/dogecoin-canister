@@ -8,10 +8,10 @@ This example demonstrates how to deploy a smart contract on the Internet Compute
 * [Deploying from ICP Ninja](#deploying-from-icp-ninja)
 * [Building and deploying the smart contract locally](#building-and-deploying-the-smart-contract-locally)
   * [1. Prerequisites](#1-prerequisites)
-  * [2. Clone the examples repo](#2-clone-the-examples-repo)
+  * [2. Clone the repo](#2-clone-this-repo)
   * [3. Start the ICP execution environment](#3-start-the-icp-execution-environment)
   * [4. Start Dogecoin regtest](#4-start-dogecoin-regtest)
-  * [5. Deploy the smart contract](#4-deploy-the-smart-contract)
+  * [5. Deploy the smart contract](#5-deploy-the-smart-contract)
 * [Generating Dogecoin addresses](#generating-dogecoin-addresses)
 * [Receiving dogecoin](#receiving-dogecoin)
 * [Checking balance](#checking-balance)
@@ -38,9 +38,129 @@ This example can be deployed directly to the Internet Computer using ICP Ninja, 
 
 ## Building and deploying the smart contract locally
 
-> [!IMPORTANT]
-> This feature is not supported yet.
+### 1. Prerequisites
 
+* [x] [Rust toolchain](https://www.rust-lang.org/tools/install)
+* [x] [Internet Computer SDK](https://internetcomputer.org/docs/building-apps/getting-started/install)
+* [x] [Local Dogecoin regtest](https://dfinity.github.io/dogecoin-canister/environment.html#create-a-local-dogecoin-network-regtest-with-dogecoind)
+* [x] On macOS, an `llvm` version that supports the `wasm32-unknown-unknown` target is required. The Rust `bitcoin-dogecoin` library relies on the `secp256k1-sys` crate, which requires `llvm` to build. The default `llvm` version provided by XCode does not meet this requirement. Install the [Homebrew version](https://formulae.brew.sh/formula/llvm) using `brew install llvm`.
+
+The IC SDK includes the `dfx` command-line tool, which is used to manage canisters and interact with the Internet Computer network.
+
+Interacting with Dogecoin requires `dfx` version `0.30.1-beta.0` or higher. You can check your installed version by running:
+
+```bash
+dfx --version
+```
+
+To install and switch to a specific `dfx` version, use:
+
+```bash
+dfxvm install <version>
+dfxvm default <version>
+```
+
+### 2. Clone this repo
+
+```bash
+git clone git@github.com:dfinity/dogecoin-canister.git
+cd examples/basic_dogecoin
+```
+
+### 3. Start the ICP execution environment
+
+Open a terminal window (terminal 1) and run the following command:
+```bash
+dfx start --enable-dogecoin --dogecoin-node 127.0.0.1:18444
+```
+This starts a local canister execution environment with Dogecoin support enabled.
+
+### 4. Start Dogecoin regtest
+
+Open another terminal window (terminal 2) and run the following command to start the local Dogecoin regtest network:
+
+```bash
+dogecoind -datadir=$(pwd)/dogecoin_data --port=18444
+```
+
+### 5. Deploy the smart contract
+
+Open a third terminal (terminal 3) and run the following command to deploy the smart contract:
+
+```bash
+dfx deploy basic_dogecoin --argument '(variant { regtest })'
+```
+
+What this does:
+
+- `dfx deploy` tells the command line interface to `deploy` the smart contract.
+- `--argument '(variant { regtest })'` passes the argument `regtest` to initialize the smart contract, telling it to connect to the local Dogecoin regtest network.
+
+Your smart contract is live and ready to use! You can interact with it using either the command line or the Candid UI (the link you see in the terminal).
+
+## Generating Dogecoin addresses
+
+The example demonstrates how to generate and use P2PKH addresses which are the most common type of addresses in Dogecoin.
+
+Use the Candid UI or CLI to generate an address:
+
+```bash
+dfx canister call basic_dogecoin get_p2pkh_address
+```
+
+## Receiving dogecoin
+
+Use the `dogecoin-cli` to mine a Dogecoin block and send the block reward in the form of local dogecoins to one of the smart contract addresses:
+```bash
+dogecoin-cli -datadir=$(pwd)/dogecoin_data generatetoaddress 1 <dogecoin_address>
+```
+
+## Checking balance
+
+Check the balance of any Dogecoin address:
+```bash
+dfx canister call basic_dogecoin get_balance '("<dogecoin_address>")'
+```
+
+This uses the Dogecoin API endpoint `dogecoin_get_balance` and works for any supported address type. Any funding transaction requires at least one confirmation to be reflected in the balance.
+
+## Sending dogecoin
+
+You can send dogecoin using the `send_from_p2pkh_address` endpoint. What this does internally:
+
+1. Estimates fees
+2. Looks up spendable UTXOs
+3. Builds a transaction to the target address
+4. Signs the transaction using ECDSA
+5. Broadcasts the transaction using the `dogecoin_send_transaction` API endpoint.
+
+Example to send 1 DOGE (100,000,000 koinus) to a target address:
+
+```bash
+dfx canister call basic_dogecoin send_from_p2pkh_address '(record { 
+  destination_address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
+  amount_in_koinu = 100000000;
+})'
+```
+
+> [!IMPORTANT]
+> Newly mined dogecoins, like those you created with the above `dogecoin-cli` command, cannot be spent until 60 additional blocks have been added to the chain on regtest. To make your dogecoin spendable, create 60 additional blocks. Choose one of the smart contract addresses as receiver of the block reward or use any valid Dogecoin dummy address:
+>
+> ```bash
+> dogecoin-cli -datadir=$(pwd)/dogecoin_data generatetoaddress 60 <dogecoin_address>
+> ```
+
+## Retrieving block headers
+
+You can query historical block headers:
+
+```bash
+dfx canister call basic_dogecoin get_block_headers '(10: nat32, null)'
+# or a range:
+dfx canister call basic_dogecoin get_block_headers '(10: nat32, opt (11: nat32))'
+```
+
+These commands call the `dogecoin_get_block_headers` API endpoint, which is useful for blockchain validation or light-client logic.
 
 ## Notes on implementation
 
