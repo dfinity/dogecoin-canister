@@ -122,8 +122,3 @@ rm -rf .dfx
 ```bash
 rm -r dogecoin_data/regtest
 ```
-
-
-
-
-
