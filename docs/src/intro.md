@@ -6,10 +6,6 @@
 
 # Introduction
 
-```admonish warning title="Work In Progress"
-🚧 The developer documentation is under construction. 
-```
-
 The *Build on Dogecoin* book is intended for developers to explain how smart contracts on the [Internet Computer](https://internetcomputer.org), often referred as [canisters](https://learn.internetcomputer.org/hc/en-us/articles/34210839162004-Canister-Smart-Contracts), can interact with the [Dogecoin](https://dogecoin.com/) blockchain.
 
 ## Background

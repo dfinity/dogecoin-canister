@@ -2,7 +2,7 @@
 
 - [Introduction](./intro.md)
 - [Developer Environment](./environment.md)
-- [Deploy your first app locally](./deploy.md)
+- [Deploy your first dapp locally](./deploy.md)
 - [Dogecoin API Endpoints](./endpoints.md)
 - [Dogecoin Transactions](./transactions.md)
    - [Generating a Dogecoin address](./doge-transactions/generate_address.md)

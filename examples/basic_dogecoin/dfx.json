@@ -19,7 +19,7 @@
     }
   },
   "defaults": {
-    "bitcoin": {
+    "dogecoin": {
       "enabled": true,
       "nodes": ["127.0.0.1:18444"]
     }
