@@ -69,7 +69,6 @@ cd examples/basic_dogecoin
 
 ### 3. Start the ICP execution environment
 
-
 Open a terminal window (terminal 1) and run the following:
 ```bash
 dfx start --enable-dogecoin --dogecoin-node 127.0.0.1:18444
