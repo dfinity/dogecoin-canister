@@ -13,13 +13,13 @@ If you are using macOS, an `llvm` version that supports the `wasm32-unknown-unkn
 
 ## Deploying your canister locally
 
-First, Navigate into the `examples/basic_dogecoin` subdirectory of the Dogecoin canister repo:
+First, navigate into the `examples/basic_dogecoin` subdirectory of the Dogecoin canister repo:
 
 ```bash
 cd examples/basic_dogecoin
 ```
 
-When you set up your [developer environment](./environment.md), if you created the subdirectory for your `dogecoin_data` files in another project's directory, you either need to create them again or copy them into this project's folder.
+If you created the subdirectory for your `dogecoin_data` files in another project's directory when setting up your [developer environment](./environment.md), you either need to create them again or copy them into this project's folder.
 
 Start the local Dogecoin regtest network:
 
