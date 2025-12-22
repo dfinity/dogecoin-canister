@@ -346,7 +346,7 @@ checksum = "3a8241f3ebb85c056b509d4327ad0358fbbba6ffb340bf388f26350aeda225b1"
 name = "benchmarks"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "canbench-rs",
  "candid",
  "hex",
@@ -411,9 +411,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
 
 [[package]]
-name = "bitcoin"
-version = "0.32.5-doge.0"
-source = "git+https://github.com/dfinity/rust-dogecoin.git?rev=851705aa88e0a2f0f8b5002173b4cdb1d218a4e5#851705aa88e0a2f0f8b5002173b4cdb1d218a4e5"
+name = "bitcoin-dogecoin"
+version = "0.32.5-doge.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1142f01cb554e9d8be5d79f782f2a371735436ebd9445c54333c27eaf97081bc"
 dependencies = [
  "base58ck",
  "bech32",
@@ -1059,7 +1060,7 @@ dependencies = [
 name = "disable-api-if-not-fully-synced-flag"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "candid",
  "ic-cdk",
  "ic-doge-test-utils",
@@ -1810,7 +1811,7 @@ version = "0.1.0"
 dependencies = [
  "assert_matches",
  "async-std",
- "bitcoin",
+ "bitcoin-dogecoin",
  "byteorder",
  "canbench-rs",
  "candid",
@@ -1851,7 +1852,7 @@ dependencies = [
 name = "ic-doge-test-utils"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "ic-doge-types",
 ]
 
@@ -1859,7 +1860,7 @@ dependencies = [
 name = "ic-doge-types"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "candid",
  "ciborium",
  "datasize",
@@ -1875,7 +1876,7 @@ dependencies = [
 name = "ic-doge-validation"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "canbench-rs",
  "csv",
  "hex",
@@ -3387,7 +3388,7 @@ dependencies = [
 name = "scenario-1"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "candid",
  "ic-cdk",
  "ic-doge-test-utils",
@@ -3398,7 +3399,7 @@ dependencies = [
 name = "scenario-2"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "candid",
  "ic-cdk",
  "ic-doge-test-utils",
@@ -3409,7 +3410,7 @@ dependencies = [
 name = "scenario-3"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "candid",
  "ic-cdk",
  "ic-doge-test-utils",
@@ -3801,7 +3802,7 @@ name = "state-builder"
 version = "0.1.0"
 dependencies = [
  "async-std",
- "bitcoin",
+ "bitcoin-dogecoin",
  "byteorder",
  "ciborium",
  "clap",
@@ -4414,7 +4415,7 @@ name = "utxo-dump"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitcoin",
+ "bitcoin-dogecoin",
  "clap",
  "csv",
  "flate2",
