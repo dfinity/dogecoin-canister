@@ -40,7 +40,7 @@ dependencies = [
 name = "basic_dogecoin"
 version = "0.1.0"
 dependencies = [
- "bitcoin",
+ "bitcoin-dogecoin",
  "candid",
  "ic-cdk",
  "serde",
@@ -76,9 +76,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "bitcoin"
-version = "0.32.5-doge.0"
-source = "git+https://github.com/dfinity/rust-dogecoin.git?rev=851705aa88e0a2f0f8b5002173b4cdb1d218a4e5#851705aa88e0a2f0f8b5002173b4cdb1d218a4e5"
+name = "bitcoin-dogecoin"
+version = "0.32.5-doge.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1142f01cb554e9d8be5d79f782f2a371735436ebd9445c54333c27eaf97081bc"
 dependencies = [
  "base58ck",
  "bech32",
