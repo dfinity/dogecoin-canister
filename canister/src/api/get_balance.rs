@@ -2,11 +2,10 @@ use crate::{
     blocktree::ChainBlock,
     charge_cycles,
     runtime::{performance_counter, print},
-    types::{Address, GetBalanceRequest},
+    types::{Address, AddressParseError, GetBalanceRequest},
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut,
 };
 use ic_doge_interface::GetBalanceError;
-use std::str::FromStr;
 
 // Various profiling stats for tracking the performance of `get_balance`.
 #[derive(Debug, Default)]
@@ -34,8 +33,13 @@ pub fn get_balance_query(request: GetBalanceRequest) -> Result<u128, GetBalanceE
 
 fn get_balance_private(request: GetBalanceRequest) -> Result<u128, GetBalanceError> {
     let min_confirmations = request.min_confirmations.unwrap_or(0);
-    let address =
-        Address::from_str(&request.address).map_err(|_| GetBalanceError::MalformedAddress)?;
+    let network = with_state(|s| s.network());
+    let address = Address::from_str_checked(&request.address, network).map_err(|e| match e {
+        AddressParseError::MalformedAddress => GetBalanceError::MalformedAddress,
+        AddressParseError::WrongNetwork { expected } => {
+            GetBalanceError::AddressForWrongNetwork { expected }
+        }
+    })?;
 
     // NOTE: The protocol limits the max value of a single utxo to be 10B DOGE,
     // or 10^18 koinu, which fits in a `u64`. However, DOGE's circulating supply in
@@ -150,6 +154,52 @@ mod test {
             }),
             Err(GetBalanceError::MalformedAddress)
         );
+    }
+
+    #[test]
+    fn get_balance_error_on_wrong_network() {
+        crate::init(InitConfig {
+            network: Some(Network::Mainnet),
+            ..Default::default()
+        });
+
+        // Use a testnet address on a mainnet canister
+        let testnet_address = random_p2pkh_address(bitcoin::Network::Testnet4);
+
+        let result = get_balance(GetBalanceRequest {
+            address: testnet_address.to_string(),
+            min_confirmations: None,
+        });
+
+        match result {
+            Err(GetBalanceError::AddressForWrongNetwork { expected }) => {
+                assert_eq!(expected, Network::Mainnet);
+            }
+            other => panic!("Expected AddressForWrongNetwork error, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn get_balance_query_error_on_wrong_network() {
+        crate::init(InitConfig {
+            network: Some(Network::Testnet),
+            ..Default::default()
+        });
+
+        // Use a mainnet address on a testnet canister
+        let mainnet_address = random_p2pkh_address(bitcoin::Network::Bitcoin);
+
+        let result = get_balance_query(GetBalanceRequest {
+            address: mainnet_address.to_string(),
+            min_confirmations: None,
+        });
+
+        match result {
+            Err(GetBalanceError::AddressForWrongNetwork { expected }) => {
+                assert_eq!(expected, Network::Testnet);
+            }
+            other => panic!("Expected AddressForWrongNetwork error, got {:?}", other),
+        }
     }
 
     #[test]

@@ -448,6 +448,15 @@ pub struct GetSuccessorsPartialResponse {
 #[derive(Debug, PartialEq, Eq)]
 pub struct InvalidAddress;
 
+/// Error type for address parsing with network validation.
+#[derive(Debug, PartialEq, Eq)]
+pub enum AddressParseError {
+    /// The address string is malformed and cannot be parsed.
+    MalformedAddress,
+    /// The address is valid but belongs to a different network.
+    WrongNetwork { expected: Network },
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Ord, PartialOrd)]
 pub struct Address(String);
 
@@ -458,21 +467,26 @@ impl Address {
             .map(|address| Self(address.to_string()))
             .map_err(|_| InvalidAddress)
     }
+
+    /// Parses an address string and validates it belongs to the expected network.
+    pub fn from_str_checked(s: &str, expected_network: Network) -> Result<Self, AddressParseError> {
+        let unchecked_address =
+            DogecoinAddress::from_str(s).map_err(|_| AddressParseError::MalformedAddress)?;
+
+        let dogecoin_network = into_dogecoin_network(expected_network);
+
+        unchecked_address
+            .require_network(dogecoin_network)
+            .map(|address| Address(address.to_string()))
+            .map_err(|_| AddressParseError::WrongNetwork {
+                expected: expected_network,
+            })
+    }
 }
 
 impl From<DogecoinAddress> for Address {
     fn from(address: DogecoinAddress) -> Self {
         Self(address.to_string())
-    }
-}
-
-impl FromStr for Address {
-    type Err = InvalidAddress;
-
-    fn from_str(s: &str) -> Result<Self, InvalidAddress> {
-        DogecoinAddress::from_str(s)
-            .map(|address| Address(address.assume_checked().to_string()))
-            .map_err(|_| InvalidAddress)
     }
 }
 
