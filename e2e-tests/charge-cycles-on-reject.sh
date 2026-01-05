@@ -11,7 +11,7 @@ trap "dfx stop" EXIT SIGINT
 dfx start --background --clean
 
 # Deploy the canister that will be used as an internal endpoint to send the transaction 
-# to the Bitcoin network when calling dogecoin_send_transaction.
+# to the Dogecoin network when calling dogecoin_send_transaction.
 dfx deploy e2e-scenario-1
 
 # Deploy the dogecoin canister.
