@@ -9,7 +9,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-bitcoin = { git = "https://github.com/dfinity/rust-dogecoin.git", rev = "851705aa88e0a2f0f8b5002173b4cdb1d218a4e5" }
+bitcoin = { package = "bitcoin-dogecoin", version = "0.32.5-doge.1"}
 candid = "0.10.6"
 ic-cdk = "0.18.7"
 serde = "1.0.171"
