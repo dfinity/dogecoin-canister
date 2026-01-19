@@ -1,0 +1,37 @@
+name: Publish dogecoin canister crates to crates.io
+
+on:
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: "Run cargo publish with --dry-run"
+        required: false
+        type: boolean
+
+jobs:
+  publish:
+    name: Publish dogecoin canister crates
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write # Required for OIDC token exchange
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Authenticate with crates.io
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - run: echo "Preparing to cargo publish ${{ github.ref_name }}."
+
+      - name: Publish ic-doge-interface to crates.io
+        run: |
+          if [ "${{ inputs.dryRun }}" = "true" ]; then
+            cargo publish -p ic-doge-interface --dry-run
+          else
+            cargo publish -p ic-doge-interface
+          fi
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
