@@ -339,8 +339,8 @@ mod test {
             ..Default::default()
         });
 
-        // Use a testnet address on a mainnet canister
-        let testnet_address = random_p2pkh_address(bitcoin::Network::Testnet4);
+        // Use a regtest address on a mainnet canister
+        let testnet_address = random_p2pkh_address(bitcoin::dogecoin::Network::Regtest);
 
         let result = get_utxos(GetUtxosRequest {
             address: testnet_address.to_string(),
@@ -358,12 +358,12 @@ mod test {
     #[test]
     fn get_utxos_query_error_on_wrong_network() {
         crate::init(InitConfig {
-            network: Some(Network::Testnet),
+            network: Some(Network::Regtest),
             ..Default::default()
         });
 
-        // Use a mainnet address on a testnet canister
-        let mainnet_address = random_p2pkh_address(bitcoin::Network::Bitcoin);
+        // Use a mainnet address on a regtest canister
+        let mainnet_address = random_p2pkh_address(bitcoin::dogecoin::Network::Dogecoin);
 
         let result = get_utxos_query(GetUtxosRequest {
             address: mainnet_address.to_string(),
@@ -372,7 +372,7 @@ mod test {
 
         match result {
             Err(GetUtxosError::AddressForWrongNetwork { expected }) => {
-                assert_eq!(expected, Network::Testnet);
+                assert_eq!(expected, Network::Regtest);
             }
             other => panic!("Expected AddressForWrongNetwork error, got {:?}", other),
         }

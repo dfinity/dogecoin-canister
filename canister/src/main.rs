@@ -1,13 +1,13 @@
-use ic_doge_canister::CanisterArg;
 use ic_cdk::{
     api::{msg_reject, msg_reply},
     heartbeat, init, inspect_message, post_upgrade, pre_upgrade, query, update,
 };
 use ic_doge_canister::types::{HttpRequest, HttpResponse};
+use ic_doge_canister::CanisterArg;
 use ic_doge_interface::{
     Config, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
-    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig,
-    MillikoinuPerByte, SendTransactionRequest, SetConfigRequest,
+    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, MillikoinuPerByte,
+    SendTransactionRequest, SetConfigRequest,
 };
 use std::marker::PhantomData;
 

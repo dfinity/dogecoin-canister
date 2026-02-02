@@ -1,7 +1,7 @@
 use candid::{encode_one, Encode, Principal};
-use ic_btc_canister::CanisterArg;
-use ic_doge_interface::InitConfig;
 use ic_cdk::management_canister::CanisterId;
+use ic_doge_canister::CanisterArg;
+use ic_doge_interface::InitConfig;
 use pocket_ic::{ErrorCode, PocketIc, PocketIcBuilder, RejectResponse};
 use std::{path::PathBuf, process::Command};
 
