@@ -1,38 +1,100 @@
 # Development Guide
 
-## Release Preparation
+## Release Overview
 
-The canisters in this repository are deployed in production by submitting proposals to the Internet Computer's [Network Nervous System](https://internetcomputer.org/nns).
+This repository contains multiple packages with different release strategies:
 
-Only after all the expected canisters were deployed the `pre-release` can be turned into a proper `latest release`.
+| Package             | Versioning                                         | Published on crates.io? |
+|---------------------|----------------------------------------------------|-------------------------|
+| `ic-doge-canister`  | Date-based (`ic-doge-canister/release/YYYY-MM-DD`) | No                      |
+| `ic-doge-interface` | Semver (`X.Y.Z`)                                   | Yes                     |
 
-## Steps to Cut a Release
+### Canister IDs
 
-1. Identify the commit for the release, eg. `aff3eef`
-2. Draft a new pre-release
-    - Click on `Draft a new release` at the [releases page](https://github.com/dfinity/bitcoin-canister/releases), make sure the right commit is selected
-    - Create a new tag with the name `release/<yyyy-mm-dd>`
-    - Set the title to be `release/<yyyy-mm-dd>`
-    - Check the `Set as a pre-release` box to indicate that this release has not been deployed to production yet
-    - Add release notes. Github can generate the release notes by clicking on `Generated Release Notes`, modify as needed
-3. Prepare canister WASM files and compute their checksums
-    - **Note**: there is no reproducibility guarantee on Mac M1s, preferably use Ubuntu or Intel Macs
-    ```shell
-    # Checkout the repo with a given commit.
-    $ git clone https://github.com/dfinity/dogecoin-canister &&\
-        cd dogecoin-canister &&\
-        git checkout aff3eef  # <- make sure the right commit is provided.
+**Dogecoin canister:**
 
-    # Use docker to reproducibly build ic-doge-canister canister WASMs.
-    $ ./scripts/docker-build
+| Network          | Production                    | Staging                       |
+|------------------|-------------------------------|-------------------------------|
+| Dogecoin Mainnet | `gordg-fyaaa-aaaan-aaadq-cai` | `bhuiy-ciaaa-aaaad-abwea-cai` |
 
-    # Compute checksums.
-    $ sha256sum *.wasm.gz
-    09f5647a45ff6d5d05b2b0ed48613fb2365b5fe6573ba0e901509c39fb9564ac  ic-doge-canister.wasm.gz
-    ```
-4. Attach the Dogecoin Canister's WASM to the release notes.
-    - Add calculated checksums into release notes
-5. Attach the candid file of the Dogecoin Canister to the release notes.
-6. Finalize the release once all the expected canisters were upgraded
-    - (Optional) Provide links to corresponding NNS proposals
-    - Uncheck `Set as a pre-release` box and check `Set as the latest release ` to indicate that the release is fully deployed
+The Dogecoin canister is deployed in production by submitting proposals to the Internet
+Computer's [Network Nervous System](https://internetcomputer.org/nns).
+
+## Releasing the Dogecoin canister
+
+### Step 1: Create a Release PR
+
+1. Go to Actions → Create Release PR
+2. Click **Run workflow**
+3. Select the canister (`ic-doge-canister`)
+4. Click **Run workflow**
+
+This creates a draft PR that updates the canister's `CHANGELOG.md` using [git-cliff](https://git-cliff.org/).
+
+5. Review and merge the PR
+
+### Step 2: Create GitHub Release
+
+1. Go to Actions → Create GitHub Releases
+2. Click **Run workflow**
+
+This creates a **draft** GitHub release with:
+
+- WASM artifact (downloaded from latest CI build on `master`)
+- Candid file
+- Changelog (scoped to the package's directory)
+- SHA-256 checksum
+- Placeholder for NNS proposal links
+
+5. Review the draft release
+
+### Step 3: Deploy via NNS Proposal
+
+After the release is published:
+
+1. Submit an NNS proposal to upgrade the canister
+2. Update the release notes with the proposal link
+3. Mark the release as "Latest" once deployed
+
+## Releasing the ic-doge-interface crate
+
+### Step 1: Create a Release PR
+
+1. Go to Actions → Create Release PR
+2. Click **Run workflow**
+3. Select `library-crates`
+4. Click **Run workflow**
+
+This uses [release-plz](https://release-plz.ieni.dev/) to create a PR that:
+
+- Bumps versions in `Cargo.toml` based on conventional commits (patch, minor, or major)
+- Updates `CHANGELOG.md` for both crates
+
+5. Review and merge the PR
+
+### Step 2: Publish to crates.io
+
+1. Go to Actions → Publish Crates to crates.io
+2. Click **Run workflow**
+
+This publishes the `ic-doge-interface` to crates.io and creates git tags.
+
+## Manual WASM Build (for verification)
+
+To manually build and verify WASM checksums:
+
+```shell
+# Clone and checkout the release commit
+git clone https://github.com/dfinity/dogecoin-canister
+cd dogecoin-canister
+git checkout <commit-sha>
+
+# Build reproducibly with Docker
+./scripts/docker-build
+
+# Verify checksums match the release
+sha256sum *.wasm.gz
+```
+
+**Note**: Reproducible builds require Docker. There is no reproducibility guarantee on Mac M1s; preferably use Ubuntu or
+Intel Macs.
