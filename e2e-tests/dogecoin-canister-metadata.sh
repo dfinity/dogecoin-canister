@@ -11,7 +11,7 @@ trap "dfx stop" EXIT SIGINT
 dfx start --background --clean
 
 # Deploy the dogecoin canister
-dfx deploy --no-wallet dogecoin --argument "(record { })"
+dfx deploy --no-wallet dogecoin --argument "(variant {init = record {}})"
 
 # Check the canister's metadata section for the Candid interface.
 METADATA=$(dfx canister metadata dogecoin candid:service)

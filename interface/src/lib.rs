@@ -302,25 +302,13 @@ pub struct OutPoint {
 }
 
 /// An unspent transaction output.
-#[derive(CandidType, Debug, Deserialize, PartialEq, Serialize, Clone, Hash, Eq)]
+#[derive(
+    CandidType, Debug, Deserialize, Ord, PartialOrd, PartialEq, Serialize, Clone, Hash, Eq,
+)]
 pub struct Utxo {
     pub outpoint: OutPoint,
     pub value: Koinu,
     pub height: Height,
-}
-
-impl std::cmp::PartialOrd for Utxo {
-    fn partial_cmp(&self, other: &Utxo) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl std::cmp::Ord for Utxo {
-    fn cmp(&self, other: &Utxo) -> std::cmp::Ordering {
-        // The output point uniquely identifies an UTXO; there is no point in
-        // comparing the other fields.
-        self.outpoint.cmp(&other.outpoint)
-    }
 }
 
 /// A filter used when requesting UTXOs.
@@ -375,6 +363,7 @@ pub struct GetUtxosResponse {
 #[derive(CandidType, Debug, Deserialize, PartialEq, Eq, Clone)]
 pub enum GetUtxosError {
     MalformedAddress,
+    AddressForWrongNetwork { expected: Network },
     MinConfirmationsTooLarge { given: u32, max: u32 },
     UnknownTipBlockHash { tip_block_hash: BlockHash },
     MalformedPage { err: String },
@@ -476,6 +465,13 @@ impl fmt::Display for GetUtxosError {
             Self::MalformedPage { err } => {
                 write!(f, "The provided page is malformed {}", err)
             }
+            Self::AddressForWrongNetwork { expected } => {
+                write!(
+                    f,
+                    "Address does not belong to the expected network: {}",
+                    expected
+                )
+            }
         }
     }
 }
@@ -490,6 +486,7 @@ pub struct GetBalanceRequest {
 #[derive(CandidType, Debug, Deserialize, PartialEq, Eq, Clone)]
 pub enum GetBalanceError {
     MalformedAddress,
+    AddressForWrongNetwork { expected: Network },
     MinConfirmationsTooLarge { given: u32, max: u32 },
 }
 
@@ -504,6 +501,13 @@ impl fmt::Display for GetBalanceError {
                     f,
                     "The requested min_confirmations is too large. Given: {}, max supported: {}",
                     given, max
+                )
+            }
+            Self::AddressForWrongNetwork { expected } => {
+                write!(
+                    f,
+                    "Address does not belong to the expected network: {}",
+                    expected
                 )
             }
         }

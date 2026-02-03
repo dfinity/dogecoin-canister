@@ -3,10 +3,11 @@ use ic_cdk::{
     heartbeat, init, inspect_message, post_upgrade, pre_upgrade, query, update,
 };
 use ic_doge_canister::types::{HttpRequest, HttpResponse};
+use ic_doge_canister::CanisterArg;
 use ic_doge_interface::{
     Config, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
-    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, InitConfig,
-    MillikoinuPerByte, SendTransactionRequest, SetConfigRequest,
+    GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, MillikoinuPerByte,
+    SendTransactionRequest, SetConfigRequest,
 };
 use std::marker::PhantomData;
 
@@ -23,9 +24,16 @@ fn hook() {
 }
 
 #[init]
-fn init(init_config: InitConfig) {
+fn init(canister_arg: CanisterArg) {
     hook();
-    ic_doge_canister::init(init_config);
+    match canister_arg {
+        CanisterArg::Init(init_config) => {
+            ic_doge_canister::init(init_config);
+        }
+        CanisterArg::Upgrade(_) => {
+            panic!("expected Init arguments got Upgrade arguments");
+        }
+    }
 }
 
 #[pre_upgrade]
@@ -34,8 +42,17 @@ fn pre_upgrade() {
 }
 
 #[post_upgrade]
-fn post_upgrade(config_update: Option<SetConfigRequest>) {
+fn post_upgrade(canister_arg: Option<CanisterArg>) {
     hook();
+    let mut config_update: Option<SetConfigRequest> = None;
+    if let Some(canister_arg) = canister_arg {
+        config_update = match canister_arg {
+            CanisterArg::Init(_) => {
+                panic!("expected Upgrade arguments got Init arguments");
+            }
+            CanisterArg::Upgrade(args) => args,
+        }
+    }
     ic_doge_canister::post_upgrade(config_update);
 }
 
@@ -155,6 +172,9 @@ fn main() {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{init, post_upgrade};
+    use ic_doge_canister::CanisterArg;
+    use ic_doge_interface::{InitConfig, SetConfigRequest};
 
     #[test]
     fn test_candid_interface_compatibility() {
@@ -172,5 +192,17 @@ mod tests {
             CandidSource::File(candid_interface.as_path()),
         )
         .expect("The canister implementation is not compatible with the candid.did file");
+    }
+
+    #[test]
+    #[should_panic]
+    fn init_panics_with_upgrade_args() {
+        init(CanisterArg::Upgrade(Some(SetConfigRequest::default())));
+    }
+
+    #[test]
+    #[should_panic]
+    fn upgrade_panics_with_init_args() {
+        post_upgrade(Some(CanisterArg::Init(InitConfig::default())));
     }
 }
