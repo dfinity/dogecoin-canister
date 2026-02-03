@@ -68,7 +68,7 @@ After the release is published:
 This uses [release-plz](https://release-plz.ieni.dev/) to create a PR that:
 
 - Bumps versions in `Cargo.toml` based on conventional commits (patch, minor, or major)
-- Updates `CHANGELOG.md` for both crates
+- Updates `CHANGELOG.md`
 
 5. Review and merge the PR
 
