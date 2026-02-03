@@ -67,15 +67,12 @@ jobs:
       - name: Generate release tag and notes
         run: |
           RELEASE_DATE=$(date +%Y-%m-%d)
-          RELEASE_TAG="${{ inputs.release_type }}/release/${RELEASE_DATE}"
+          RELEASE_TAG="release/${RELEASE_DATE}"
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
           echo "RELEASE_DATE=$RELEASE_DATE" >> "$GITHUB_ENV"
           
-          # Find previous tag: prefer <package>/release/*, fallback to release/*
-          PREV_TAG=$(git tag --list '${{ inputs.release_type }}/release/*' --sort=-version:refname | head -n1)
-          if [ -z "$PREV_TAG" ]; then
-            PREV_TAG=$(git tag --list 'release/*' --sort=-version:refname | head -n1)
-          fi
+          # Find previous release tag
+          PREV_TAG=$(git tag --list 'release/*' --sort=-version:refname | head -n1)
           
           # Generate changelog with git-cliff (scoped to package directory)
           # Strip the version title line (e.g., "## [release/2026-01-21] - 2026-01-21")
@@ -113,7 +110,7 @@ jobs:
         with:
           draft: true
           tag_name: ${{ env.RELEASE_TAG }}
-          name: ${{ inputs.release_type }}/release/${{ env.RELEASE_DATE }}
+          name: release/${{ env.RELEASE_DATE }}
           body: ${{ env.RELEASE_BODY }}
           files: |
             wasms/${{ env.WASM_NAME }}

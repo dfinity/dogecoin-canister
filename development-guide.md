@@ -6,7 +6,7 @@ This repository contains multiple packages with different release strategies:
 
 | Package             | Versioning                                         | Published on crates.io? |
 |---------------------|----------------------------------------------------|-------------------------|
-| `ic-doge-canister`  | Date-based (`ic-doge-canister/release/YYYY-MM-DD`) | No                      |
+| `ic-doge-canister`  | Date-based (`release/YYYY-MM-DD`) | No                      |
 | `ic-doge-interface` | Semver (`X.Y.Z`)                                   | Yes                     |
 
 ### Canister IDs
