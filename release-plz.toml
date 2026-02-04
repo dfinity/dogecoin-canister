@@ -28,7 +28,7 @@ allow_dirty = false
 publish_allow_dirty = false
 
 # Only these crates are managed by release-plz.
-# ic-doge-canister use date-based releases and are managed manually.
+# ic-doge-canister uses date-based releases and is managed manually.
 
 [[package]]
 name = "ic-doge-interface"
