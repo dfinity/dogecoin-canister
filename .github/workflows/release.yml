@@ -10,11 +10,11 @@ on:
         type: choice
         options:
           - ic-doge-canister  # Date-based, uses git-cliff
-          - library-crates   # Semver (ic-doge-interface), uses release-plz
+          - ic-doge-interface   # Semver , uses release-plz
 
 # Creates a Release PR for a specific package:
 # - ic-doge-canister: via git-cliff (date-based)
-# - library-crates: via release-plz (semver) - includes ic-doge-interface
+# - ic-doge-interface: via release-plz (semver)
 
 jobs:
   # ===== Canister Release PR (date-based) =====
@@ -87,10 +87,10 @@ jobs:
           labels: release
           draft: true
 
-  # ===== Library Crates Release PR (semver) =====
-  library-crates-pr:
-    name: Create Release PR for library crates
-    if: ${{ inputs.package == 'library-crates' }}
+  # ===== ic-doge-interface Crate Release PR (semver) =====
+  ic-doge-interface:
+    name: Create Release PR for ic-doge-interface crate
+    if: ${{ inputs.package == 'ic-doge-interface' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -104,7 +104,7 @@ jobs:
           fetch-depth: 0
 
       - name: Create Release PR (release-plz)
-        # Creates a single PR for ic-btc-interface and ic-btc-validation
+        # Creates a single PR for ic-doge-interface
         uses: release-plz/action@5ab144c9d67d4346240190d0f95ed08668677928 # v0.5.121
         with:
           command: release-pr

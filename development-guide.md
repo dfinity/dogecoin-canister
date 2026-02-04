@@ -62,7 +62,7 @@ After the release is published:
 
 1. Go to Actions → Create Release PR
 2. Click **Run workflow**
-3. Select `library-crates`
+3. Select `ic-doge-interface`
 4. Click **Run workflow**
 
 This uses [release-plz](https://release-plz.ieni.dev/) to create a PR that:
