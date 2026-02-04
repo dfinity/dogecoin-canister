@@ -47,7 +47,7 @@ download_latest_release
 dfx start --background --clean
 
 # Deploy the latest release.
-dfx deploy --no-wallet ${REFERENCE_CANISTER_NAME} --argument "(record {})"
+dfx deploy --no-wallet ${REFERENCE_CANISTER_NAME} --argument "(variant {init = record {}})"
 
 dfx canister stop ${REFERENCE_CANISTER_NAME}
 
@@ -61,11 +61,8 @@ if ! [[ $(dfx canister status dogecoin 2>&1) == *"Status: Stopped"* ]]; then
   exit 1
 fi
 
-# Update candid to make the post_upgrade accept a set_config_request.
-sed -i.bak 's/service dogecoin : (init_config)/service dogecoin : (opt set_config_request)/' ../canister/candid.did
-
 echo "Deploy new version of canister..."
-dfx deploy --no-wallet dogecoin --argument "(null)"
+dfx deploy --no-wallet dogecoin --argument "(variant {init = record {}})"
 
 dfx canister start dogecoin
 dfx canister stop dogecoin
@@ -73,10 +70,7 @@ dfx canister stop dogecoin
 echo "Upgrade canister to own version..."
 
 # Redeploy the canister to test the pre-upgrade hook.
-dfx deploy --upgrade-unchanged dogecoin --argument "(null)"
+dfx deploy --upgrade-unchanged dogecoin --argument "(variant {upgrade})"
 dfx canister start dogecoin
-
-# Reset candid init args
-sed -i.bak 's/service dogecoin : (opt set_config_request)/service dogecoin : (init_config)/' ../canister/candid.did
 
 echo "SUCCESS"

@@ -2,13 +2,12 @@ use crate::{
     blocktree::{BlockChain, CachedBlock, ChainBlock},
     charge_cycles,
     runtime::{performance_counter, print},
-    types::{Address, GetUtxosRequest, Page, Utxo},
+    types::{Address, AddressParseError, GetUtxosRequest, Page, Utxo},
     unstable_blocks, verify_has_enough_cycles, with_state, with_state_mut, State,
 };
 use ic_doge_interface::{GetUtxosError, GetUtxosResponse, Utxo as PublicUtxo, UtxosFilter};
 use ic_doge_types::{BlockHash, OutPoint, Txid};
 use serde_bytes::ByteBuf;
-use std::str::FromStr;
 
 // The maximum number of UTXOs that are allowed to be included in a single
 // `GetUtxosResponse`.
@@ -200,7 +199,12 @@ fn get_utxos_from_chain(
 ) -> Result<(GetUtxosResponse, Stats), GetUtxosError> {
     let mut stats = Stats::default();
 
-    let address = Address::from_str(address).map_err(|_| GetUtxosError::MalformedAddress)?;
+    let address = Address::from_str_checked(address, state.network()).map_err(|e| match e {
+        AddressParseError::MalformedAddress => GetUtxosError::MalformedAddress,
+        AddressParseError::WrongNetwork { expected } => {
+            GetUtxosError::AddressForWrongNetwork { expected }
+        }
+    })?;
 
     if chain.len() < min_confirmations as usize {
         return Err(GetUtxosError::MinConfirmationsTooLarge {
@@ -326,6 +330,52 @@ mod test {
             }),
             Err(GetUtxosError::MalformedAddress)
         );
+    }
+
+    #[test]
+    fn get_utxos_error_on_wrong_network() {
+        crate::init(InitConfig {
+            network: Some(Network::Mainnet),
+            ..Default::default()
+        });
+
+        // Use a regtest address on a mainnet canister
+        let testnet_address = random_p2pkh_address(bitcoin::dogecoin::Network::Regtest);
+
+        let result = get_utxos(GetUtxosRequest {
+            address: testnet_address.to_string(),
+            filter: None,
+        });
+
+        match result {
+            Err(GetUtxosError::AddressForWrongNetwork { expected }) => {
+                assert_eq!(expected, Network::Mainnet);
+            }
+            other => panic!("Expected AddressForWrongNetwork error, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn get_utxos_query_error_on_wrong_network() {
+        crate::init(InitConfig {
+            network: Some(Network::Regtest),
+            ..Default::default()
+        });
+
+        // Use a mainnet address on a regtest canister
+        let mainnet_address = random_p2pkh_address(bitcoin::dogecoin::Network::Dogecoin);
+
+        let result = get_utxos_query(GetUtxosRequest {
+            address: mainnet_address.to_string(),
+            filter: None,
+        });
+
+        match result {
+            Err(GetUtxosError::AddressForWrongNetwork { expected }) => {
+                assert_eq!(expected, Network::Regtest);
+            }
+            other => panic!("Expected AddressForWrongNetwork error, got {:?}", other),
+        }
     }
 
     #[test]
