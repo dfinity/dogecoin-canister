@@ -191,7 +191,6 @@ impl<T: HeaderStore> HeaderValidator for BitcoinHeaderValidator<T> {
                 pow_limit_bits
             }
             BitcoinNetwork::Bitcoin | BitcoinNetwork::Signet => pow_limit_bits,
-            &other => unreachable!("Unsupported network: {:?}", other),
         }
     }
 
