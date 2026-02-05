@@ -44,10 +44,6 @@ footer = """
 """
 trim = true
 
-[remote.github]
-owner = "dfinity"
-repo = "dogecoin-canister"
-
 [git]
 conventional_commits = true
 filter_unconventional = false
