@@ -90,7 +90,7 @@ jobs:
           ${WASM_SHA256}  ${{ env.WASM_NAME }}
           \`\`\`"
           
-          PROPOSALS="## Proposals
+          PROPOSALS="## Proposal
 
           [TO BE ADDED]"
           
