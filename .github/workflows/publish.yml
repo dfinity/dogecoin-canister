@@ -1,4 +1,4 @@
-name: Publish dogecoin canister crates to crates.io
+name: Publish ic-doge-interface crate to crates.io
 
 on:
   workflow_dispatch
@@ -8,7 +8,7 @@ on:
 
 jobs:
   publish:
-    name: Publish dogecoin canister crates
+    name: Publish ic-doge-interface crate
     runs-on: ubuntu-latest
 
     permissions:
