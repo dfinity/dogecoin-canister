@@ -23,9 +23,8 @@ body = """
     ### {{ group | upper_first }}
     {% for commit in commits -%}
         {% set message = commit.message | split(pat="\n") | first | upper_first | trim -%}
-        {% set parts = message | split(pat=" (#") -%}
-        - {{ parts[0] -}}
-        {%- if commit.links %} ({% for link in commit.links %}[{{ link.text }}]({{ link.href }}){% if not loop.last %}, {% endif %}{% endfor %}){% endif %}
+        {% set message = message | replace(from="\\(#(\\d+)\\)", to="([#$1](https://github.com/dfinity/dogecoin-canister/pull/$1))") -%}
+        - {{ message }}
     {% endfor %}
 {% endfor %}\n
 """
@@ -64,9 +63,6 @@ commit_parsers = [
     { message = "^fix", group = "Fixed" },
     { message = "^.*: fix", group = "Fixed" },
     { message = "^.*", group = "Changed" },
-]
-link_parsers = [
-    { pattern = "#(\\d+)", href = "https://github.com/dfinity/dogecoin-canister/pull/$1" },
 ]
 filter_commits = false
 topo_order = false
