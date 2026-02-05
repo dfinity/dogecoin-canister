@@ -22,12 +22,10 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
     ### {{ group | upper_first }}
     {% for commit in commits -%}
-        {% set commit_message = commit.message | split(pat="\n") | first | upper_first | trim -%}
-        {% if commit.links -%}
-            - {{ commit_message }}{% for link in commit.links %} ([{{ link.text }}]({{ link.href }})){% endfor %}
-        {%- else -%}
-            - {{ commit_message }}
-        {%- endif %}
+        {% set message = commit.message | split(pat="\n") | first | upper_first | trim -%}
+        {% set parts = message | split(pat=" (#") -%}
+        - {{ parts[0] -}}
+        {%- if commit.links %} ({% for link in commit.links %}[{{ link.text }}]({{ link.href }}){% if not loop.last %}, {% endif %}{% endfor %}){% endif %}
     {% endfor %}
 {% endfor %}\n
 """
