@@ -58,6 +58,9 @@ commit_parsers = [
     { message = "^.*: fix", group = "Fixed" },
     { message = "^.*", group = "Changed" },
 ]
+link_parsers = [
+    { pattern = "#(\\d+)", href = "https://github.com/dfinity/dogecoin-canister/pull/$1" },
+]
 filter_commits = false
 topo_order = false
 sort_commits = "newest"
