@@ -3,6 +3,11 @@ name = "ic-doge-test-utils"
 version = "0.1.0"
 edition = "2021"
 description = "Test utilities for the Dogecoin Canister on the Internet Computer"
+homepage = "https://docs.rs/ic-doge-test-utils"
+documentation = "https://docs.rs/ic-doge-test-utils"
+license = "Apache-2.0"
+include = ["src", "Cargo.toml", "../LICENSE"]
+repository = "https://github.com/dfinity/dogecoin-canister"
 
 [dependencies]
 bitcoin = { workspace = true }
