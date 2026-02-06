@@ -8,13 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-02-06
 
 ### Changed
-- Release plz ([#74](https://github.com/dfinity/dogecoin-canister/pull/74))
+
 - Cherry-pick from dfinity/bitcoin-canister@master (8d51212..38a51b8) ([#72](https://github.com/dfinity/dogecoin-canister/pull/72))
-
-
-[0.2.0]: https://github.com/dfinity/dogecoin-canister/compare/0.1.0...0.2.0
-
 
 ## [0.1.0] - 2025-12-18
 
 - Initial release
+
+[0.2.0]: https://github.com/dfinity/dogecoin-canister/compare/ic-doge-interface-0.1.0...ic-doge-interface-0.2.0
+[0.1.0]: https://github.com/dfinity/dogecoin-canister/releases/tag/ic-doge-interface-0.1.0
