@@ -21,8 +21,16 @@ body = """
 {% endif -%}
 {% for group, commits in commits | group_by(attribute="group") %}
     ### {{ group | upper_first }}
-    {% for commit in commits %}
-        - {{ commit.message | split(pat="\n") | first | upper_first | trim }}
+    {% for commit in commits -%}
+        {% set title = commit.message | split(pat="\n") | first | upper_first | trim -%}
+        {% set parts = title | split(pat=" (#") -%}
+        {% if parts | length > 1 -%}
+            {% set pr_part = parts[1] | split(pat=")") -%}
+            {% set pr_num = pr_part[0] -%}
+            - {{ parts[0] }} ([#{{ pr_num }}](https://github.com/dfinity/dogecoin-canister/pull/{{ pr_num }}))
+        {%- else -%}
+            - {{ title }}
+        {%- endif %}
     {% endfor %}
 {% endfor %}\n
 """

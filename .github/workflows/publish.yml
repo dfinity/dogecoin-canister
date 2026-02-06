@@ -1,14 +1,14 @@
-name: Publish dogecoin canister crates to crates.io
+name: Publish ic-doge-interface crate to crates.io
 
 on:
-  workflow_dispatch:
+  workflow_dispatch
 
 # Publishes ic-doge-interface to crates.io
 # Run this after merging the release PR created by release-plz
 
 jobs:
   publish:
-    name: Publish dogecoin canister crates
+    name: Publish ic-doge-interface crate
     runs-on: ubuntu-latest
 
     permissions:

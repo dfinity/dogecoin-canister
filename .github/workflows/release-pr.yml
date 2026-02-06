@@ -51,13 +51,13 @@ jobs:
       - name: Update CHANGELOG
         run: |
           # Get the previous release tag
-          PREV_TAG=$(git tag --list '${{ inputs.package }}/release/*' --sort=-version:refname | head -n1)
-          NEW_TAG="${{ inputs.package }}/release/${{ env.RELEASE_DATE }}"
+          PREV_TAG=$(git tag --list 'release/*' --sort=-version:refname | head -n1)
+          NEW_TAG="release/${{ env.RELEASE_DATE }}"
           
           # Prepend new changelog entry
           git-cliff --config cliff.toml \
             --include-path "${{ env.INCLUDE_PATH }}" \
-            --tag-pattern "${{ inputs.package }}/release/.*" \
+            --tag-pattern "release/.*" \
             --prepend "${{ env.CHANGELOG_PATH }}" \
             --unreleased \
             --tag "$NEW_TAG"
@@ -83,7 +83,7 @@ jobs:
             This PR updates the changelog for ${{ inputs.package }}.
 
             After merging, run the **Create GitHub Releases** workflow with `${{ inputs.package }}` selected.
-          branch: ${{ inputs.package }}/release/${{ env.RELEASE_DATE }}
+          branch: release/${{ env.RELEASE_DATE }}
           labels: release
           draft: true
 
