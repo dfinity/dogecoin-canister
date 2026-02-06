@@ -7,9 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [release/2026-02-06] - 2026-02-06
 
 ### Changed
-- Release plz ([#74](https://github.com/dfinity/dogecoin-canister/pull/74))
-- Cherry-pick from dfinity/bitcoin-canister@master (8d51212..38a51b8) ([#72](https://github.com/dfinity/dogecoin-canister/pull/72))
-
+- Cherry-pick from dfinity/bitcoin-canister@master (8d51212..38a51b8) ([#72](https://github.com/dfinity/dogecoin-canister/pull/72)):
+  - Add network validation (regtest/mainnet) for addresses in get_balance and get_utxos requests
+  - Add unified canister_arg to initialize and upgrade Dogecoin canister
 
 ## [release/2025-12-10] - 2025-12-10
 
@@ -57,9 +57,9 @@ Initial pre-release of the Dogecoin canister, adapted from the Bitcoin canister 
 - Increase block range in canister/src/tests.rs ([#20](https://github.com/dfinity/dogecoin-canister/pull/20))
 
 
+[release/2026-02-06]: https://github.com/dfinity/dogecoin-canister/compare/release/2025-12-10...release/2026-02-06
 [release/2025-12-10]: https://github.com/dfinity/dogecoin-canister/compare/release/2025-11-19...release/2025-12-10
 [release/2025-11-19]: https://github.com/dfinity/dogecoin-canister/compare/release/2025-10-24...release/2025-11-19
 [release/2025-10-24]: https://github.com/dfinity/dogecoin-canister/compare/pre-release/2025-10-17...release/2025-10-24
 [pre-release/2025-10-17]: https://github.com/dfinity/dogecoin-canister/compare/baseline-fork...pre-release/2025-10-17
 
-[release/2026-02-06]: https://github.com/dfinity/dogecoin-canister/compare/release/2025-12-10...release/2026-02-06
