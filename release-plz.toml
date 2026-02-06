@@ -38,4 +38,4 @@ changelog_path = "interface/CHANGELOG.md"
 semver_check = true
 publish = true # enable `cargo publish`
 git_tag_enable = true
-tag_name = "{{package}}-{{version}}"
+git_tag_name = "{{ package }}-{{ version }}"
