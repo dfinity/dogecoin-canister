@@ -40,6 +40,8 @@ git checkout 63070ba8c769ca242560ff5ab714e54f860d502f
 didc encode -d canister/candid.did -t '(canister_arg)' '(variant { upgrade = opt record { watchdog_canister = opt opt principal "he6b4-hiaaa-aaaan-aaaeq-cai" } })' | xxd -r -p | sha256sum
 ```
 
+About the upgrade arguments:
+* `watchdog_canister`: Set the principal of the watchdog canister to [`he6b4-hiaaa-aaaan-aaaeq-cai`](https://dashboard.internetcomputer.org/canister/he6b4-hiaaa-aaaan-aaaeq-cai), which is a canister controlled by the NNS root ([r7inp-6aaaa-aaaaa-aaabq-cai](https://dashboard.internetcomputer.org/canister/r7inp-6aaaa-aaaaa-aaabq-cai)) on the same subnet ([w4rem](https://dashboard.internetcomputer.org/network/subnets/w4rem-dv5e3-widiz-wbpea-kbttk-mnzfm-tzrc7-svcj3-kbxyb-zamch-hqe)) that will contain the code of the watchdog canister (available in the bitcoin-canister [repository](https://github.com/dfinity/bitcoin-canister/tree/f29c7c21621397ec70ee5018369157850f0e56e0/watchdog)) installed through an upcoming proposal.
 ## Wasm Verification
 
 Verify that the hash of the gzipped WASM matches the proposed hash.
