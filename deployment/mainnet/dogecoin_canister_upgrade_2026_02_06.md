@@ -18,7 +18,9 @@ Previous Dogecoin canister proposal: https://dashboard.internetcomputer.org/prop
 
 The main goal of this proposal is to allow the future installation of the Dogecoin watchdog canister by adding its principal to the Dogecoin canister configuration. The Dogecoin watchdog canister will be responsible for monitoring the latest height of the Dogecoin blockchain and temporary disabling the Dogecoin canister API in case of mismatch.
 
-Additionally, this proposal applies the latest changes from the upstream Bitcoin canister, that is: 1) adding network validation for addresses in `get_balance` and `get_utxos` requests so that an error is returned to the user in case the address is for a different network (e.g. regtest address for the mainnet canister), 2) in the candid.did file, adding unified canister_arg with init and upgrade variants to ease construction of the init and upgrade arguments of the canister.
+Additionally, this proposal applies the latest changes from the upstream Bitcoin canister, that is: 
+1. adding network validation for addresses in `get_balance` and `get_utxos` requests so that an error is returned to the user in case the address is for a different network (e.g. regtest address for the mainnet canister),
+2. in the candid.did file, adding unified canister_arg with init and upgrade variants to ease construction of the init and upgrade arguments of the canister.
 
 
 ## Release Notes
