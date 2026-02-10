@@ -62,7 +62,7 @@ if ! [[ $(dfx canister status dogecoin 2>&1) == *"Status: Stopped"* ]]; then
 fi
 
 echo "Deploy new version of canister..."
-dfx deploy --no-wallet dogecoin --argument "(variant {init = record {}})"
+dfx deploy --no-wallet dogecoin --argument "(variant {upgrade})"
 
 dfx canister start dogecoin
 dfx canister stop dogecoin
