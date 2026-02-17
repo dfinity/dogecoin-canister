@@ -30,6 +30,13 @@ dfx deploy --no-wallet dogecoin --argument "(variant {init = record {
 # Wait until the ingestion of stable blocks is complete.
 wait_until_main_chain_height 4 60
 
+# Verify the blockchain info using the query endpoint.
+BLOCKCHAIN_INFO=$(dfx canister call dogecoin get_blockchain_info --query)
+if ! [[ $BLOCKCHAIN_INFO == *"height = 4"* ]]; then
+  echo "FAIL: Expected height 4 in blockchain info, got $BLOCKCHAIN_INFO"
+  exit 1
+fi
+
 BALANCE=$(dfx canister call dogecoin dogecoin_get_balance '(record {
   network = variant { regtest };
   address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
