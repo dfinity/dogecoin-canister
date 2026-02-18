@@ -1305,7 +1305,7 @@ mod test {
     #[test]
     fn count_utxos_in_blocks_chain_of_coinbase_blocks() {
         let network = Network::Regtest;
-        let blocks = build_chain(network, 3, 1);
+        let blocks = build_chain(network, 3, 1, false);
         let blocks_refs: Vec<&Block> = blocks.iter().collect();
         // Genesis + 2 blocks, each with 1 coinbase output. Total = 3 UTXOs.
         assert_eq!(count_utxos_in_blocks(0, blocks_refs), 3);
