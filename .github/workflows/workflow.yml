@@ -615,6 +615,7 @@ jobs:
         benchmark,
         canister-build-reproducibility,
         dogecoin_canister_metadata,
+        candid-compatibility,
       ]
     runs-on: ubuntu-latest
     steps:
@@ -662,4 +663,7 @@ jobs:
         run: exit 1
       - name: check canister-build-reproducibility result
         if: ${{ needs.canister-build-reproducibility.result != 'success' }}
+        run: exit 1
+      - name: check candid-compatibility result
+        if: ${{ needs.candid-compatibility.result != 'success' && needs.candid-compatibility.result != 'skipped' }}
         run: exit 1
