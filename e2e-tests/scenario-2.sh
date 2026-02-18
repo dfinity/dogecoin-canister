@@ -18,7 +18,7 @@ dfx start --background --clean
 dfx deploy --no-wallet e2e-scenario-2
 
 # Configure dfx.json to use pre-built WASM
-use_prebuilt_bitcoin_wasm
+use_prebuilt_dogecoin_wasm
 
 # Deploy the dogecoin canister, setting the blocks_source to be the source above.
 dfx deploy --no-wallet dogecoin --argument "(variant {init = record {

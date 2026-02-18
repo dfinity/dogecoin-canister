@@ -16,7 +16,7 @@ dfx start --background --clean
 dfx deploy --no-wallet e2e-disable-api-if-not-fully-synced-flag
 
 # Configure dfx.json to use pre-built WASM
-use_prebuilt_bitcoin_wasm
+use_prebuilt_dogecoin_wasm
 
 # Deploy the dogecoin canister, setting the blocks_source to be the source above.
 # And enabling 'disable_api_if_not_fully_synced'.

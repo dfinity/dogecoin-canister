@@ -63,7 +63,7 @@ if ! [[ $(dfx canister status dogecoin 2>&1) == *"Status: Stopped"* ]]; then
 fi
 
 # Configure dfx.json to use pre-built WASM
-use_prebuilt_bitcoin_wasm
+use_prebuilt_dogecoin_wasm
 
 echo "Deploy new version of canister..."
 dfx deploy --no-wallet dogecoin --argument "(variant {upgrade})"

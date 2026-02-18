@@ -11,7 +11,7 @@ trap "dfx stop" EXIT SIGINT
 dfx start --background --clean
 
 # Configure dfx.json to use pre-built WASM
-use_prebuilt_bitcoin_wasm
+use_prebuilt_dogecoin_wasm
 
 # Deploy the dogecoin canister
 dfx deploy --no-wallet dogecoin --argument "(variant {init = record {}})"
