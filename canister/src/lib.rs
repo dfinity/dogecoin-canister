@@ -796,7 +796,7 @@ mod test {
         let genesis = genesis_block(network);
         let tip_info = get_blockchain_info();
 
-        // After init, the tip is the Bitcoin genesis block for the configured network.
+        // After init, the tip is the Dogecoin genesis block for the configured network.
         assert_eq!(tip_info.height, 0);
         assert_eq!(tip_info.block_hash, genesis.block_hash().to_vec());
         assert_eq!(tip_info.timestamp, genesis.header().time);

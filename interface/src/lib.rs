@@ -788,7 +788,7 @@ impl Fees {
 /// Information about the blockchain as seen by the canister.
 ///
 /// Currently returns information about the main chain tip. The main chain is the
-/// canister's best guess at what the Bitcoin network considers the canonical chain.
+/// canister's best guess at what the Dogecoin network considers the canonical chain.
 /// It is defined as the longest chain with an "uncontested" tip — meaning there
 /// exists no other block at the same height as the tip.
 #[derive(CandidType, Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]

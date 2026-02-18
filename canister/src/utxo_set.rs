@@ -1314,7 +1314,7 @@ mod test {
     #[test]
     fn count_utxos_in_blocks_with_spending_transactions() {
         let network = Network::Regtest;
-        let address: Address = random_p2pkh_address(into_bitcoin_network(network)).into();
+        let address: Address = random_p2pkh_address(into_dogecoin_network(network)).into();
         let mut blocks: Vec<Block> = vec![];
 
         // Block 1 (genesis): coinbase with 1 output → +1. Running total: 1.

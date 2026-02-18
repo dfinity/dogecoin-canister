@@ -27,7 +27,7 @@ dfx deploy --no-wallet dogecoin --argument "(variant {init = record {
 wait_until_main_chain_height 5 60
 
 # Verify the blockchain info using the query endpoint.
-BLOCKCHAIN_INFO=$(dfx canister call bitcoin get_blockchain_info --query)
+BLOCKCHAIN_INFO=$(dfx canister call dogecoin get_blockchain_info --query)
 if ! [[ $BLOCKCHAIN_INFO == *"height = 5"* ]]; then
   echo "FAIL: Expected height 5 in blockchain info, got $BLOCKCHAIN_INFO"
   exit 1

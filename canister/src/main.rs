@@ -143,8 +143,8 @@ fn set_config(request: SetConfigRequest) {
 }
 
 #[query]
-pub fn get_blockchain_info() -> ic_btc_canister::types::BlockchainInfo {
-    ic_btc_canister::get_blockchain_info()
+pub fn get_blockchain_info() -> ic_doge_canister::types::BlockchainInfo {
+    ic_doge_canister::get_blockchain_info()
 }
 
 #[query]

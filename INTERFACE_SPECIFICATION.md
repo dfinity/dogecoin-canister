@@ -271,7 +271,7 @@ type blockchain_info = record {
 get_blockchain_info : () -> (blockchain_info) query;
 ```
 
-This endpoint returns information about the canister's current view of the Bitcoin blockchain, which includes the following:
+This endpoint returns information about the canister's current view of the Dogecoin blockchain, which includes the following:
 
 * `height`: The height of the main chain tip.
 * `block_hash`: The hash of the tip block as a `block_hash` (blob, 32 bytes).
