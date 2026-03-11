@@ -1,6 +1,5 @@
 use crate::unstable_blocks::BlocksCache;
 use bitcoin::block::Header;
-use ic_doge_interface::Network;
 use ic_doge_types::{Block, BlockHash};
 use std::fmt;
 mod serde;
@@ -441,8 +440,8 @@ impl<Block: ChainBlock> BlockTree<Block> {
     /// criteria, the chain ends at this node (contested tip).
     ///
     /// Runs in O(n) time where n is the number of blocks in the tree.
-    pub fn main_chain_by_difficulty(&self, network: Network) -> BlockChain<'_, Block> {
-        let (_, _, mut chain_rev) = self.main_chain_by_difficulty_inner(network);
+    pub fn main_chain_by_difficulty(&self) -> BlockChain<'_, Block> {
+        let (_, _, mut chain_rev) = self.main_chain_by_difficulty_inner();
         let first = chain_rev
             .pop()
             .expect("chain is never empty: always contains at least the root");
@@ -453,9 +452,8 @@ impl<Block: ChainBlock> BlockTree<Block> {
     /// Bottom-up DFS returning (accumulated_difficulty, depth, main_chain_reversed).
     fn main_chain_by_difficulty_inner(
         &self,
-        network: Network,
     ) -> (DifficultyBasedDepth, usize, Vec<&Block>) {
-        let self_difficulty = DifficultyBasedDepth::new(self.root.difficulty(network));
+        let self_difficulty = DifficultyBasedDepth::new(self.root.difficulty());
 
         if self.children.is_empty() {
             return (self_difficulty, 1, vec![&self.root]);
@@ -467,7 +465,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
 
         for child in self.children.iter() {
             let (child_diff, child_depth, child_chain) =
-                child.main_chain_by_difficulty_inner(network);
+                child.main_chain_by_difficulty_inner();
             let key = (child_diff, child_depth);
 
             match key.cmp(&best_key) {
@@ -501,16 +499,15 @@ impl<Block: ChainBlock> BlockTree<Block> {
     /// definition.
     ///
     /// Runs in O(n) time where n is the number of blocks in the tree.
-    pub fn main_chain_length_by_difficulty(&self, network: Network) -> usize {
-        self.main_chain_length_by_difficulty_inner(network).2
+    pub fn main_chain_length_by_difficulty(&self) -> usize {
+        self.main_chain_length_by_difficulty_inner().2
     }
 
     /// Bottom-up DFS returning (accumulated_difficulty, depth, main_chain_length).
     fn main_chain_length_by_difficulty_inner(
         &self,
-        network: Network,
     ) -> (DifficultyBasedDepth, usize, usize) {
-        let self_difficulty = DifficultyBasedDepth::new(self.root.difficulty(network));
+        let self_difficulty = DifficultyBasedDepth::new(self.root.difficulty());
 
         if self.children.is_empty() {
             return (self_difficulty, 1, 1);
@@ -522,7 +519,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
 
         for child in self.children.iter() {
             let (child_diff, child_depth, child_len) =
-                child.main_chain_length_by_difficulty_inner(network);
+                child.main_chain_length_by_difficulty_inner();
             let key = (child_diff, child_depth);
 
             match key.cmp(&best_key) {
@@ -852,8 +849,8 @@ mod test {
     // main_chain_by_difficulty().len().
     #[proptest]
     fn test_main_chain_length_matches_chain_len(tree: BlockTree) {
-        let chain = tree.main_chain_by_difficulty(Network::Regtest);
-        let length = tree.main_chain_length_by_difficulty(Network::Regtest);
+        let chain = tree.main_chain_by_difficulty();
+        let length = tree.main_chain_length_by_difficulty();
         prop_assert_eq!(chain.len(), length);
     }
 
