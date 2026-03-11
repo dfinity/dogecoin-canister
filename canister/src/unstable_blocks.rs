@@ -329,7 +329,7 @@ pub fn push(
 /// Returns the best guess on what the main blockchain is.
 ///
 /// The main chain is determined by most accumulated proof-of-work (difficulty),
-/// following Bitcoin's consensus rule. At each fork, the branch with the
+/// following Dogecoin's consensus rule. At each fork, the branch with the
 /// strictly highest accumulated difficulty is followed. When accumulated
 /// difficulties are tied, the longest branch (by block count) wins. If
 /// branches still tie on both criteria, the chain ends at the fork point
@@ -1101,10 +1101,7 @@ mod test {
         push(&mut forest, &utxos, block_d).unwrap();
         push(&mut forest, &utxos, block_e).unwrap();
 
-        assert_eq!(
-            get_main_chain(&forest),
-            vec![block_0, block_a, block_b]
-        );
+        assert_eq!(get_main_chain(&forest), vec![block_0, block_a, block_b]);
         assert_eq!(get_main_chain_length(&forest), 3);
     }
 
@@ -1135,10 +1132,7 @@ mod test {
         push(&mut forest, &utxos, block_b.clone()).unwrap();
         push(&mut forest, &utxos, block_c).unwrap();
 
-        assert_eq!(
-            get_main_chain(&forest),
-            vec![block_0, block_a, block_b]
-        );
+        assert_eq!(get_main_chain(&forest), vec![block_0, block_a, block_b]);
         assert_eq!(get_main_chain_length(&forest), 3);
     }
 
@@ -1172,20 +1166,14 @@ mod test {
         push(&mut forest, &utxos, block_a.clone()).unwrap();
         push(&mut forest, &utxos, block_b.clone()).unwrap();
 
-        assert_eq!(
-            get_main_chain(&forest),
-            vec![block_0.clone(), block_a]
-        );
+        assert_eq!(get_main_chain(&forest), vec![block_0.clone(), block_a]);
         assert_eq!(get_main_chain_length(&forest), 2);
 
         let block_c =
             BlockBuilder::with_prev_header(block_b.header()).build_with_mock_difficulty(20);
         push(&mut forest, &utxos, block_c.clone()).unwrap();
 
-        assert_eq!(
-            get_main_chain(&forest),
-            vec![block_0, block_b, block_c]
-        );
+        assert_eq!(get_main_chain(&forest), vec![block_0, block_b, block_c]);
         assert_eq!(get_main_chain_length(&forest), 3);
     }
 
@@ -1247,10 +1235,7 @@ mod test {
         push(&mut forest, &utxos, block_b).unwrap();
         push(&mut forest, &utxos, block_c).unwrap();
 
-        assert_eq!(
-            get_main_chain(&forest),
-            vec![block_0, block_a]
-        );
+        assert_eq!(get_main_chain(&forest), vec![block_0, block_a]);
         assert_eq!(get_main_chain_length(&forest), 2);
     }
 
@@ -1384,10 +1369,7 @@ mod test {
         push(&mut forest, &utxos, block_c).unwrap();
         push(&mut forest, &utxos, block_e).unwrap();
 
-        assert_eq!(
-            get_main_chain(&forest),
-            vec![block_0, block_d]
-        );
+        assert_eq!(get_main_chain(&forest), vec![block_0, block_d]);
         assert_eq!(get_main_chain_length(&forest), 2);
     }
 
@@ -1417,10 +1399,7 @@ mod test {
         push(&mut forest, &utxos, block_b).unwrap();
         push(&mut forest, &utxos, block_c).unwrap();
 
-        assert_eq!(
-            get_main_chain(&forest),
-            vec![block_0, block_a]
-        );
+        assert_eq!(get_main_chain(&forest), vec![block_0, block_a]);
         assert_eq!(get_main_chain_length(&forest), 2);
     }
 
@@ -1491,10 +1470,7 @@ mod test {
             BlockBuilder::with_prev_header(block_a.header()).build_with_mock_difficulty(5);
         push(&mut forest, &utxos, block_c.clone()).unwrap();
 
-        assert_eq!(
-            get_main_chain(&forest),
-            vec![block_0, block_a, block_c]
-        );
+        assert_eq!(get_main_chain(&forest), vec![block_0, block_a, block_c]);
         assert_eq!(get_main_chain_length(&forest), 3);
     }
 

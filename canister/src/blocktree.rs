@@ -67,7 +67,6 @@ impl<'a, Block> BlockChain<'a, Block> {
         }
     }
 
-    /// This is only useful for tests to simplify the creation of a `BlockChain`.
     pub fn new_with_successors(first: &'a Block, successors: Vec<&'a Block>) -> Self {
         Self { first, successors }
     }
@@ -450,9 +449,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
     }
 
     /// Bottom-up DFS returning (accumulated_difficulty, depth, main_chain_reversed).
-    fn main_chain_by_difficulty_inner(
-        &self,
-    ) -> (DifficultyBasedDepth, usize, Vec<&Block>) {
+    fn main_chain_by_difficulty_inner(&self) -> (DifficultyBasedDepth, usize, Vec<&Block>) {
         let self_difficulty = DifficultyBasedDepth::new(self.root.difficulty());
 
         if self.children.is_empty() {
@@ -464,8 +461,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
         let mut contested = false;
 
         for child in self.children.iter() {
-            let (child_diff, child_depth, child_chain) =
-                child.main_chain_by_difficulty_inner();
+            let (child_diff, child_depth, child_chain) = child.main_chain_by_difficulty_inner();
             let key = (child_diff, child_depth);
 
             match key.cmp(&best_key) {
@@ -504,9 +500,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
     }
 
     /// Bottom-up DFS returning (accumulated_difficulty, depth, main_chain_length).
-    fn main_chain_length_by_difficulty_inner(
-        &self,
-    ) -> (DifficultyBasedDepth, usize, usize) {
+    fn main_chain_length_by_difficulty_inner(&self) -> (DifficultyBasedDepth, usize, usize) {
         let self_difficulty = DifficultyBasedDepth::new(self.root.difficulty());
 
         if self.children.is_empty() {

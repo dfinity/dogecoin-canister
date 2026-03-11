@@ -353,7 +353,7 @@ fn get_blockchain_info_many_branches() -> BenchResult {
 /// Builds a chain of `num_blocks` blocks extending from the given header.
 /// Each block has a unique coinbase transaction (using `value_counter` for unique outputs).
 fn build_chain_from(prev_header: Header, num_blocks: usize, value_counter: &mut u64) -> Vec<Block> {
-    const ADDRESS: &str = "bcrt1qg4cvn305es3k8j69x06t9hf4v5yx4mxdaeazl8";
+    const ADDRESS: &str = "mwSSBD3NCriNXNMgd6dr2N2rxX9M9zXqrp";
     let address = dogecoin::Address::from_str(ADDRESS)
         .unwrap()
         .assume_checked();
