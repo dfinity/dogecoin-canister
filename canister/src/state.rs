@@ -333,6 +333,25 @@ pub fn main_chain_height(state: &State) -> Height {
         - 1
 }
 
+/// Returns information about the blockchain state.
+pub fn blockchain_info(state: &State) -> crate::types::BlockchainInfo {
+    let main_chain = unstable_blocks::get_main_chain(&state.unstable_blocks);
+    let tip_block = main_chain.tip();
+    let chain = main_chain.into_chain();
+    let blocks: Vec<Block> = chain.iter().map(|cached| cached.block()).collect();
+
+    crate::types::BlockchainInfo {
+        height: main_chain_height(state),
+        block_hash: tip_block.block_hash().to_vec(),
+        timestamp: tip_block.header().time,
+        difficulty: tip_block.difficulty(),
+        utxos_length: crate::utxo_set::count_utxos_in_blocks(
+            state.utxos.utxos_len(),
+            blocks.iter(),
+        ),
+    }
+}
+
 pub fn get_block_hashes(state: &State) -> Vec<BlockHash> {
     unstable_blocks::get_block_hashes(&state.unstable_blocks)
 }

@@ -570,6 +570,10 @@ pub struct SetConfigRequest {
     /// If enabled, fee percentiles are only computed when requested.
     /// Otherwise, they are computed whenever we receive a new block.
     pub lazily_evaluate_fee_percentiles: Option<Flag>,
+
+    /// If enabled, continuously burns all cycles in the canister's balance
+    /// to count towards the IC's burn rate.
+    pub burn_cycles: Option<Flag>,
 }
 
 #[derive(CandidType, Serialize, Deserialize, PartialEq, Eq, Copy, Clone, Debug, Default)]
@@ -779,6 +783,26 @@ impl Fees {
             get_block_headers_maximum: 10_000_000_000,
         }
     }
+}
+
+/// Information about the blockchain as seen by the canister.
+///
+/// Currently returns information about the main chain tip. The main chain is the
+/// canister's best guess at what the Dogecoin network considers the canonical chain.
+/// It is defined as the longest chain with an "uncontested" tip — meaning there
+/// exists no other block at the same height as the tip.
+#[derive(CandidType, Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct BlockchainInfo {
+    /// The height of the main chain tip.
+    pub height: Height,
+    /// The hash of the tip block.
+    pub block_hash: BlockHash,
+    /// Unix timestamp of the tip block (seconds since epoch).
+    pub timestamp: u32,
+    /// Difficulty of the tip block.
+    pub difficulty: u128,
+    /// Total number of UTXOs up to the main chain tip (stable + unstable main chain blocks).
+    pub utxos_length: u64,
 }
 
 #[cfg(test)]

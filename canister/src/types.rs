@@ -552,6 +552,8 @@ pub struct HttpResponse {
     pub body: ByteBuf,
 }
 
+pub use ic_doge_interface::BlockchainInfo;
+
 /// A type used to facilitate time-slicing.
 #[must_use]
 #[derive(Debug, PartialEq, Eq)]
