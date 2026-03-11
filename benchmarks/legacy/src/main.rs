@@ -230,7 +230,7 @@ fn get_blockchain_info_single_chain() -> BenchResult {
 
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Regtest),
-        stability_threshold: Some(2000),
+        stability_threshold: Some(2000), // Set larger than blocks_to_insert to ensure inserted blocks form a long unstable chain
         ..Default::default()
     });
 
@@ -265,7 +265,7 @@ fn get_blockchain_info_with_forks() -> BenchResult {
 
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Regtest),
-        stability_threshold: Some(2000),
+        stability_threshold: Some(2000), // Set larger than blocks_to_insert to ensure inserted blocks form a long unstable chain
         ..Default::default()
     });
 
@@ -310,7 +310,7 @@ fn get_blockchain_info_many_branches() -> BenchResult {
 
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Regtest),
-        stability_threshold: Some(2000),
+        stability_threshold: Some(2000), // Set larger than blocks_to_insert to ensure inserted blocks form a long unstable chain
         ..Default::default()
     });
 
