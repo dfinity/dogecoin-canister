@@ -75,8 +75,10 @@ jobs:
           PREV_TAG=$(git tag --list 'release/*' --sort=-version:refname | head -n1)
           
           # Generate changelog with git-cliff (scoped to package directory)
+          # Use only release/* tags so the compare link uses the previous canister release (e.g. release/2025-12-10), not ic-doge-interface semver tags.
           # Strip the version title line (e.g., "## [release/2026-01-21] - 2026-01-21")
           CHANGELOG=$(git-cliff --config cliff.toml \
+            --tag-pattern "release/.*" \
             --include-path "${{ env.INCLUDE_PATH }}" \
             --unreleased \
             --tag "$RELEASE_TAG" \
