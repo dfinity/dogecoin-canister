@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [release/2026-03-12] - 2026-03-12
+
+### Added
+- Cherry-pick from dfinity/bitcoin-canister@master (9dcf7e6..d9ab390) ([#97](https://github.com/dfinity/dogecoin-canister/pull/97))
+  - Add `get_blockchain_info` endpoint
+- Cherry-pick from dfinity/bitcoin-canister@master (7f84397) ([#95](https://github.com/dfinity/dogecoin-canister/pull/95))
+  - Add `burn_cycles` field to `SetConfigRequest`
+
+### Changed
+- Cherry-pick from dfinity/bitcoin-canister@master (ff779883..c3c089f) ([#100](https://github.com/dfinity/dogecoin-canister/pull/100)):
+  - Move `CanisterArg` to `ic-btc-interface`
+  - Add most accumulated difficulty criterion in main chain selection
+
 ## [release/2026-02-06] - 2026-02-06
 
 ### Changed
@@ -57,9 +70,11 @@ Initial pre-release of the Dogecoin canister, adapted from the Bitcoin canister 
 - Increase block range in canister/src/tests.rs ([#20](https://github.com/dfinity/dogecoin-canister/pull/20))
 
 
+[release/2026-03-12]: https://github.com/dfinity/dogecoin-canister/compare/release/2026-02-06...release/2026-03-12
 [release/2026-02-06]: https://github.com/dfinity/dogecoin-canister/compare/release/2025-12-10...release/2026-02-06
 [release/2025-12-10]: https://github.com/dfinity/dogecoin-canister/compare/release/2025-11-19...release/2025-12-10
 [release/2025-11-19]: https://github.com/dfinity/dogecoin-canister/compare/release/2025-10-24...release/2025-11-19
 [release/2025-10-24]: https://github.com/dfinity/dogecoin-canister/compare/pre-release/2025-10-17...release/2025-10-24
 [pre-release/2025-10-17]: https://github.com/dfinity/dogecoin-canister/compare/baseline-fork...pre-release/2025-10-17
+
 
