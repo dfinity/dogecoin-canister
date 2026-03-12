@@ -279,8 +279,7 @@ This endpoint returns information about the canister's current view of the Dogec
 * `difficulty`: The difficulty of the tip block.
 * `utxos_length`: The total number of UTXOs up to the main chain tip.
 
-The main chain is defined as the longest chain of blocks with an "uncontested" tip — meaning there is no other block at
-the same height as the tip.
+The main chain is defined as the chain with the most accumulated proof-of-work (difficulty), following Dogecoin's consensus rule.
 
 This endpoint is primarily intended for monitoring purposes, such as by the watchdog canister. Unlike other endpoints:
 

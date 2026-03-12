@@ -1,8 +1,29 @@
 benches:
+  get_blockchain_info_many_branches:
+    total:
+      calls: 1
+      instructions: 25318517
+      heap_increase: 0
+      stable_memory_increase: 0
+    scopes: {}
+  get_blockchain_info_single_chain:
+    total:
+      calls: 1
+      instructions: 50198830
+      heap_increase: 5
+      stable_memory_increase: 0
+    scopes: {}
+  get_blockchain_info_with_forks:
+    total:
+      calls: 1
+      instructions: 50699276
+      heap_increase: 1
+      stable_memory_increase: 0
+    scopes: {}
   get_metrics:
     total:
       calls: 1
-      instructions: 6388212
+      instructions: 3446166
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
@@ -36,35 +57,35 @@ benches:
   insert_block_headers:
     total:
       calls: 1
-      instructions: 1424356974
+      instructions: 1424266681
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_multiple_times:
     total:
       calls: 1
-      instructions: 13381079576
+      instructions: 13373426876
       heap_increase: 9
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_multiple_times_regtest_without_auxpow:
     total:
       calls: 1
-      instructions: 3483950627
+      instructions: 3483373311
       heap_increase: 3
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_regtest_without_auxpow:
     total:
       calls: 1
-      instructions: 3459065371
+      instructions: 3458483378
       heap_increase: 3
       stable_memory_increase: 0
     scopes: {}
   insert_block_with_10k_transactions:
     total:
       calls: 1
-      instructions: 2036548488
+      instructions: 2036548497
       heap_increase: 69
       stable_memory_increase: 0
     scopes:
@@ -91,7 +112,7 @@ benches:
   insert_block_with_1k_transactions:
     total:
       calls: 1
-      instructions: 195151103
+      instructions: 195151112
       heap_increase: 8
       stable_memory_increase: 0
     scopes:
@@ -118,7 +139,7 @@ benches:
   pre_upgrade_with_many_unstable_blocks:
     total:
       calls: 1
-      instructions: 6889525083
+      instructions: 6889525095
       heap_increase: 0
       stable_memory_increase: 1024
     scopes:
