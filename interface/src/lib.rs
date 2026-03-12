@@ -585,6 +585,14 @@ pub enum Flag {
     Disabled,
 }
 
+#[derive(CandidType, Deserialize)]
+pub enum CanisterArg {
+    #[serde(rename = "init")]
+    Init(InitConfig),
+    #[serde(rename = "upgrade")]
+    Upgrade(Option<SetConfigRequest>),
+}
+
 /// The config used to initialize the canister.
 ///
 /// This struct is equivalent to `Config`, except that all its fields are optional.
@@ -783,6 +791,28 @@ impl Fees {
             get_block_headers_maximum: 10_000_000_000,
         }
     }
+}
+
+/// Information about the blockchain as seen by the canister.
+///
+/// Returns information about the main chain tip. The main chain is the
+/// canister's best guess at what the Dogecoin network considers the canonical chain.
+/// It is defined as the chain with the most accumulated proof-of-work (difficulty),
+/// following Dogecoin's consensus rule. When accumulated difficulties are tied,
+/// the longest branch (by block count) wins. If branches still tie on both
+/// criteria, the chain ends at the fork point (contested tip).
+#[derive(CandidType, Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct BlockchainInfo {
+    /// The height of the main chain tip.
+    pub height: Height,
+    /// The hash of the tip block.
+    pub block_hash: BlockHash,
+    /// Unix timestamp of the tip block (seconds since epoch).
+    pub timestamp: u32,
+    /// Difficulty of the tip block.
+    pub difficulty: u128,
+    /// Total number of UTXOs up to the main chain tip (stable + unstable main chain blocks).
+    pub utxos_length: u64,
 }
 
 #[cfg(test)]

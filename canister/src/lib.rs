@@ -27,8 +27,8 @@ use crate::{
 pub use api::get_metrics;
 pub use api::send_transaction;
 pub use api::set_config;
-use candid::{CandidType, Deserialize};
 pub use heartbeat::heartbeat;
+pub use ic_doge_interface::CanisterArg;
 use ic_doge_interface::{
     Config, Flag, GetBalanceError, GetBalanceRequest, GetBlockHeadersError, GetBlockHeadersRequest,
     GetBlockHeadersResponse, GetCurrentFeePercentilesRequest, GetUtxosError, GetUtxosRequest,
@@ -92,14 +92,6 @@ fn reset_syncing_state(state: &mut State) {
     print("Resetting syncing state...");
     state.syncing_state.is_fetching_blocks = false;
     state.syncing_state.response_to_process = None;
-}
-
-#[derive(CandidType, Deserialize)]
-pub enum CanisterArg {
-    #[serde(rename = "init")]
-    Init(InitConfig),
-    #[serde(rename = "upgrade")]
-    Upgrade(Option<SetConfigRequest>),
 }
 
 /// Initializes the state of the Dogecoin canister.
@@ -192,6 +184,10 @@ pub fn get_config() -> Config {
         burn_cycles: s.burn_cycles,
         lazily_evaluate_fee_percentiles: s.lazily_evaluate_fee_percentiles,
     })
+}
+
+pub fn get_blockchain_info() -> types::BlockchainInfo {
+    with_state(state::blockchain_info)
 }
 
 // We use 8MiB buffer
@@ -778,6 +774,39 @@ mod test {
         with_state(|s| {
             assert_eq!(s.disable_api_if_not_fully_synced, Flag::Enabled);
         });
+    }
+
+    #[test]
+    fn get_blockchain_info_returns_correct_info() {
+        let network = Network::Mainnet;
+        init(InitConfig {
+            stability_threshold: Some(1),
+            network: Some(network),
+            ..Default::default()
+        });
+
+        let genesis = genesis_block(network);
+        let tip_info = get_blockchain_info();
+
+        // After init, the tip is the Dogecoin genesis block for the configured network.
+        assert_eq!(tip_info.height, 0);
+        assert_eq!(tip_info.block_hash, genesis.block_hash().to_vec());
+        assert_eq!(tip_info.timestamp, genesis.header().time);
+        assert_eq!(tip_info.difficulty, genesis.difficulty(network));
+        // Genesis block has 1 coinbase output.
+        assert_eq!(tip_info.utxos_length, 1);
+    }
+
+    #[test]
+    fn get_blockchain_info_succeeds_when_api_disabled() {
+        init(InitConfig {
+            api_access: Some(Flag::Disabled),
+            ..Default::default()
+        });
+
+        let info = get_blockchain_info();
+        assert_eq!(info.height, 0);
+        assert_eq!(info.utxos_length, 1);
     }
 
     #[test]

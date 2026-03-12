@@ -257,6 +257,35 @@ set_config : (set_config_request) -> ();
 
 This endpoint is used to update the configuration. The watchdog canister can only set the API access flag. All other configuration can only be updated by the controller of the canister. For the main Dogecoin canister (connected to Dogecoin mainnet), the only controller is the NNS root canister.
 
+### `get_blockchain_info`
+
+```
+type blockchain_info = record {
+  height : block_height;
+  block_hash : block_hash;
+  timestamp : nat32;
+  difficulty : nat;
+  utxos_length : nat64;
+};
+
+get_blockchain_info : () -> (blockchain_info) query;
+```
+
+This endpoint returns information about the canister's current view of the Dogecoin blockchain, which includes the following:
+
+* `height`: The height of the main chain tip.
+* `block_hash`: The hash of the tip block as a `block_hash` (blob, 32 bytes).
+* `timestamp`: The Unix timestamp of the tip block.
+* `difficulty`: The difficulty of the tip block.
+* `utxos_length`: The total number of UTXOs up to the main chain tip.
+
+The main chain is defined as the chain with the most accumulated proof-of-work (difficulty), following Dogecoin's consensus rule.
+
+This endpoint is primarily intended for monitoring purposes, such as by the watchdog canister. Unlike other endpoints:
+
+* It does **not** require the API to be enabled (`api_access` flag).
+* It does **not** require the canister to be fully synced.
+
 ### Byte Order
 
 Note that Dogecoin inherits [Bitcoin's byte order quick](https://learnmeabitcoin.com/technical/general/byte-order), that is, the byte order is reversed for transaction and block hashes when displayed, for example, in logs and blockchain explorers.
