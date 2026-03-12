@@ -22,9 +22,7 @@ This proposal applies the latest changes from the upstream Bitcoin canister, tha
 
 2. changes the main chain selection rule so that the chain with the greatest accumulated proof-of-work is considered the main chain. The canister's main chain selection used by the `dogecoin_get_balance`, `dogecoin_get_utxos`, `dogecoin_get_current_fee_percentiles`, and `dogecoin_get_block_headers` endpoints previously relied on the longest chain by block count. This does not match Dogecoin's consensus rule, which defines the main chain as the one with the most accumulated proof-of-work. In practice, on the Dogecoin mainnet, difficulty adjustments are gradual and bounded, so the chain with the most work is also typically the longest. For correctness and consistency with Dogecoin, this upgrade adds the greatest accumulated proof-of-work in the main chain selection. Note that this upgrade does not affect when blocks are considered stable as block stability already relies on the accumulated proof-of-work.
 
-3. adds network validation for addresses in `dogecoin_get_balance` and `dogecoin_get_utxos` requests so that an error is returned to the user if the address is for a different network (e.g. regtest address for the mainnet canister).
-
-4. adds unified canister arguments with init and upgrade variants to ease construction of the init and upgrade arguments of the canister.
+3. adds `burn_cycles` field to `SetConfigRequest` in order to be able to set the corresponding configuration flag during upgrades and when calling the `set_config` endpoint.
 
 ## Release Notes
 
