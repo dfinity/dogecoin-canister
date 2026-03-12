@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [release/2026-03-12] - 2026-03-12
+
+### Changed
+- Cherry-pick from dfinity/bitcoin-canister@master (ff779883..c3c089f) ([#100](https://github.com/dfinity/dogecoin-canister/pull/100))
+- Cherry-pick from dfinity/bitcoin-canister@master (9dcf7e6..d9ab390) ([#97](https://github.com/dfinity/dogecoin-canister/pull/97))
+- Cherry-pick from dfinity/bitcoin-canister@master (7f84397) ([#95](https://github.com/dfinity/dogecoin-canister/pull/95))
+
+
 ## [release/2026-02-06] - 2026-02-06
 
 ### Changed
@@ -63,3 +71,5 @@ Initial pre-release of the Dogecoin canister, adapted from the Bitcoin canister 
 [release/2025-10-24]: https://github.com/dfinity/dogecoin-canister/compare/pre-release/2025-10-17...release/2025-10-24
 [pre-release/2025-10-17]: https://github.com/dfinity/dogecoin-canister/compare/baseline-fork...pre-release/2025-10-17
 
+
+[release/2026-03-12]: https://github.com/dfinity/dogecoin-canister/compare/release/2026-02-06...release/2026-03-12
