@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Add `BlockchainInfo` struct for the `get_blockchain_info` endpoint return type.
 
 - Cherry-pick from dfinity/bitcoin-canister@master (7f84397) ([#95](https://github.com/dfinity/dogecoin-canister/pull/95))
-  - Add a `burn_cycles` field to type `SetConfigRequest`.
+  - Add missing `burn_cycles` field to type `SetConfigRequest`. **Breaking change:** the `SetConfigRequest` type now requires this field.
 
 
 ## [0.2.0] - 2026-02-06
