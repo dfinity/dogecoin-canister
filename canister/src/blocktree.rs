@@ -237,10 +237,6 @@ impl<Block> BlockTree<Block> {
         }
     }
 
-    pub fn into_root(self) -> Block {
-        self.root
-    }
-
     pub fn root(&self) -> &Block {
         &self.root
     }

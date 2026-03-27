@@ -37,7 +37,6 @@ use ic_doge_interface::{
 use ic_doge_types::Block;
 use ic_stable_structures::reader::{BufferedReader, Reader};
 use ic_stable_structures::writer::{BufferedWriter, Writer};
-use ic_stable_structures::Memory;
 pub use memory::get_memory;
 use serde_bytes::ByteBuf;
 use state::main_chain_height;
@@ -45,9 +44,6 @@ use std::convert::TryInto;
 use std::io::Write;
 use std::{cell::RefCell, cmp::max};
 use utxo_set::UtxoSet;
-
-/// WASM page size is 64KB
-const WASM_PAGE_SIZE: u64 = 1 << 15;
 
 /// The maximum number of blocks the canister can be behind the tip to be considered synced.
 const SYNCED_THRESHOLD: u32 = 2;
@@ -223,15 +219,17 @@ pub fn post_upgrade(config_update: Option<SetConfigRequest>) {
 
     let reader = Reader::new(&memory, 0);
     let mut buffered_reader = BufferedReader::new(BUFFER_SIZE, reader);
-    let state = ciborium::de::from_reader(&mut buffered_reader).map(|mut state: State| {
-        let cache = unstable_blocks::BlocksCacheInStableMem::new(
-            state.network(),
-            memory::get_unstable_blocks_memory(),
-        );
-        // Reset cache to stable memory
-        state.replace_unstable_blocks_cache(cache);
-        state
-    }).expect("Failed to read state.");
+    let state = ciborium::de::from_reader(&mut buffered_reader)
+        .map(|mut state: State| {
+            let cache = unstable_blocks::BlocksCacheInStableMem::new(
+                state.network(),
+                memory::get_unstable_blocks_memory(),
+            );
+            // Reset cache to stable memory
+            state.replace_unstable_blocks_cache(cache);
+            state
+        })
+        .expect("Failed to read state.");
 
     set_state(state);
 
