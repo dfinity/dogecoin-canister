@@ -2,14 +2,14 @@ use crate::validation::ValidationContextError;
 use crate::{
     address_utxoset::AddressUtxoSet,
     block_header_store::BlockHeaderStore,
-    blocktree::{BlockTree, CachedBlock, ChainBlock},
+    blocktree::ChainBlock,
     metrics::Metrics,
     runtime::{duration_since_epoch, inc_performance_counter, performance_counter, print},
     types::{
         into_dogecoin_network, Address, BlockHeaderBlob, GetSuccessorsCompleteResponse,
         GetSuccessorsPartialResponse, Slicing,
     },
-    unstable_blocks::{self, BlocksCache, GenericUnstableBlocks, UnstableBlocks},
+    unstable_blocks::{self, BlocksCache, UnstableBlocks},
     validation::ValidationContext,
     UtxoSet,
 };
@@ -27,12 +27,12 @@ use serde::{Deserialize, Serialize};
 // expensive in production.
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct GenericState<Tree> {
+pub struct State {
     /// The UTXOs of all stable blocks since genesis.
     pub utxos: UtxoSet,
 
     /// Blocks inserted, but are not considered stable yet.
-    pub unstable_blocks: GenericUnstableBlocks<Tree>,
+    pub unstable_blocks: UnstableBlocks,
 
     /// State used for syncing new blocks.
     pub syncing_state: SyncingState,
@@ -75,8 +75,6 @@ pub struct GenericState<Tree> {
     #[serde(default)]
     pub lazily_evaluate_fee_percentiles: Flag,
 }
-
-pub type State = GenericState<BlockTree<CachedBlock>>;
 
 impl State {
     /// Create a new blockchain.
@@ -124,9 +122,7 @@ impl State {
     pub fn replace_unstable_blocks_cache<Cache: BlocksCache + 'static>(&mut self, cache: Cache) {
         self.unstable_blocks.replace_blocks_cache(cache)
     }
-}
 
-impl<A> GenericState<A> {
     pub fn network(&self) -> Network {
         self.utxos.network()
     }
@@ -134,40 +130,6 @@ impl<A> GenericState<A> {
     /// The height of the latest stable block.
     pub fn stable_height(&self) -> Height {
         self.utxos.next_height()
-    }
-
-    /// Mapping the tree type in unstable blocks to a different type.
-    pub fn map_tree<B, F: FnOnce(A) -> B>(self, f: F) -> GenericState<B> {
-        let GenericState {
-            utxos,
-            unstable_blocks,
-            syncing_state,
-            blocks_source,
-            fee_percentiles_cache,
-            stable_block_headers,
-            fees,
-            metrics,
-            api_access,
-            disable_api_if_not_fully_synced,
-            watchdog_canister,
-            burn_cycles,
-            lazily_evaluate_fee_percentiles,
-        } = self;
-        GenericState {
-            utxos,
-            unstable_blocks: unstable_blocks.map_tree(f),
-            syncing_state,
-            blocks_source,
-            fee_percentiles_cache,
-            stable_block_headers,
-            fees,
-            metrics,
-            api_access,
-            disable_api_if_not_fully_synced,
-            watchdog_canister,
-            burn_cycles,
-            lazily_evaluate_fee_percentiles,
-        }
     }
 }
 
