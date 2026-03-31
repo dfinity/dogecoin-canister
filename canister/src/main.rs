@@ -61,7 +61,6 @@ async fn heartbeat() {
     ic_doge_canister::heartbeat().await
 }
 
-// TODO: change to Koinu or Amount?
 #[update(manual_reply = true)]
 pub fn dogecoin_get_balance(request: GetBalanceRequest) -> PhantomData<Amount> {
     match ic_doge_canister::get_balance(request) {
