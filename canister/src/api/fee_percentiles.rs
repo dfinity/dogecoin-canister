@@ -1,5 +1,5 @@
 use crate::{
-    blocktree::{CachedBlock, ChainBlock},
+    blocktree::CachedBlock,
     charge_cycles,
     runtime::{performance_counter, print},
     state::{FeePercentilesCache, State},

@@ -2,7 +2,6 @@ use crate::validation::ValidationContextError;
 use crate::{
     address_utxoset::AddressUtxoSet,
     block_header_store::BlockHeaderStore,
-    blocktree::ChainBlock,
     metrics::Metrics,
     runtime::{duration_since_epoch, inc_performance_counter, performance_counter, print},
     types::{
