@@ -8,7 +8,10 @@ use canbench_rs::{bench, bench_fn, BenchResult};
 use ic_cdk::init;
 use ic_doge_canister::state::main_chain_height;
 use ic_doge_canister::{types::BlockHeaderBlob, with_state, with_state_mut};
-use ic_doge_interface::{InitConfig, Network};
+use ic_doge_interface::{
+    GetBalanceRequest, GetBlockHeadersRequest, GetCurrentFeePercentilesRequest, GetUtxosRequest,
+    InitConfig, Network, NetworkInRequest,
+};
 use ic_doge_test_utils::{build_regtest_chain, BlockBuilder, TransactionBuilder};
 use ic_doge_types::Block;
 use std::cell::RefCell;
@@ -571,6 +574,218 @@ fn insert_block_headers_multiple_times_regtest_without_auxpow() -> BenchResult {
     assert_next_block_headers_max_height(block_headers_to_insert - 1);
 
     bench_result
+}
+
+#[bench(raw)]
+fn dogecoin_get_balance_baseline() -> BenchResult {
+    bench_get_balance(3)
+}
+
+#[bench(raw)]
+fn dogecoin_get_balance_stress() -> BenchResult {
+    bench_get_balance(100)
+}
+
+fn bench_get_balance(num_outputs_to_address_per_block: usize) -> BenchResult {
+    let blocks_to_insert = 100;
+    let num_transactions_per_block = 3000;
+    let num_outputs_per_transaction = 3;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some(blocks_to_insert as u128),
+        ..Default::default()
+    });
+
+    let address = parsed_address();
+    let genesis = genesis_block(dogecoin::Network::Regtest);
+    let mut counter = 1u64;
+    let chain = build_chain_from(
+        *genesis.header,
+        blocks_to_insert,
+        num_transactions_per_block,
+        num_outputs_per_transaction,
+        num_outputs_to_address_per_block,
+        &address,
+        &mut counter,
+    );
+
+    with_state_mut(|s| {
+        for block in &chain {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    assert_chain_height(blocks_to_insert);
+
+    bench_fn(|| {
+        ic_doge_canister::get_balance_query(GetBalanceRequest {
+            address: ADDRESS.to_string(),
+            network: NetworkInRequest::Regtest,
+            min_confirmations: None,
+        })
+        .unwrap();
+    })
+}
+
+#[bench(raw)]
+fn dogecoin_get_utxos_baseline() -> BenchResult {
+    bench_get_utxos(3)
+}
+
+#[bench(raw)]
+fn dogecoin_get_utxos_stress() -> BenchResult {
+    bench_get_utxos(100)
+}
+
+fn bench_get_utxos(num_outputs_to_address_per_block: usize) -> BenchResult {
+    let blocks_to_insert = 100;
+    let num_transactions_per_block = 3000;
+    let num_outputs_per_transaction = 3;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some(blocks_to_insert as u128),
+        ..Default::default()
+    });
+
+    let address = parsed_address();
+    let genesis = genesis_block(dogecoin::Network::Regtest);
+    let mut counter = 1u64;
+    let chain = build_chain_from(
+        *genesis.header,
+        blocks_to_insert,
+        num_transactions_per_block,
+        num_outputs_per_transaction,
+        num_outputs_to_address_per_block,
+        &address,
+        &mut counter,
+    );
+
+    with_state_mut(|s| {
+        for block in &chain {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    assert_chain_height(blocks_to_insert);
+
+    let mut total_utxos = 0;
+    let result = bench_fn(|| {
+        total_utxos = 0;
+        let mut page = None;
+        loop {
+            let response = ic_doge_canister::get_utxos_query(GetUtxosRequest {
+                address: ADDRESS.to_string(),
+                network: NetworkInRequest::Regtest,
+                filter: page.map(ic_doge_interface::UtxosFilterInRequest::Page),
+            })
+            .unwrap();
+            total_utxos += response.utxos.len();
+            match response.next_page {
+                Some(next) => page = Some(next),
+                None => break,
+            }
+        }
+    });
+
+    let expected_utxos = blocks_to_insert * num_outputs_to_address_per_block;
+    assert_eq!(
+        total_utxos, expected_utxos,
+        "Expected {} UTXOs for the address, got {}.",
+        expected_utxos, total_utxos
+    );
+    result
+}
+
+#[bench(raw)]
+fn dogecoin_get_current_fee_percentiles() -> BenchResult {
+    let blocks_to_insert = 100;
+    let num_transactions_per_block = 3000;
+    let num_outputs_per_transaction = 3;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some(blocks_to_insert as u128),
+        ..Default::default()
+    });
+
+    let address = parsed_address();
+    let genesis = genesis_block(dogecoin::Network::Regtest);
+    let mut counter = 1u64;
+    let chain = build_chain_from(
+        *genesis.header,
+        blocks_to_insert,
+        num_transactions_per_block,
+        num_outputs_per_transaction,
+        0,
+        &address,
+        &mut counter,
+    );
+
+    with_state_mut(|s| {
+        for block in &chain {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    assert_chain_height(blocks_to_insert);
+
+    bench_fn(|| {
+        ic_doge_canister::get_current_fee_percentiles_without_fees(
+            GetCurrentFeePercentilesRequest {
+                network: NetworkInRequest::Regtest,
+            },
+        );
+    })
+}
+
+#[bench(raw)]
+fn dogecoin_get_block_headers_baseline() -> BenchResult {
+    bench_get_block_headers(100)
+}
+
+#[bench(raw)]
+fn dogecoin_get_block_headers_stress() -> BenchResult {
+    bench_get_block_headers(5000)
+}
+
+fn bench_get_block_headers(blocks_to_insert: usize) -> BenchResult {
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some(blocks_to_insert as u128),
+        ..Default::default()
+    });
+
+    let address = parsed_address();
+    let genesis = genesis_block(dogecoin::Network::Regtest);
+    let mut counter = 1u64;
+    let chain = build_chain_from(
+        *genesis.header,
+        blocks_to_insert,
+        1,
+        1,
+        0,
+        &address,
+        &mut counter,
+    );
+
+    with_state_mut(|s| {
+        for block in &chain {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    assert_chain_height(blocks_to_insert);
+
+    bench_fn(|| {
+        ic_doge_canister::get_block_headers_without_fees(GetBlockHeadersRequest {
+            start_height: 0,
+            end_height: None,
+            network: NetworkInRequest::Regtest,
+        })
+        .unwrap();
+    })
 }
 
 fn main() {}
