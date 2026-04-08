@@ -50,6 +50,7 @@ pub fn build_chain_from(
 
 /// Like [`build_chain_from`], but streams each block to `on_block` instead of
 /// collecting them, avoiding the need to hold the entire chain in memory.
+#[allow(clippy::too_many_arguments)]
 pub fn build_chain_from_for_each(
     prev_header: Header,
     num_blocks: usize,
