@@ -1,4 +1,4 @@
-use crate::{blocktree::ChainBlock, state::State, unstable_blocks};
+use crate::{state::State, unstable_blocks};
 use bitcoin::{block::Header, hashes::Hash};
 use ic_doge_types::BlockHash;
 use ic_doge_validation::HeaderStore;

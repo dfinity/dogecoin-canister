@@ -1,7 +1,6 @@
 use crate::{
     blocktree::{
-        BlockChain, BlockDoesNotExtendTree, BlockTree, CachedBlock, ChainBlock, Depth,
-        DifficultyBasedDepth,
+        BlockChain, BlockDoesNotExtendTree, BlockTree, CachedBlock, Depth, DifficultyBasedDepth,
     },
     runtime::print,
     types::{Address, TxOut},
@@ -68,7 +67,7 @@ pub fn testnet_unstable_max_depth_difference(
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct UnstableBlocks {
     stability_threshold: u32,
-    tree: BlockTree<CachedBlock>,
+    tree: BlockTree,
     outpoints_cache: OutPointsCache,
     network: Network,
     // The headers of the blocks that are expected to be received.
@@ -313,7 +312,7 @@ pub fn push(
 /// difficulties are tied, the longest branch (by block count) wins. If
 /// branches still tie on both criteria, the chain ends at the fork point
 /// (contested tip).
-pub fn get_main_chain(blocks: &UnstableBlocks) -> BlockChain<'_, CachedBlock> {
+pub fn get_main_chain(blocks: &UnstableBlocks) -> BlockChain<'_> {
     blocks.tree.main_chain_by_difficulty()
 }
 
@@ -337,7 +336,7 @@ pub fn blocks_count(blocks: &UnstableBlocks) -> usize {
 pub fn get_chain_with_tip<'a>(
     blocks: &'a UnstableBlocks,
     tip: &BlockHash,
-) -> Option<(BlockChain<'a, CachedBlock>, Vec<&'a CachedBlock>)> {
+) -> Option<(BlockChain<'a>, Vec<&'a CachedBlock>)> {
     blocks.tree.get_chain_with_tip(tip)
 }
 
