@@ -1,3 +1,6 @@
+mod utils;
+
+use crate::utils::build_chain_from;
 use bitcoin::consensus::Decodable;
 use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::{block::Header, consensus::Encodable, dogecoin, dogecoin::Block as DogecoinBlock};
@@ -11,8 +14,44 @@ use ic_doge_types::Block;
 use std::cell::RefCell;
 use std::str::FromStr;
 
+const ADDRESS: &str = "mwSSBD3NCriNXNMgd6dr2N2rxX9M9zXqrp";
+
+fn parsed_address() -> dogecoin::Address {
+    dogecoin::Address::from_str(ADDRESS)
+        .unwrap()
+        .assume_checked()
+}
+
 thread_local! {
     static MAINNET_BLOCKS: RefCell<Vec<Block>> =  const { RefCell::new(vec![])};
+}
+
+// Asserts that all blocks have been inserted so benchmarks are not silently run on a partial chain.
+// If block insertion hits the instruction limit, the IC will trap, silently leaving fewer blocks than expected.
+// Without this check, the benchmark could still run and report misleadingly low instruction counts.
+fn assert_chain_height(expected: usize) {
+    with_state(|s| {
+        let chain_len = main_chain_height(s) as usize;
+        assert_eq!(
+            chain_len, expected,
+            "Expected all blocks to be inserted. Max height should be {}, got {}.",
+            expected, chain_len
+        );
+    });
+}
+
+// Asserts that all block headers have been inserted so benchmarks are not silently run on partial data.
+fn assert_next_block_headers_max_height(expected: u32) {
+    with_state(|s| {
+        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
+            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
+        );
+        assert_eq!(
+            max_height, expected,
+            "Expected all headers to be inserted. Max height should be {}, got {}.",
+            expected, max_height
+        );
+    });
 }
 
 #[init]
@@ -42,28 +81,34 @@ fn init() {
 // Insert the first 300 blocks of the Dogecoin mainnet.
 #[bench(raw)]
 fn insert_300_blocks() -> BenchResult {
+    let blocks_to_insert = 300;
+
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Mainnet),
         stability_threshold: Some(144),
         ..Default::default()
     });
 
-    bench_fn(|| {
+    let result = bench_fn(|| {
         with_state_mut(|s| {
-            for i in 0..300 {
+            for i in 0..blocks_to_insert {
                 ic_doge_canister::state::insert_block(
                     s,
-                    MAINNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
+                    MAINNET_BLOCKS.with(|b| b.borrow()[i].clone()),
                 )
                 .unwrap();
             }
         });
-    })
+    });
+    assert_chain_height(blocks_to_insert);
+    result
 }
 
 // Get the metrics when there are many unstable blocks.
 #[bench(raw)]
 fn get_metrics() -> BenchResult {
+    let blocks_to_insert = 3000;
+
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Mainnet),
         stability_threshold: Some(3000),
@@ -71,14 +116,16 @@ fn get_metrics() -> BenchResult {
     });
 
     with_state_mut(|s| {
-        for i in 0..3000 {
+        for i in 0..blocks_to_insert {
             ic_doge_canister::state::insert_block(
                 s,
-                MAINNET_BLOCKS.with(|b| b.borrow()[i as usize].clone()),
+                MAINNET_BLOCKS.with(|b| b.borrow()[i].clone()),
             )
             .unwrap();
         }
     });
+
+    assert_chain_height(blocks_to_insert);
 
     bench_fn(|| {
         ic_doge_canister::get_metrics();
@@ -107,6 +154,8 @@ fn insert_block_headers() -> BenchResult {
         }
     });
 
+    assert_chain_height(blocks_to_insert as usize);
+
     // Compute the next block headers.
     let next_block_headers = MAINNET_BLOCKS.with(|b| {
         let blocks = b.borrow();
@@ -127,18 +176,7 @@ fn insert_block_headers() -> BenchResult {
         });
     });
 
-    with_state(|s| {
-        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
-            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
-        );
-        assert_eq!(
-            max_height,
-            blocks_to_insert + block_headers_to_insert,
-            "Expected all headers to be inserted. Max height should be {}, got {}.",
-            blocks_to_insert + block_headers_to_insert,
-            max_height
-        );
-    });
+    assert_next_block_headers_max_height(blocks_to_insert + block_headers_to_insert);
 
     bench_result
 }
@@ -178,16 +216,7 @@ fn insert_block_headers_multiple_times() -> BenchResult {
         });
     });
 
-    with_state(|s| {
-        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
-            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
-        );
-        assert_eq!(
-            max_height, block_headers_to_insert,
-            "Expected all headers to be inserted. Max height should be {}, got {}.",
-            block_headers_to_insert, max_height
-        );
-    });
+    assert_next_block_headers_max_height(block_headers_to_insert);
 
     bench_result
 }
@@ -200,182 +229,6 @@ fn insert_block_with_10k_transactions() -> BenchResult {
 #[bench(raw)]
 fn insert_block_with_1k_transactions() -> BenchResult {
     bench_insert_block(1_000)
-}
-
-#[bench(raw)]
-fn pre_upgrade_with_many_unstable_blocks() -> BenchResult {
-    let blocks = build_regtest_chain(3000, 100, false);
-
-    ic_doge_canister::init(InitConfig {
-        network: Some(Network::Regtest),
-        ..Default::default()
-    });
-
-    // Insert the blocks.
-    with_state_mut(|s| {
-        for block in blocks.into_iter().skip(1) {
-            ic_doge_canister::state::insert_block(s, block).unwrap();
-        }
-    });
-
-    bench_fn(|| {
-        ic_doge_canister::pre_upgrade();
-    })
-}
-
-// Benchmarks `get_blockchain_info` on a single linear chain (typical mainnet scenario).
-#[bench(raw)]
-fn get_blockchain_info_single_chain() -> BenchResult {
-    let blocks_to_insert: usize = 1000;
-
-    ic_doge_canister::init(InitConfig {
-        network: Some(Network::Regtest),
-        stability_threshold: Some(2000), // Set larger than blocks_to_insert to ensure inserted blocks form a long unstable chain
-        ..Default::default()
-    });
-
-    let genesis = genesis_block(dogecoin::Network::Regtest);
-    let mut counter = 1u64;
-    let chain = build_chain_from(*genesis.header, blocks_to_insert, &mut counter);
-
-    with_state_mut(|s| {
-        for block in &chain {
-            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
-        }
-    });
-
-    with_state(|s| {
-        let chain_len = main_chain_height(s) as usize;
-        assert_eq!(
-            chain_len, blocks_to_insert,
-            "Expected all blocks to be inserted. Max height should be {}, got {}.",
-            blocks_to_insert, chain_len
-        );
-    });
-
-    bench_fn(|| {
-        ic_doge_canister::get_blockchain_info();
-    })
-}
-
-// Benchmarks `get_blockchain_info` with a main chain and a few short forks.
-#[bench(raw)]
-fn get_blockchain_info_with_forks() -> BenchResult {
-    let blocks_to_insert: usize = 1000;
-
-    ic_doge_canister::init(InitConfig {
-        network: Some(Network::Regtest),
-        stability_threshold: Some(2000), // Set larger than blocks_to_insert to ensure inserted blocks form a long unstable chain
-        ..Default::default()
-    });
-
-    let genesis = genesis_block(dogecoin::Network::Regtest);
-    let mut counter = 1u64;
-    let chain = build_chain_from(*genesis.header, blocks_to_insert, &mut counter);
-
-    with_state_mut(|s| {
-        for block in &chain {
-            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
-        }
-    });
-
-    // Add 5 forks at various heights, each 10 blocks long.
-    for &fork_point in &[200, 400, 500, 600, 700] {
-        let fork = build_chain_from(*chain[fork_point].header(), 10, &mut counter);
-        with_state_mut(|s| {
-            for block in &fork {
-                ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
-            }
-        });
-    }
-
-    with_state(|s| {
-        let chain_len = main_chain_height(s) as usize;
-        assert_eq!(
-            chain_len, blocks_to_insert,
-            "Expected all blocks to be inserted. Max height should be {}, got {}.",
-            blocks_to_insert, chain_len
-        );
-    });
-
-    bench_fn(|| {
-        ic_doge_canister::get_blockchain_info();
-    })
-}
-
-// Benchmarks `get_blockchain_info` with many branches of varying lengths (testnet-like scenario).
-#[bench(raw)]
-fn get_blockchain_info_many_branches() -> BenchResult {
-    let blocks_to_insert = 500;
-
-    ic_doge_canister::init(InitConfig {
-        network: Some(Network::Regtest),
-        stability_threshold: Some(2000), // Set larger than blocks_to_insert to ensure inserted blocks form a long unstable chain
-        ..Default::default()
-    });
-
-    let genesis = genesis_block(dogecoin::Network::Regtest);
-    let mut counter = 1u64;
-    let chain = build_chain_from(*genesis.header, blocks_to_insert, &mut counter);
-
-    with_state_mut(|s| {
-        for block in &chain {
-            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
-        }
-    });
-
-    // Add 49 forks at every 10th block, with varying lengths (5 to 14 blocks).
-    for i in 0..49usize {
-        let fork_point = i * 10;
-        let fork_len = 5 + (i % 10);
-        let fork = build_chain_from(*chain[fork_point].header(), fork_len, &mut counter);
-        with_state_mut(|s| {
-            for block in &fork {
-                ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
-            }
-        });
-    }
-
-    with_state(|s| {
-        let chain_len = main_chain_height(s) as usize;
-        assert_eq!(
-            chain_len, blocks_to_insert,
-            "Expected all blocks to be inserted. Max height should be {}, got {}.",
-            blocks_to_insert, chain_len
-        );
-    });
-
-    bench_fn(|| {
-        ic_doge_canister::get_blockchain_info();
-    })
-}
-
-/// Builds a chain of `num_blocks` blocks extending from the given header.
-/// Each block has a unique coinbase transaction (using `value_counter` for unique outputs).
-fn build_chain_from(prev_header: Header, num_blocks: usize, value_counter: &mut u64) -> Vec<Block> {
-    const ADDRESS: &str = "mwSSBD3NCriNXNMgd6dr2N2rxX9M9zXqrp";
-    let address = dogecoin::Address::from_str(ADDRESS)
-        .unwrap()
-        .assume_checked();
-
-    let mut blocks = Vec::with_capacity(num_blocks);
-    let mut prev = prev_header;
-    for _ in 0..num_blocks {
-        let block = Block::new(
-            BlockBuilder::default()
-                .with_prev_header(prev)
-                .with_transaction(
-                    TransactionBuilder::coinbase()
-                        .with_output(&address, *value_counter)
-                        .build(),
-                )
-                .build(),
-        );
-        prev = *block.header();
-        blocks.push(block);
-        *value_counter += 1;
-    }
-    blocks
 }
 
 fn bench_insert_block(num_transactions: u32) -> BenchResult {
@@ -453,6 +306,186 @@ fn bench_insert_block(num_transactions: u32) -> BenchResult {
     })
 }
 
+#[bench(raw)]
+fn pre_upgrade_with_many_unstable_blocks() -> BenchResult {
+    let blocks_to_insert: usize = 3000;
+
+    let blocks = build_regtest_chain(blocks_to_insert as u32, 100, false);
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        ..Default::default()
+    });
+
+    // Insert the blocks.
+    with_state_mut(|s| {
+        for block in blocks.into_iter().skip(1) {
+            ic_doge_canister::state::insert_block(s, block).unwrap();
+        }
+    });
+
+    assert_chain_height(blocks_to_insert - 1);
+
+    bench_fn(|| {
+        ic_doge_canister::pre_upgrade();
+    })
+}
+
+// Benchmarks `get_blockchain_info` on a single linear chain (typical mainnet scenario).
+#[bench(raw)]
+fn get_blockchain_info_single_chain() -> BenchResult {
+    let blocks_to_insert: usize = 1000;
+    let num_transactions_per_block: usize = 300;
+    let num_outputs_per_transaction: usize = 3;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some(blocks_to_insert as u128),
+        ..Default::default()
+    });
+
+    let address = parsed_address();
+    let genesis = genesis_block(dogecoin::Network::Regtest);
+    let mut counter = 1u64;
+    let chain = build_chain_from(
+        *genesis.header,
+        blocks_to_insert,
+        num_transactions_per_block,
+        num_outputs_per_transaction,
+        0,
+        &address,
+        &mut counter,
+    );
+
+    with_state_mut(|s| {
+        for block in &chain {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    assert_chain_height(blocks_to_insert);
+
+    bench_fn(|| {
+        ic_doge_canister::get_blockchain_info();
+    })
+}
+
+// Benchmarks `get_blockchain_info` with a main chain and a few short forks.
+#[bench(raw)]
+fn get_blockchain_info_with_forks() -> BenchResult {
+    let blocks_to_insert: usize = 1000;
+    let num_transactions_per_block: usize = 300;
+    let num_outputs_per_transaction: usize = 3;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some(blocks_to_insert as u128),
+        ..Default::default()
+    });
+
+    let address = parsed_address();
+    let genesis = genesis_block(dogecoin::Network::Regtest);
+    let mut counter = 1u64;
+    let chain = build_chain_from(
+        *genesis.header,
+        blocks_to_insert,
+        num_transactions_per_block,
+        num_outputs_per_transaction,
+        0,
+        &address,
+        &mut counter,
+    );
+
+    with_state_mut(|s| {
+        for block in &chain {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    // Add 5 forks at various heights, each 10 blocks long.
+    for &fork_point in &[200, 400, 500, 600, 700] {
+        let fork = build_chain_from(
+            *chain[fork_point].header(),
+            10,
+            num_transactions_per_block,
+            num_outputs_per_transaction,
+            0,
+            &address,
+            &mut counter,
+        );
+        with_state_mut(|s| {
+            for block in &fork {
+                ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+            }
+        });
+    }
+
+    assert_chain_height(blocks_to_insert);
+
+    bench_fn(|| {
+        ic_doge_canister::get_blockchain_info();
+    })
+}
+
+// Benchmarks `get_blockchain_info` with many branches of varying lengths (testnet-like scenario).
+#[bench(raw)]
+fn get_blockchain_info_many_branches() -> BenchResult {
+    let blocks_to_insert = 1000;
+    let num_transactions_per_block: usize = 300;
+    let num_outputs_per_transaction: usize = 3;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some(blocks_to_insert as u128),
+        ..Default::default()
+    });
+
+    let address = parsed_address();
+    let genesis = genesis_block(dogecoin::Network::Regtest);
+    let mut counter = 1u64;
+    let chain = build_chain_from(
+        *genesis.header,
+        blocks_to_insert,
+        num_transactions_per_block,
+        num_outputs_per_transaction,
+        0,
+        &address,
+        &mut counter,
+    );
+
+    with_state_mut(|s| {
+        for block in &chain {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    // Add 49 forks at every 10th block, with varying lengths (5 to 14 blocks).
+    for i in 0..(blocks_to_insert / 10) - 1 {
+        let fork_point = i * 10;
+        let fork_len = 5 + (i % 10);
+        let fork = build_chain_from(
+            *chain[fork_point].header(),
+            fork_len,
+            num_transactions_per_block,
+            num_outputs_per_transaction,
+            0,
+            &address,
+            &mut counter,
+        );
+        with_state_mut(|s| {
+            for block in &fork {
+                ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+            }
+        });
+    }
+
+    assert_chain_height(blocks_to_insert);
+
+    bench_fn(|| {
+        ic_doge_canister::get_blockchain_info();
+    })
+}
+
 // Insert 250 block headers without AuxPow information in Regtest.
 #[bench(raw)]
 fn insert_block_headers_regtest_without_auxpow() -> BenchResult {
@@ -494,18 +527,7 @@ fn insert_block_headers_regtest_without_auxpow() -> BenchResult {
         });
     });
 
-    with_state(|s| {
-        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
-            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
-        );
-        assert_eq!(
-            max_height,
-            blocks_to_insert + block_headers_to_insert - 1,
-            "Expected all headers to be inserted. Max height should be {}, got {}.",
-            blocks_to_insert + block_headers_to_insert - 1,
-            max_height
-        );
-    });
+    assert_next_block_headers_max_height(blocks_to_insert + block_headers_to_insert - 1);
 
     bench_result
 }
@@ -546,18 +568,7 @@ fn insert_block_headers_multiple_times_regtest_without_auxpow() -> BenchResult {
         });
     });
 
-    with_state(|s| {
-        let max_height = s.unstable_blocks.next_block_headers_max_height().expect(
-            "Failed to get next_block_headers_max_height: no new block headers have been inserted.",
-        );
-        assert_eq!(
-            max_height,
-            block_headers_to_insert - 1,
-            "Expected all headers to be inserted. Max height should be {}, got {}.",
-            block_headers_to_insert - 1,
-            max_height
-        );
-    });
+    assert_next_block_headers_max_height(block_headers_to_insert - 1);
 
     bench_result
 }
