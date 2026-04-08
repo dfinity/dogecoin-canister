@@ -43,36 +43,52 @@ impl CachedBlock {
     pub fn block(&self) -> Block {
         self.cache.borrow().get(&self.block_hash).unwrap()
     }
+
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+
+    pub fn block_hash(&self) -> &BlockHash {
+        &self.block_hash
+    }
+
+    pub fn prev_block_hash(&self) -> BlockHash {
+        BlockHash::from(self.header().prev_blockhash)
+    }
+
+    pub fn difficulty(&self) -> u128 {
+        self.difficulty
+    }
 }
 
 /// Represents a non-empty block chain as:
 /// * the first block of the chain
 /// * the successors to this block (which can be an empty list)
 #[derive(Debug, PartialEq, Eq)]
-pub struct BlockChain<'a, Block> {
+pub struct BlockChain<'a> {
     // The first block of this `BlockChain`, i.e. the one at the lowest height.
-    first: &'a Block,
+    first: &'a CachedBlock,
     // The successor blocks of this `BlockChain`, i.e. the chain after the
     // `first` block.
-    successors: Vec<&'a Block>,
+    successors: Vec<&'a CachedBlock>,
 }
 
-impl<'a, Block> BlockChain<'a, Block> {
+impl<'a> BlockChain<'a> {
     /// Creates a new `BlockChain` with the given `first` block and an empty list
     /// of successors.
-    pub fn new(first: &'a Block) -> Self {
+    pub fn new(first: &'a CachedBlock) -> Self {
         Self {
             first,
             successors: vec![],
         }
     }
 
-    pub fn new_with_successors(first: &'a Block, successors: Vec<&'a Block>) -> Self {
+    pub fn new_with_successors(first: &'a CachedBlock, successors: Vec<&'a CachedBlock>) -> Self {
         Self { first, successors }
     }
 
     /// Appends a new block to the list of `successors` of this `BlockChain`.
-    pub fn push(&mut self, block: &'a Block) {
+    pub fn push(&mut self, block: &'a CachedBlock) {
         self.successors.push(block);
     }
 
@@ -81,11 +97,11 @@ impl<'a, Block> BlockChain<'a, Block> {
         self.successors.len() + 1
     }
 
-    pub fn first(&self) -> &'a Block {
+    pub fn first(&self) -> &'a CachedBlock {
         self.first
     }
 
-    pub fn tip(&self) -> &'a Block {
+    pub fn tip(&self) -> &'a CachedBlock {
         match self.successors.last() {
             None => {
                 // The chain consists of only one block, and that is the tip.
@@ -96,27 +112,10 @@ impl<'a, Block> BlockChain<'a, Block> {
     }
 
     /// Consumes this `BlockChain` and returns the entire chain of blocks.
-    pub fn into_chain(self) -> Vec<&'a Block> {
+    pub fn into_chain(self) -> Vec<&'a CachedBlock> {
         let mut chain = vec![self.first];
         chain.extend(self.successors);
         chain
-    }
-
-    /// Return the Block at the given index in the chain if the index is in range.
-    /// Otherwise return None.
-    pub fn get(&self, index: usize) -> Option<&'a Block> {
-        if index == 0 {
-            Some(self.first)
-        } else if index - 1 < self.successors.len() {
-            Some(self.successors[index - 1])
-        } else {
-            None
-        }
-    }
-
-    /// Return an iterator of all blocks in the chain starting from the first one.
-    pub fn iter(&self) -> impl Iterator<Item = &'a Block> + '_ {
-        std::iter::once(self.first).chain(self.successors.iter().copied())
     }
 }
 
@@ -181,13 +180,13 @@ impl Sub for DifficultyBasedDepth {
 
 /// Maintains a tree of connected blocks.
 #[derive(Debug, PartialEq, Eq)]
-pub struct BlockTree<Block> {
-    root: Block,
-    children: Vec<BlockTree<Block>>,
+pub struct BlockTree {
+    root: CachedBlock,
+    children: Vec<BlockTree>,
 }
 
-/// CachedBlock specific implementation
-impl BlockTree<CachedBlock> {
+/// Cache-specific methods
+impl BlockTree {
     /// Creates a new `BlockTree` with the given block as its root.
     pub fn new_with_cache<Cache: BlocksCache + 'static>(cache: Cache, root: Block) -> Self {
         Self::new_with_shared_cache(Rc::new(RefCell::new(Box::new(cache))), root)
@@ -228,16 +227,16 @@ impl BlockTree<CachedBlock> {
     }
 }
 
-impl<Block> BlockTree<Block> {
+impl BlockTree {
     /// Creates a new `BlockTree` with the given block as its root.
-    pub fn new(root: Block) -> Self {
+    pub fn new(root: CachedBlock) -> Self {
         Self {
             root,
             children: vec![],
         }
     }
 
-    pub fn root(&self) -> &Block {
+    pub fn root(&self) -> &CachedBlock {
         &self.root
     }
 
@@ -272,7 +271,7 @@ impl<Block> BlockTree<Block> {
             .collect()
     }
 
-    fn get_child_blocks(&self) -> Vec<&Block> {
+    fn get_child_blocks(&self) -> Vec<&CachedBlock> {
         self.children.iter().map(|c| &c.root).collect()
     }
 
@@ -295,44 +294,22 @@ impl<Block> BlockTree<Block> {
     }
 
     /// Returns all blocks in the tree.
-    pub fn blocks(&self) -> impl Iterator<Item = &Block> {
+    pub fn blocks(&self) -> impl Iterator<Item = &CachedBlock> {
         Box::new(
             std::iter::once(&self.root)
                 .chain(self.children.iter().flat_map(|child| child.blocks())),
-        ) as Box<dyn Iterator<Item = &Block>>
+        ) as Box<dyn Iterator<Item = &CachedBlock>>
     }
 }
 
-pub trait ChainBlock {
-    fn header(&self) -> &Header;
-    fn block_hash(&self) -> &BlockHash;
-    fn prev_block_hash(&self) -> BlockHash;
-    fn difficulty(&self) -> u128;
-}
-
-impl ChainBlock for CachedBlock {
-    fn header(&self) -> &Header {
-        &self.header
-    }
-    fn block_hash(&self) -> &BlockHash {
-        &self.block_hash
-    }
-    fn prev_block_hash(&self) -> BlockHash {
-        BlockHash::from(self.header().prev_blockhash)
-    }
-    fn difficulty(&self) -> u128 {
-        self.difficulty
-    }
-}
-
-impl<Block: ChainBlock> BlockTree<Block> {
+impl BlockTree {
     /// Extends the tree with the given block.
     ///
     /// Blocks can extend the tree in the following cases:
     ///   * The block is a successor of a block already in the tree.
     ///
     /// Note that `ValidationContext` ensures that the block to insert is not already present.
-    pub fn extend(&mut self, block: Block) -> Result<(), BlockDoesNotExtendTree> {
+    pub fn extend(&mut self, block: CachedBlock) -> Result<(), BlockDoesNotExtendTree> {
         debug_assert!(
             self.find(block.block_hash()).is_none(),
             "BUG: block {} is already present in the tree, but this should have been prevented when instantiating `ValidationContext`",
@@ -359,7 +336,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
     pub fn get_chain_with_tip<'a>(
         &'a self,
         tip: &BlockHash,
-    ) -> Option<(BlockChain<'a, Block>, Vec<&'a Block>)> {
+    ) -> Option<(BlockChain<'a>, Vec<&'a CachedBlock>)> {
         // Compute the chain in reverse order, as that's more efficient, and then
         // reverse it to get the answer in the correct order.
         self.get_chain_with_tip_reverse(tip)
@@ -383,10 +360,10 @@ impl<Block: ChainBlock> BlockTree<Block> {
     // Do a depth-first search to find the blockchain that ends with the given `tip`.
     // For performance reasons, the list is returned in the reverse order, starting
     // from `tip` and ending with `anchor`.
-    fn get_chain_with_tip_reverse<'a>(
-        &'a self,
+    fn get_chain_with_tip_reverse(
+        &self,
         tip: &BlockHash,
-    ) -> Option<(Vec<&'a Block>, Vec<&'a Block>)> {
+    ) -> Option<(Vec<&CachedBlock>, Vec<&CachedBlock>)> {
         if self.root.block_hash() == tip {
             return Some((vec![&self.root], self.get_child_blocks()));
         }
@@ -419,7 +396,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
     /// criteria, the chain ends at this node (contested tip).
     ///
     /// Runs in O(n) time where n is the number of blocks in the tree.
-    pub fn main_chain_by_difficulty(&self) -> BlockChain<'_, Block> {
+    pub fn main_chain_by_difficulty(&self) -> BlockChain<'_> {
         let (_, _, mut chain_rev) = self.main_chain_by_difficulty_inner();
         let first = chain_rev
             .pop()
@@ -429,7 +406,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
     }
 
     /// Bottom-up DFS returning (accumulated_difficulty, depth, main_chain_reversed).
-    fn main_chain_by_difficulty_inner(&self) -> (DifficultyBasedDepth, usize, Vec<&Block>) {
+    fn main_chain_by_difficulty_inner(&self) -> (DifficultyBasedDepth, usize, Vec<&CachedBlock>) {
         let self_difficulty = DifficultyBasedDepth::new(self.root.difficulty());
 
         if self.children.is_empty() {
@@ -437,7 +414,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
         }
 
         let mut best_key = (DifficultyBasedDepth::new(0), 0usize);
-        let mut best_chain: Vec<&Block> = vec![];
+        let mut best_chain: Vec<&CachedBlock> = vec![];
         let mut contested = false;
 
         for child in self.children.iter() {
@@ -521,15 +498,12 @@ impl<Block: ChainBlock> BlockTree<Block> {
 
     /// Returns a `BlockTree` where the hash of the root block matches the provided `block_hash`
     /// along with its depth if it exists, and `None` otherwise.
-    pub fn find_mut<'a>(
-        &'a mut self,
-        blockhash: &BlockHash,
-    ) -> Option<(&'a mut BlockTree<Block>, u32)> {
-        fn find_mut_helper<'a, Block: ChainBlock>(
-            block_tree: &'a mut BlockTree<Block>,
+    pub fn find_mut(&mut self, blockhash: &BlockHash) -> Option<(&mut BlockTree, u32)> {
+        fn find_mut_helper<'a>(
+            block_tree: &'a mut BlockTree,
             blockhash: &BlockHash,
             depth: u32,
-        ) -> Option<(&'a mut BlockTree<Block>, u32)> {
+        ) -> Option<(&'a mut BlockTree, u32)> {
             if block_tree.root.block_hash() == blockhash {
                 return Some((block_tree, depth));
             }
@@ -548,7 +522,7 @@ impl<Block: ChainBlock> BlockTree<Block> {
 
     /// Returns a `BlockTree` where the hash of the root matches the hash of the provided `block`
     /// if it exists, and `None` otherwise.
-    fn find(&self, block_hash: &BlockHash) -> Option<&BlockTree<Block>> {
+    fn find(&self, block_hash: &BlockHash) -> Option<&BlockTree> {
         if self.root.block_hash() == block_hash {
             return Some(self);
         }
@@ -620,14 +594,14 @@ mod test {
     use std::collections::BTreeSet;
     use test_strategy::proptest;
 
-    type BlockTree = super::BlockTree<CachedBlock>;
+    type BlockTree = super::BlockTree;
 
     fn test_tree(root: Block) -> BlockTree {
         let cache = TestBlocksCache::new(Network::Mainnet);
         BlockTree::new_with_cache(cache, root)
     }
 
-    fn to_blockchain<'a, T>(blocks: &[&'a T]) -> BlockChain<'a, T> {
+    fn to_blockchain<'a>(blocks: &[&'a CachedBlock]) -> BlockChain<'a> {
         let mut iter = blocks.iter();
         BlockChain {
             first: iter.next().unwrap(),
