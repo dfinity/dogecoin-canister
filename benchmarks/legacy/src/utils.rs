@@ -34,6 +34,32 @@ pub fn build_chain_from(
     address: &bitcoin::dogecoin::Address,
     value_counter: &mut u64,
 ) -> Vec<Block> {
+    let mut blocks = Vec::with_capacity(num_blocks);
+    build_chain_from_for_each(
+        prev_header,
+        num_blocks,
+        num_transactions_per_block,
+        num_outputs_per_transaction,
+        num_outputs_to_address_per_block,
+        address,
+        value_counter,
+        |block| blocks.push(block),
+    );
+    blocks
+}
+
+/// Like [`build_chain_from`], but streams each block to `on_block` instead of
+/// collecting them, avoiding the need to hold the entire chain in memory.
+pub fn build_chain_from_for_each(
+    prev_header: Header,
+    num_blocks: usize,
+    num_transactions_per_block: usize,
+    num_outputs_per_transaction: usize,
+    num_outputs_to_address_per_block: usize,
+    address: &bitcoin::dogecoin::Address,
+    value_counter: &mut u64,
+    mut on_block: impl FnMut(Block),
+) {
     assert!(
         num_transactions_per_block >= 1,
         "each block needs at least a coinbase transaction"
@@ -61,7 +87,6 @@ pub fn build_chain_from(
     //   [0, num_outputs_to_address_per_block)             → funding outputs (address)
     //   [num_outputs_to_address_per_block, extra_txs)     → funding outputs (dummy)
 
-    let mut blocks = Vec::with_capacity(num_blocks);
     let mut prev = prev_header;
     let mut prev_coinbase_txid: Option<bitcoin::Txid> = None;
 
@@ -116,8 +141,7 @@ pub fn build_chain_from(
 
         let block = Block::new(builder.build());
         prev = *block.header();
-        blocks.push(block);
         prev_coinbase_txid = Some(coinbase_txid);
+        on_block(block);
     }
-    blocks
 }

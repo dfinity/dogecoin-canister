@@ -1,6 +1,6 @@
 mod utils;
 
-use crate::utils::build_chain_from;
+use crate::utils::{build_chain_from, build_chain_from_for_each};
 use bitcoin::consensus::Decodable;
 use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::{block::Header, consensus::Encodable, dogecoin, dogecoin::Block as DogecoinBlock};
@@ -600,20 +600,19 @@ fn bench_get_balance(num_outputs_to_address_per_block: usize) -> BenchResult {
     let address = parsed_address();
     let genesis = genesis_block(dogecoin::Network::Regtest);
     let mut counter = 1u64;
-    let chain = build_chain_from(
-        *genesis.header,
-        blocks_to_insert,
-        num_transactions_per_block,
-        num_outputs_per_transaction,
-        num_outputs_to_address_per_block,
-        &address,
-        &mut counter,
-    );
-
     with_state_mut(|s| {
-        for block in &chain {
-            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
-        }
+        build_chain_from_for_each(
+            *genesis.header,
+            blocks_to_insert,
+            num_transactions_per_block,
+            num_outputs_per_transaction,
+            num_outputs_to_address_per_block,
+            &address,
+            &mut counter,
+            |block| {
+                ic_doge_canister::state::insert_block(s, block).unwrap();
+            },
+        );
     });
 
     assert_chain_height(blocks_to_insert);
@@ -652,20 +651,19 @@ fn bench_get_utxos(num_outputs_to_address_per_block: usize) -> BenchResult {
     let address = parsed_address();
     let genesis = genesis_block(dogecoin::Network::Regtest);
     let mut counter = 1u64;
-    let chain = build_chain_from(
-        *genesis.header,
-        blocks_to_insert,
-        num_transactions_per_block,
-        num_outputs_per_transaction,
-        num_outputs_to_address_per_block,
-        &address,
-        &mut counter,
-    );
-
     with_state_mut(|s| {
-        for block in &chain {
-            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
-        }
+        build_chain_from_for_each(
+            *genesis.header,
+            blocks_to_insert,
+            num_transactions_per_block,
+            num_outputs_per_transaction,
+            num_outputs_to_address_per_block,
+            &address,
+            &mut counter,
+            |block| {
+                ic_doge_canister::state::insert_block(s, block).unwrap();
+            },
+        );
     });
 
     assert_chain_height(blocks_to_insert);
@@ -713,20 +711,19 @@ fn dogecoin_get_current_fee_percentiles() -> BenchResult {
     let address = parsed_address();
     let genesis = genesis_block(dogecoin::Network::Regtest);
     let mut counter = 1u64;
-    let chain = build_chain_from(
-        *genesis.header,
-        blocks_to_insert,
-        num_transactions_per_block,
-        num_outputs_per_transaction,
-        0,
-        &address,
-        &mut counter,
-    );
-
     with_state_mut(|s| {
-        for block in &chain {
-            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
-        }
+        build_chain_from_for_each(
+            *genesis.header,
+            blocks_to_insert,
+            num_transactions_per_block,
+            num_outputs_per_transaction,
+            0,
+            &address,
+            &mut counter,
+            |block| {
+                ic_doge_canister::state::insert_block(s, block).unwrap();
+            },
+        );
     });
 
     assert_chain_height(blocks_to_insert);
