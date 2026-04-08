@@ -81,7 +81,9 @@ pub fn build_chain_from(
         let coinbase_tx = coinbase.build();
         let coinbase_txid = coinbase_tx.compute_txid();
 
-        let mut builder = BlockBuilder::default().with_prev_header(prev).with_transaction(coinbase_tx);
+        let mut builder = BlockBuilder::default()
+            .with_prev_header(prev)
+            .with_transaction(coinbase_tx);
 
         // Spend the previous block's funding outputs.
         if let Some(prev_txid) = prev_coinbase_txid {

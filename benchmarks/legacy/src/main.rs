@@ -88,7 +88,7 @@ fn insert_300_blocks() -> BenchResult {
 
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Mainnet),
-        stability_threshold: Some(144),
+        stability_threshold: Some(blocks_to_insert as u128),
         ..Default::default()
     });
 
@@ -114,7 +114,7 @@ fn get_metrics() -> BenchResult {
 
     ic_doge_canister::init(InitConfig {
         network: Some(Network::Mainnet),
-        stability_threshold: Some(3000),
+        stability_threshold: Some(blocks_to_insert as u128),
         ..Default::default()
     });
 
