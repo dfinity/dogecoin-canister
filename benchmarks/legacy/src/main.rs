@@ -587,7 +587,7 @@ fn dogecoin_get_balance_stress() -> BenchResult {
 }
 
 fn bench_get_balance(num_outputs_to_address_per_block: usize) -> BenchResult {
-    let blocks_to_insert = 100;
+    let blocks_to_insert = 1440;
     let num_transactions_per_block = 3000;
     let num_outputs_per_transaction = 3;
 
@@ -639,7 +639,7 @@ fn dogecoin_get_utxos_stress() -> BenchResult {
 }
 
 fn bench_get_utxos(num_outputs_to_address_per_block: usize) -> BenchResult {
-    let blocks_to_insert = 100;
+    let blocks_to_insert = 1440;
     let num_transactions_per_block = 3000;
     let num_outputs_per_transaction = 3;
 
@@ -700,7 +700,7 @@ fn bench_get_utxos(num_outputs_to_address_per_block: usize) -> BenchResult {
 
 #[bench(raw)]
 fn dogecoin_get_current_fee_percentiles() -> BenchResult {
-    let blocks_to_insert = 100;
+    let blocks_to_insert = 1440;
     let num_transactions_per_block = 3000;
     let num_outputs_per_transaction = 3;
 
@@ -742,7 +742,7 @@ fn dogecoin_get_current_fee_percentiles() -> BenchResult {
 
 #[bench(raw)]
 fn dogecoin_get_block_headers_baseline() -> BenchResult {
-    bench_get_block_headers(100)
+    bench_get_block_headers(1440)
 }
 
 #[bench(raw)]
