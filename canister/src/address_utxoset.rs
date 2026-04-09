@@ -148,7 +148,7 @@ mod test {
 
         let mut address_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);
 
-        address_utxo_set.apply_block(&block_0.block_hash());
+        address_utxo_set.apply_block(block_0.block_hash());
 
         // Address should have that data.
         assert_eq!(
@@ -197,14 +197,14 @@ mod test {
         unstable_blocks::push(&mut unstable_blocks, &utxo_set, block_1.clone()).unwrap();
 
         let mut address_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);
-        address_utxo_set.apply_block(&block_0.block_hash());
-        address_utxo_set.apply_block(&block_1.block_hash());
+        address_utxo_set.apply_block(block_0.block_hash());
+        address_utxo_set.apply_block(block_1.block_hash());
 
         assert_eq!(address_utxo_set.into_iter(None).collect::<Vec<_>>(), vec![]);
 
         let mut address_2_utxo_set = AddressUtxoSet::new(address_2, &utxo_set, &unstable_blocks);
-        address_2_utxo_set.apply_block(&block_0.block_hash());
-        address_2_utxo_set.apply_block(&block_1.block_hash());
+        address_2_utxo_set.apply_block(block_0.block_hash());
+        address_2_utxo_set.apply_block(block_1.block_hash());
 
         assert_eq!(
             address_2_utxo_set.into_iter(None).collect::<Vec<_>>(),
@@ -257,12 +257,12 @@ mod test {
         unstable_blocks::push(&mut unstable_blocks, &utxo_set, block_1.clone()).unwrap();
 
         let mut address_1_utxo_set = AddressUtxoSet::new(address_1, &utxo_set, &unstable_blocks);
-        address_1_utxo_set.apply_block(&block_0.block_hash());
-        address_1_utxo_set.apply_block(&block_1.block_hash());
+        address_1_utxo_set.apply_block(block_0.block_hash());
+        address_1_utxo_set.apply_block(block_1.block_hash());
 
         let mut address_2_utxo_set = AddressUtxoSet::new(address_2, &utxo_set, &unstable_blocks);
-        address_2_utxo_set.apply_block(&block_0.block_hash());
-        address_2_utxo_set.apply_block(&block_1.block_hash());
+        address_2_utxo_set.apply_block(block_0.block_hash());
+        address_2_utxo_set.apply_block(block_1.block_hash());
 
         // Address 1 should have one UTXO corresponding to the remaining amount
         // it gave back to itself.
