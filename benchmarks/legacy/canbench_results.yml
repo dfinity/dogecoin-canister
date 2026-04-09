@@ -37,15 +37,15 @@ benches:
   dogecoin_get_utxos_baseline:
     total:
       calls: 1
-      instructions: 224218720
-      heap_increase: 0
+      instructions: 12785941867
+      heap_increase: 1
       stable_memory_increase: 0
     scopes: {}
   dogecoin_get_utxos_stress:
     total:
       calls: 1
-      instructions: 461438462625
-      heap_increase: 393
+      instructions: 880531540513
+      heap_increase: 395
       stable_memory_increase: 0
     scopes: {}
   get_blockchain_info_many_branches:
@@ -72,20 +72,20 @@ benches:
   get_metrics:
     total:
       calls: 1
-      instructions: 3402692
+      instructions: 3402682
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   insert_300_blocks:
     total:
       calls: 1
-      instructions: 4130829319
+      instructions: 4130829898
       heap_increase: 9
       stable_memory_increase: 0
     scopes:
       validate:
         calls: 300
-        instructions: 4069166835
+        instructions: 4069166814
         heap_increase: 9
         stable_memory_increase: 0
       validate_block:
@@ -113,28 +113,28 @@ benches:
   insert_block_headers_multiple_times:
     total:
       calls: 1
-      instructions: 13381072165
+      instructions: 13381072102
       heap_increase: 9
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_multiple_times_regtest_without_auxpow:
     total:
       calls: 1
-      instructions: 3483950043
+      instructions: 3483943083
       heap_increase: 3
       stable_memory_increase: 0
     scopes: {}
   insert_block_headers_regtest_without_auxpow:
     total:
       calls: 1
-      instructions: 3459064739
+      instructions: 3459057489
       heap_increase: 3
       stable_memory_increase: 0
     scopes: {}
   insert_block_with_10k_transactions:
     total:
       calls: 1
-      instructions: 2036548496
+      instructions: 2036548498
       heap_increase: 69
       stable_memory_increase: 0
     scopes:
@@ -161,7 +161,7 @@ benches:
   insert_block_with_1k_transactions:
     total:
       calls: 1
-      instructions: 195151111
+      instructions: 195151113
       heap_increase: 8
       stable_memory_increase: 0
     scopes:
@@ -188,7 +188,7 @@ benches:
   pre_upgrade_with_many_unstable_blocks:
     total:
       calls: 1
-      instructions: 6931384884
+      instructions: 6931384886
       heap_increase: 0
       stable_memory_increase: 1024
     scopes:
