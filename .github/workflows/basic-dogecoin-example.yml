@@ -17,8 +17,8 @@ jobs:
         os: [ubuntu-22.04, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             ~/.cargo/registry
@@ -38,7 +38,7 @@ jobs:
           brew install llvm
 
       - name: Install dfx
-        uses: dfinity/setup-dfx@main
+        uses: dfinity/setup-dfx@e50c04f104ee4285ec010f10609483cf41e4d365 # main
         with:
           dfx-version: ${{ env.DFX_VERSION }}
 
@@ -54,8 +54,8 @@ jobs:
     needs: test  # Only if tests pass
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             ~/.cargo/registry
@@ -76,7 +76,7 @@ jobs:
           cp target/wasm32-unknown-unknown/release/basic_dogecoin.wasm .
           gzip -9 basic_dogecoin.wasm
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: basic_dogecoin.wasm.gz
           path: examples/basic_dogecoin/basic_dogecoin.wasm.gz
