@@ -37,15 +37,15 @@ benches:
   dogecoin_get_utxos_baseline:
     total:
       calls: 1
-      instructions: 12757982094
-      heap_increase: 1
+      instructions: 224212916
+      heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   dogecoin_get_utxos_stress:
     total:
       calls: 1
-      instructions: 880428638540
-      heap_increase: 395
+      instructions: 461449246892
+      heap_increase: 393
       stable_memory_increase: 0
     scopes: {}
   get_blockchain_info_many_branches:
