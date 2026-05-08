@@ -552,7 +552,7 @@ jobs:
       - name: Install `ic-wasm`
         uses: taiki-e/install-action@97a5807a604e12de3a13b52d868ebecaeeea757c # v2.75.4
         with:
-          tool: ic-wasm
+          tool: ic-wasm@0.9.10
 
       - name: Check canister endpoints
         run: |
@@ -614,6 +614,7 @@ jobs:
         cycles_burn,
         benchmark,
         canister-build-reproducibility,
+        check-canister-wasm-endpoints,
         dogecoin_canister_metadata,
         candid-compatibility,
       ]
@@ -663,6 +664,9 @@ jobs:
         run: exit 1
       - name: check canister-build-reproducibility result
         if: ${{ needs.canister-build-reproducibility.result != 'success' }}
+        run: exit 1
+      - name: check check-canister-wasm-endpoints result
+        if: ${{ needs.check-canister-wasm-endpoints.result != 'success' }}
         run: exit 1
       - name: check candid-compatibility result
         if: ${{ needs.candid-compatibility.result != 'success' && needs.candid-compatibility.result != 'skipped' }}
