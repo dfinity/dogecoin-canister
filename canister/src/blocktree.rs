@@ -449,8 +449,8 @@ impl BlockTree {
     /// Bottom-up DFS returning (accumulated_difficulty, main_chain_length).
     ///
     /// Same logic as [`main_chain_by_difficulty_inner`](Self::main_chain_by_difficulty_inner),
-    /// but avoids the per-node `Vec<&Block>` allocation since only the chain
-    /// length is needed.
+    /// but avoids the per-node `Vec<&CachedBlock>` allocation since only the
+    /// chain length is needed.
     fn main_chain_length_by_difficulty_inner(&self) -> (DifficultyBasedDepth, usize) {
         let self_difficulty = DifficultyBasedDepth::new(self.root.difficulty());
 
