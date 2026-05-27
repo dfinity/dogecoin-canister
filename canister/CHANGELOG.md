@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [release/2026-05-27] - 2026-05-27
+
+### Added
+- Add benchmarks for `dogecoin_get_*` endpoints ([#109](https://github.com/dfinity/dogecoin-canister/pull/109))
+
+
+### Changed
+- DEFI-2834: cherry-pick from dfinity/bitcoin-canister@master (707ef54) ([#118](https://github.com/dfinity/dogecoin-canister/pull/118))
+- DEFI-2834: cherry-pick from dfinity/bitcoin-canister@master (e354549) ([#117](https://github.com/dfinity/dogecoin-canister/pull/117))
+- Cherry-pick from dfinity/bitcoin-canister@master (949c2aa) ([#112](https://github.com/dfinity/dogecoin-canister/pull/112))
+- Do not deserialize whole block in `get_utxos` call ([#110](https://github.com/dfinity/dogecoin-canister/pull/110))
+- De-generify `BlockTree<Block>` ([#107](https://github.com/dfinity/dogecoin-canister/pull/107))
+- Cherry-pick from dfinity/bitcoin-canister@master (09d7313) ([#108](https://github.com/dfinity/dogecoin-canister/pull/108))
+- De-generify `GenericState` and `GenericUnstableBlocks` ([#106](https://github.com/dfinity/dogecoin-canister/pull/106))
+
+
 ## [release/2026-03-12] - 2026-03-12
 
 ### Added
@@ -78,3 +94,5 @@ Initial pre-release of the Dogecoin canister, adapted from the Bitcoin canister 
 [pre-release/2025-10-17]: https://github.com/dfinity/dogecoin-canister/compare/baseline-fork...pre-release/2025-10-17
 
 
+
+[release/2026-05-27]: https://github.com/dfinity/dogecoin-canister/compare/release/2026-03-12...release/2026-05-27
