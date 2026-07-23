@@ -1,5 +1,6 @@
 use crate::{dogecoin_get_balance, Amount, DOGE_CONTEXT};
-use ic_cdk::{bitcoin_canister::GetBalanceRequest, update};
+use ic_cdk::update;
+use ic_cdk_bitcoin_canister::GetBalanceRequest;
 
 /// Returns the balance of the given Dogecoin address.
 #[update]

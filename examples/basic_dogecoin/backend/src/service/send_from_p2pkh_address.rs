@@ -6,10 +6,8 @@ use crate::{
     SendRequest, DOGE_CONTEXT,
 };
 use bitcoin::{consensus::serialize, dogecoin::Address, PublicKey};
-use ic_cdk::{
-    bitcoin_canister::{GetUtxosRequest, SendTransactionRequest},
-    trap, update,
-};
+use ic_cdk::{trap, update};
+use ic_cdk_bitcoin_canister::{GetUtxosRequest, SendTransactionRequest};
 use std::str::FromStr;
 
 /// Sends the given amount of dogecoin from this smart contract's P2PKH address to the given address.

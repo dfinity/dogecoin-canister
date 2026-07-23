@@ -1,0 +1,19 @@
+# Various IDEs and Editors
+.vscode/
+.idea/
+**/*~
+
+# Mac OSX temporary files
+.DS_Store
+**/.DS_Store
+
+# icp-cli local state/cache
+.icp/
+
+# rust
+target/
+
+# dogecoin
+dogecoin_data
+
+canister_ids.json

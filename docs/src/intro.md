@@ -6,7 +6,7 @@
 
 # Introduction
 
-The *Build on Dogecoin* book is intended for developers to explain how smart contracts on the [Internet Computer](https://internetcomputer.org), often referred as [canisters](https://learn.internetcomputer.org/hc/en-us/articles/34210839162004-Canister-Smart-Contracts), can interact with the [Dogecoin](https://dogecoin.com/) blockchain.
+The *Build on Dogecoin* book is intended for developers to explain how smart contracts on the [Internet Computer](https://internetcomputer.org), often referred as [canisters](https://docs.internetcomputer.org/concepts/canisters), can interact with the [Dogecoin](https://dogecoin.com/) blockchain.
 
 ## Background
 
@@ -16,7 +16,7 @@ To interact with the Dogecoin blockchain, your canister will make use of the fol
 
 - **[Dogecoin canister](https://github.com/dfinity/dogecoin-canister)**: Think of it as your decentralized gateway to reach the Dogecoin blockchain. This canister provides an API that can be used by others to query information about the Dogecoin network state, for example, unspent transaction outputs (UTXOs), block headers, or the balance of any Dogecoin address; and to send transactions to the network.
 
-- **[Threshold ECDSA](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa)**: Your canister can have a secret key that is stored in a secure and decentralized manner using chain-key cryptography (several such keys can be computed by key derivation). Messages sent by the canister can be signed using this key, enabling your canister to [send signed transactions](./doge-transactions/complete_flow.md) to the Dogecoin network through the Dogecoin canister.
+- **[Threshold ECDSA](https://docs.internetcomputer.org/concepts/chain-key-cryptography/#chain-key-signatures-threshold-ecdsa-and-schnorr)**: Your canister can have a secret key that is stored in a secure and decentralized manner using chain-key cryptography (several such keys can be computed by key derivation). Messages sent by the canister can be signed using this key, enabling your canister to [send signed transactions](./doge-transactions/complete_flow.md) to the Dogecoin network through the Dogecoin canister.
 
 To submit a Dogecoin transaction from a canister, the following steps are typically performed:
 
@@ -35,7 +35,7 @@ First, set up your [development environment](./environment.md). Then, to build c
 
 - [Create a Dogecoin transaction](./doge-transactions/create_transactions.md). Dogecoin transactions spend UTXOs and create new UTXOs. A UTXO is the output of a Dogecoin transaction. It exists until it is used as the input of another transaction.
 
-- [Sign the transaction](./doge-transactions/sign_transactions.md) using [threshold ECDSA API](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa). All inputs of a transaction must be signed before the transaction can be submitted to the Dogecoin network.
+- [Sign the transaction](./doge-transactions/sign_transactions.md) using [threshold ECDSA API](https://docs.internetcomputer.org/references/management-canister/#chain-key-signing). All inputs of a transaction must be signed before the transaction can be submitted to the Dogecoin network.
 
 - [Submit the transaction](./doge-transactions/complete_flow.md) by sending a request to the Dogecoin API that specifies the blob of the transaction and the target Dogecoin network (mainnet or regtest).
 

@@ -11,10 +11,8 @@ use bitcoin::{
     sighash::{EcdsaSighashType, SighashCache},
     AddressType, PublicKey, Transaction,
 };
-use ic_cdk::{
-    bitcoin_canister::{MillisatoshiPerByte, Utxo},
-    trap,
-};
+use ic_cdk::trap;
+use ic_cdk_bitcoin_canister::{MillisatoshiPerByte, Utxo};
 use std::convert::TryFrom;
 
 // Builds a transaction to send the given `amount` of koinu to the

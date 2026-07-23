@@ -37,32 +37,32 @@ pub struct Outpoint {
 To get the available UTXOs for a Dogecoin address, use the `dogecoin_get_utxos` API endpoint. The following example demonstrates how to retrieve UTXOs for a given Dogecoin P2PKH address.
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/service/get_utxos.rs:1:19}}
+{{#include ../../../examples/basic_dogecoin/backend/src/service/get_utxos.rs}}
 ```
 
-*View the source on GitHub: [get_utxo.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_utxos.rs)*
+*View the source on GitHub: [get_utxos.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/backend/src/service/get_utxos.rs)*
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/lib.rs:119:128}}
+{{#include ../../../examples/basic_dogecoin/backend/src/lib.rs:134:143}}
 ```
 
-*View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs#L119)*
+*View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/backend/src/lib.rs#L134)*
 
 ## Calculate transaction fee per byte
 
 The transaction fee of a Dogecoin transaction is calculated based on the size of the transaction in bytes. An appropriate fee per byte can be determined by looking at the fees of recent transactions on the Dogecoin mainnet. The following snippet shows how to estimate the fee per byte for a transaction using the `dogecoin_get_current_fee_percentiles` API endpoint and choosing the 50th percentile.
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs:1:15}}
+{{#include ../../../examples/basic_dogecoin/backend/src/service/get_current_fee_percentiles.rs}}
 ```
 
-*View the source on GitHub: [get_current_fee_percentiles.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_current_fee_percentiles.rs)*
+*View the source on GitHub: [get_current_fee_percentiles.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/backend/src/service/get_current_fee_percentiles.rs)*
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/lib.rs:135:148}}
+{{#include ../../../examples/basic_dogecoin/backend/src/lib.rs:150:163}}
 ```
 
-*View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/lib.rs#L135)*
+*View the source on GitHub: [lib.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/backend/src/lib.rs#L150)*
 
 ## Build the transaction
 
@@ -71,7 +71,7 @@ Now the transaction can be built. Since the fee of a transaction is based on its
 The following snippet shows a simplified version of how to build a transaction that will be signed by a P2PKH address:
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/p2pkh.rs:20:70}}
+{{#include ../../../examples/basic_dogecoin/backend/src/p2pkh.rs:18:68}}
 ```
 
-*View the source on GitHub: [p2pkh.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/p2pkh.rs#L20)*
+*View the source on GitHub: [p2pkh.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/backend/src/p2pkh.rs#L18)*

@@ -5,12 +5,15 @@ mod service;
 
 use bitcoin::dogecoin;
 use candid::{CandidType, Deserialize, Principal};
-use ic_cdk::bitcoin_canister::{
-    GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
+use ic_cdk::call::{Call, CallResult};
+use ic_cdk::{init, post_upgrade};
+// The Dogecoin canister reuses the Bitcoin canister's Candid types and cycles-cost
+// helpers. There is no dedicated `ic-cdk-dogecoin-canister` crate, so we import them
+// from `ic-cdk-bitcoin-canister` and issue the `dogecoin_*` calls manually below.
+use ic_cdk_bitcoin_canister::{
+    self as bitcoin_canister, GetBalanceRequest, GetBlockHeadersRequest, GetBlockHeadersResponse,
     GetCurrentFeePercentilesRequest, GetUtxosRequest, GetUtxosResponse, SendTransactionRequest,
 };
-use ic_cdk::call::{Call, CallResult};
-use ic_cdk::{bitcoin_canister, init, post_upgrade};
 use serde::Serialize;
 use std::cell::Cell;
 
@@ -48,8 +51,12 @@ thread_local! {
 
 /// Internal shared init logic used both by init and post-upgrade hooks.
 fn init_upgrade(network: Network) {
+    // Which threshold ECDSA key to use. "test_key_1" is provisioned locally by the
+    // icp-cli network launcher and is also usable on mainnet with lower signing costs;
+    // "key_1" is the production key. See the README ("Choosing a threshold ECDSA key")
+    // and https://docs.internetcomputer.org/concepts/chain-key-cryptography/#deployed-keys.
     let key_name = match network {
-        Network::Regtest => "dfx_test_key",
+        Network::Regtest => "test_key_1",
         Network::Mainnet => "test_key_1",
     };
 
@@ -98,6 +105,14 @@ impl From<Network> for bitcoin_canister::Network {
     }
 }
 
+// The request types expose the network as a `NetworkInRequest`. Convert through the
+// canister `Network` enum so call sites can use `ctx.network.into()` directly.
+impl From<Network> for bitcoin_canister::NetworkInRequest {
+    fn from(network: Network) -> Self {
+        bitcoin_canister::Network::from(network).into()
+    }
+}
+
 fn into_dogecoin_network(network: bitcoin_canister::Network) -> Network {
     match network {
         bitcoin_canister::Network::Mainnet => Network::Mainnet,
@@ -117,7 +132,7 @@ pub type MillikoinuPerByte = u64;
 ///
 /// Check the [Dogecoin Canisters Interface Specification](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md#dogecoin_get_utxos) for more details.
 pub async fn dogecoin_get_utxos(arg: &GetUtxosRequest) -> CallResult<GetUtxosResponse> {
-    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network));
+    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network.into()));
     // same cycles cost as for the Bitcoin canister
     let cycles = bitcoin_canister::cost_get_utxos(arg);
     Ok(Call::bounded_wait(canister_id, "dogecoin_get_utxos")
@@ -135,7 +150,7 @@ pub async fn dogecoin_get_utxos(arg: &GetUtxosRequest) -> CallResult<GetUtxosRes
 pub async fn dogecoin_get_fee_percentiles(
     arg: &GetCurrentFeePercentilesRequest,
 ) -> CallResult<Vec<MillikoinuPerByte>> {
-    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network));
+    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network.into()));
     // same cycles cost as for the Bitcoin canister
     let cycles = bitcoin_canister::cost_get_current_fee_percentiles(arg);
     Ok(
@@ -153,7 +168,7 @@ pub async fn dogecoin_get_fee_percentiles(
 ///
 /// Check the [Dogecoin Canisters Interface Specification](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md#dogecoin_send_transaction) for more details.
 pub async fn dogecoin_send_transaction(arg: &SendTransactionRequest) -> CallResult<()> {
-    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network));
+    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network.into()));
     // same cycles cost as for the Bitcoin canister
     let cycles = bitcoin_canister::cost_send_transaction(arg);
 
@@ -172,7 +187,7 @@ pub async fn dogecoin_send_transaction(arg: &SendTransactionRequest) -> CallResu
 ///
 /// Check the [Dogecoin Canisters Interface Specification](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md#dogecoin_get_balance) for more details.
 pub async fn dogecoin_get_balance(arg: &GetBalanceRequest) -> CallResult<Amount> {
-    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network));
+    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network.into()));
     // same cycles cost as for the Bitcoin canister
     let cycles = bitcoin_canister::cost_get_balance(arg);
     Ok(Call::bounded_wait(canister_id, "dogecoin_get_balance")
@@ -190,7 +205,7 @@ pub async fn dogecoin_get_balance(arg: &GetBalanceRequest) -> CallResult<Amount>
 pub async fn dogecoin_get_block_headers(
     arg: &GetBlockHeadersRequest,
 ) -> CallResult<GetBlockHeadersResponse> {
-    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network));
+    let canister_id = get_dogecoin_canister_id(&into_dogecoin_network(arg.network.into()));
     // same cycles cost as for the Bitcoin canister
     let cycles = bitcoin_canister::cost_get_block_headers(arg);
     Ok(
@@ -220,3 +235,7 @@ pub struct SendRequest {
     pub destination_address: String,
     pub amount_in_koinu: u64,
 }
+
+// Exports the canister's Candid interface, derived from the annotated endpoints.
+// The generated `candid:service` is embedded in the Wasm metadata at build time.
+ic_cdk::export_candid!();

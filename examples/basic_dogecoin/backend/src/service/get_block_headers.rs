@@ -1,8 +1,6 @@
 use crate::{dogecoin_get_block_headers, DOGE_CONTEXT};
-use ic_cdk::{
-    bitcoin_canister::{GetBlockHeadersRequest, GetBlockHeadersResponse},
-    update,
-};
+use ic_cdk::update;
+use ic_cdk_bitcoin_canister::{GetBlockHeadersRequest, GetBlockHeadersResponse};
 
 /// Returns the block headers in the given height range.
 #[update]

@@ -1,34 +1,15 @@
 # Basic Dogecoin
 
-This example demonstrates how to deploy a smart contract on the Internet Computer that can send and receive dogecoins.
-
-## Table of contents
-
-* [Architecture](#architecture)
-* [Deploying from ICP Ninja](#deploying-from-icp-ninja)
-* [Building and deploying the smart contract locally](#building-and-deploying-the-smart-contract-locally)
-  * [1. Prerequisites](#1-prerequisites)
-  * [2. Clone the repo](#2-clone-this-repo)
-  * [3. Start the ICP execution environment](#3-start-the-icp-execution-environment)
-  * [4. Start Dogecoin regtest](#4-start-dogecoin-regtest)
-  * [5. Deploy the smart contract](#5-deploy-the-smart-contract)
-* [Generating Dogecoin addresses](#generating-dogecoin-addresses)
-* [Receiving dogecoin](#receiving-dogecoin)
-* [Checking balance](#checking-balance)
-* [Sending dogecoin](#sending-dogecoin)
-* [Retrieving block headers](#retrieving-block-headers)
-* [Notes on implementation](#notes-on-implementation)
-* [Security considerations and best practices](#security-considerations-and-best-practices)
+This example demonstrates how a canister can receive and send dogecoin on the Internet Computer, using legacy (P2PKH) addresses.
 
 ## Architecture
 
+For a deeper understanding of the ICP ↔ Dogecoin integration, see the [Dogecoin integration concepts](https://docs.internetcomputer.org/concepts/chain-fusion/dogecoin). The Dogecoin integration builds on the same machinery as the [Bitcoin integration](https://docs.internetcomputer.org/concepts/chain-fusion/bitcoin).
+
 This example integrates with the Internet Computer's built-in:
 
-* [ECDSA API](https://internetcomputer.org/docs/current/references/ic-interface-spec/#ic-ecdsa_public_key)
-* [Dogecoin API](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md)
-
-For background on the Bitcoin integration, which underpins the ICP<>DOGE integration, refer to the [Learn Hub](https://learn.internetcomputer.org/hc/en-us/articles/34211154520084-Bitcoin-Integration).
-
+- Threshold ECDSA ([`ecdsa_public_key`](https://docs.internetcomputer.org/references/ic-interface-spec/management-canister/#ic-ecdsa_public_key), [`sign_with_ecdsa`](https://docs.internetcomputer.org/references/ic-interface-spec/management-canister/#ic-sign_with_ecdsa)) — derives P2PKH addresses and signs transactions spending from them
+- [Dogecoin canister](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md) — queries balances, UTXOs, fee percentiles, and block data; submits signed transactions to the Dogecoin network
 
 ## Deploying from ICP Ninja
 
@@ -36,131 +17,155 @@ This example can be deployed directly to the Internet Computer using ICP Ninja, 
 
 [![](https://icp.ninja/assets/open.svg)](https://icp.ninja/editor?g=https://github.com/dfinity/dogecoin-canister/tree/master/examples/basic_dogecoin)
 
-## Building and deploying the smart contract locally
+## Build and deploy from the command line
 
-### 1. Prerequisites
+### Prerequisites
 
-* [x] [Rust toolchain](https://www.rust-lang.org/tools/install)
-* [x] [Internet Computer SDK](https://internetcomputer.org/docs/building-apps/getting-started/install)
-* [x] [Local Dogecoin regtest](https://dfinity.github.io/dogecoin-canister/environment.html#create-a-local-dogecoin-network-regtest-with-dogecoind)
-* [x] On macOS, an `llvm` version that supports the `wasm32-unknown-unknown` target is required. The Rust `bitcoin-dogecoin` library relies on the `secp256k1-sys` crate, which requires `llvm` to build. The default `llvm` version provided by XCode does not meet this requirement. Install the [Homebrew version](https://formulae.brew.sh/formula/llvm) using `brew install llvm`.
+- [Node.js](https://nodejs.org/) v18+
+- [icp-cli](https://cli.internetcomputer.org/): `npm install -g @icp-sdk/icp-cli @icp-sdk/ic-wasm`
+- [Rust](https://www.rust-lang.org/tools/install) v1.85+ with `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`
+- [Docker](https://docs.docker.com/get-docker/) (required to run the custom network launcher image that bundles dogecoind)
+- On macOS, a `clang` with WASM support is required to compile the `secp256k1-sys` C library for the `wasm32-unknown-unknown` target. Xcode's bundled clang does not include the WASM backend. Install the [Homebrew LLVM](https://formulae.brew.sh/formula/llvm) and add it to your PATH:
+  ```bash
+  brew install llvm
+  export PATH="$(brew --prefix llvm)/bin:$PATH"
+  ```
+  Add the `export` line to your shell profile (`~/.zshrc` or `~/.bashrc`) to make it permanent.
 
-The IC SDK includes the `dfx` command-line tool, which is used to manage canisters and interact with the Internet Computer network.
-
-Interacting with Dogecoin requires `dfx` version `0.30.1-beta.0` or higher. You can check your installed version by running:
-
-```bash
-dfx --version
-```
-
-To install and switch to a specific `dfx` version, use:
+### Install
 
 ```bash
-dfxvm install <version>
-dfxvm default <version>
+git clone https://github.com/dfinity/dogecoin-canister
+cd dogecoin-canister/examples/basic_dogecoin
 ```
 
-### 2. Clone this repo
+### Build the network launcher image
+
+The local network bundles dogecoind inside a custom Docker image. Build it once before starting the network:
 
 ```bash
-git clone git@github.com:dfinity/dogecoin-canister.git
-cd examples/basic_dogecoin
+./build-image.sh
 ```
 
-### 3. Start the ICP execution environment
-
-Open a terminal window (terminal 1) and run the following command:
-```bash
-dfx start --enable-dogecoin --dogecoin-node 127.0.0.1:18444
-```
-This starts a local canister execution environment with Dogecoin support enabled.
-
-### 4. Start Dogecoin regtest
-
-Open another terminal window (terminal 2) and run the following command to start the local Dogecoin regtest network:
+### Deploy locally and test
 
 ```bash
-dogecoind -datadir=$(pwd)/dogecoin_data --port=18444
+icp network start -d
+icp deploy --cycles 30t
+bash test.sh
+icp network stop
 ```
 
-### 5. Deploy the smart contract
+> If tests fail with an out-of-cycles error, top up the canister and retry:
+> ```bash
+> icp canister top-up --amount 30t backend
+> ```
 
-Open a third terminal (terminal 3) and run the following command to deploy the smart contract:
+### Deploy to the IC network
+
+The `ic` environment deploys to IC mainnet connected to Dogecoin mainnet, using `test_key_1`:
 
 ```bash
-dfx deploy basic_dogecoin --argument '(variant { regtest })'
+icp deploy -e ic --cycles 30t
 ```
 
-What this does:
+#### Choosing a threshold ECDSA key
 
-- `dfx deploy` tells the command line interface to `deploy` the smart contract.
-- `--argument '(variant { regtest })'` passes the argument `regtest` to initialize the smart contract, telling it to connect to the local Dogecoin regtest network.
+The IC offers different [deployed threshold keys](https://docs.internetcomputer.org/concepts/chain-key-cryptography/#deployed-keys), set via `key_name` in [`backend/src/lib.rs`](backend/src/lib.rs):
 
-Your smart contract is live and ready to use! You can interact with it using either the command line or the Candid UI (the link you see in the terminal).
+- **`test_key_1`** — a test key. It is what the icp-cli network launcher provisions locally, and it is also available on mainnet with **lower signing costs** than the production key. Prefer it for development and testing, where no production funds are at stake. This example uses `test_key_1` for both `regtest` and `mainnet` by default.
+- **`key_1`** — the production key. Use it for real deployments that hold real value, accepting the higher per-signature cost.
 
 ## Generating Dogecoin addresses
 
-The example demonstrates how to generate and use P2PKH addresses which are the most common type of addresses in Dogecoin.
-
-Use the Candid UI or CLI to generate an address:
+The example demonstrates how to generate and use P2PKH (legacy) addresses, which are the most common address type on Dogecoin. They are derived using ECDSA and signed with `sign_with_ecdsa`.
 
 ```bash
-dfx canister call basic_dogecoin get_p2pkh_address
+icp canister call backend get_p2pkh_address '()'
 ```
 
-## Receiving dogecoin
+## Funding and sending dogecoin: a complete walkthrough
 
-Use the `dogecoin-cli` to mine a Dogecoin block and send the block reward in the form of local dogecoins to one of the smart contract addresses:
+This walkthrough shows how to fund an address, check its balance, send dogecoin to another address, and confirm the transfer — using the bundled `dogecoind` in regtest mode.
+
+> **Coinbase maturity:** In Dogecoin, newly mined block rewards (coinbase UTXOs) cannot be spent until a number of additional blocks have been mined on top. Mine enough blocks upfront so the first reward is spendable.
+
+### Step 1 — Get the canister's address and the container ID
+
 ```bash
-dogecoin-cli -datadir=$(pwd)/dogecoin_data generatetoaddress 1 <dogecoin_address>
+CONTAINER=$(docker ps --filter "ancestor=icp-cli-network-launcher-dogecoin" --format "{{.ID}}" | head -1)
+ADDR=$(icp canister call backend get_p2pkh_address '()' | grep -o '"[^"]*"' | tr -d '"')
+echo "Address: $ADDR"
 ```
 
-## Checking balance
+### Step 2 — Mine 101 blocks to fund the address
 
-Check the balance of any Dogecoin address:
+Mining 101 blocks ensures the first block reward is past the coinbase maturity threshold and spendable.
+
 ```bash
-dfx canister call basic_dogecoin get_balance '("<dogecoin_address>")'
+docker exec $CONTAINER dogecoin-cli -regtest \
+  -rpcuser=ic-doge-integration -rpcpassword=QPQiNaph19FqUsCrBRN0FII7lyM26B51fAMeBQzCb-E= \
+  generatetoaddress 101 "$ADDR"
 ```
 
-This uses the Dogecoin API endpoint `dogecoin_get_balance` and works for any supported address type. Any funding transaction requires at least one confirmation to be reflected in the balance.
+### Step 3 — Check the balance
 
-## Sending dogecoin
-
-You can send dogecoin using the `send_from_p2pkh_address` endpoint. What this does internally:
-
-1. Estimates fees
-2. Looks up spendable UTXOs
-3. Builds a transaction to the target address
-4. Signs the transaction using ECDSA
-5. Broadcasts the transaction using the `dogecoin_send_transaction` API endpoint.
-
-Example to send 1 DOGE (100,000,000 koinus) to a target address:
+The IC Dogecoin integration syncs new blocks continuously. If the balance shows 0, wait a few seconds and retry.
 
 ```bash
-dfx canister call basic_dogecoin send_from_p2pkh_address '(record { 
-  destination_address = "mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM";
+icp canister call backend get_balance "(\"$ADDR\")"
+```
+
+### Step 4 — Send dogecoin
+
+```bash
+DEST="mhXcJVuNA48bZsrKq4t21jx1neSqyceqTM"
+icp canister call backend send_from_p2pkh_address "(record {
+  destination_address = \"$DEST\";
   amount_in_koinu = 100000000;
-})'
+})"
+# Returns the transaction ID
 ```
 
-> [!IMPORTANT]
-> Newly mined dogecoins, like those you created with the above `dogecoin-cli` command, cannot be spent until 60 additional blocks have been added to the chain on regtest. To make your dogecoin spendable, create 60 additional blocks. Choose one of the smart contract addresses as receiver of the block reward or use any valid Dogecoin dummy address:
->
-> ```bash
-> dogecoin-cli -datadir=$(pwd)/dogecoin_data generatetoaddress 60 <dogecoin_address>
-> ```
+The transaction is now broadcast to `dogecoind`'s mempool. The destination balance will remain 0 until it is confirmed in a block.
+
+### Step 5 — Mine a confirmation block
+
+```bash
+docker exec $CONTAINER dogecoin-cli -regtest \
+  -rpcuser=ic-doge-integration -rpcpassword=QPQiNaph19FqUsCrBRN0FII7lyM26B51fAMeBQzCb-E= \
+  generatetoaddress 1 "$ADDR"
+```
+
+### Step 6 — Verify the destination received the funds
+
+```bash
+icp canister call backend get_balance "(\"$DEST\")"
+```
+
+Each send internally estimates fees, selects UTXOs, builds a transaction, signs it using ECDSA, and broadcasts it via `dogecoin_send_transaction`.
+
+## Querying UTXOs
+
+You can inspect the UTXOs held at any Dogecoin address:
+
+```bash
+icp canister call backend get_utxos "(\"$ADDR\")"
+```
+
+This returns all unspent outputs at the address — useful for verifying that funds arrived or for debugging balance issues. The response includes each outpoint (txid + vout index), value in koinu, and confirmation height.
 
 ## Retrieving block headers
 
 You can query historical block headers:
 
 ```bash
-dfx canister call basic_dogecoin get_block_headers '(10: nat32, null)'
+icp canister call backend get_block_headers '(10: nat32, null)'
 # or a range:
-dfx canister call basic_dogecoin get_block_headers '(10: nat32, opt (11: nat32))'
+icp canister call backend get_block_headers '(10: nat32, opt (11: nat32))'
 ```
 
-These commands call the `dogecoin_get_block_headers` API endpoint, which is useful for blockchain validation or light-client logic.
+This calls `dogecoin_get_block_headers`, which is useful for blockchain validation or light client logic.
 
 ## Notes on implementation
 
@@ -174,13 +179,9 @@ This example implements several important patterns for Dogecoin integration:
 
 This example is provided for educational purposes and is not production-ready. It is important to consider security implications when developing applications that interact with Dogecoin or other cryptocurrencies. The code has **not been audited** and may contain vulnerabilities or security issues.
 
-If you base your application on this example, we recommend you familiarize yourself with and adhere to the [security best practices](https://internetcomputer.org/docs/current/references/security/) for developing on the Internet Computer. This example may not implement all the best practices.
+If you base your application on this example, we recommend you familiarize yourself with and adhere to the [security best practices](https://docs.internetcomputer.org/guides/security/overview) for developing on the Internet Computer. This example may not implement all the best practices.
 
 For example, the following aspects are particularly relevant for this app:
 
-- [Certify query responses if they are relevant for security](https://internetcomputer.org/docs/building-apps/security/data-integrity-and-authenticity#using-certified-variables-for-secure-queries), since the app, for example, offers a method to read balances.
-- [Use a decentralized governance system like SNS to make a smart contract have a decentralized controller](https://internetcomputer.org/docs/building-apps/security/decentralization), since decentralized control may be essential for smart contracts holding dogecoins on behalf of users.
-
----
-
-*Last updated: November 2025*
+- Certify query responses if they are relevant for security, since the app offers a method to read balances.
+- Use a decentralized governance system like SNS to give a canister a decentralized controller, since decentralized control may be essential for canisters holding dogecoins on behalf of users.
