@@ -7,7 +7,7 @@ use bitcoin::{
     self, absolute::LockTime, blockdata::witness::Witness, dogecoin::Address, hashes::Hash,
     transaction::Version, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
 };
-use ic_cdk::bitcoin_canister::{GetCurrentFeePercentilesRequest, Utxo};
+use ic_cdk_bitcoin_canister::{GetCurrentFeePercentilesRequest, Utxo};
 use std::fmt;
 
 /// Selects UTXOs using a greedy algorithm to cover the required amount plus fee.
@@ -89,7 +89,7 @@ pub fn build_transaction_with_fee(
         .iter()
         .map(|utxo| TxIn {
             previous_output: OutPoint {
-                txid: Txid::from_raw_hash(Hash::from_slice(&utxo.outpoint.txid).unwrap()),
+                txid: Txid::from_raw_hash(Hash::from_slice(utxo.outpoint.txid.as_ref()).unwrap()),
                 vout: utxo.outpoint.vout,
             },
             sequence: Sequence::MAX,      // No relative timelock constraints

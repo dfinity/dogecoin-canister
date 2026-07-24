@@ -1,8 +1,6 @@
 use crate::{dogecoin_get_utxos, DOGE_CONTEXT};
-use ic_cdk::{
-    bitcoin_canister::{GetUtxosRequest, GetUtxosResponse},
-    update,
-};
+use ic_cdk::update;
+use ic_cdk_bitcoin_canister::{GetUtxosRequest, GetUtxosResponse};
 
 /// Returns the UTXOs of the given Dogecoin address.
 #[update]

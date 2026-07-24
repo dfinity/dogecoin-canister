@@ -18,7 +18,7 @@ Returns the UTXOs associated with a Dogecoin address. UTXOs can be filtered by m
 
 ### `dogecoin_get_utxos_query`
 
-Queries `dogecoin_get_utxos` using a [query call](https://internetcomputer.org/docs/building-apps/interact-with-canisters/query-calls). Since this is a query call, it returns quickly but results are not trustworthy.
+Queries `dogecoin_get_utxos` using a [query call](https://docs.internetcomputer.org/guides/canister-calls/calling-from-clients/#query-vs-update-calls). Since this is a query call, it returns quickly but results are not trustworthy.
 
 ### `dogecoin_get_balance`
 
@@ -26,7 +26,7 @@ Returns the balance of a Dogecoin address in koinus (1 DOGE = 100,000,000 koinus
 
 ### `dogecoin_get_balance_query`
 
-Queries `dogecoin_get_balance` using a [query call](https://internetcomputer.org/docs/building-apps/interact-with-canisters/query-calls). Since this is a query call, it returns quickly but results are not trustworthy.
+Queries `dogecoin_get_balance` using a [query call](https://docs.internetcomputer.org/guides/canister-calls/calling-from-clients/#query-vs-update-calls). Since this is a query call, it returns quickly but results are not trustworthy.
 
 ### `dogecoin_get_current_fee_percentiles`
 
@@ -48,7 +48,7 @@ See the Dogecoin canister [interface specification](https://github.com/dfinity/d
 
 ## Cycles Cost
 
-The costs of API calls in [cycles](https://internetcomputer.org/docs/building-apps/getting-started/tokens-and-cycles) and USD for the Dogecoin Mainnet APIs are presented in the following table. As a general principle for the Dogecoin API, some API calls must have a minimum number of cycles attached to them, as indicated in the column *Minimum cycles to send with call*. Requiring a relatively large minimum number of cycles makes it possible to change the pricing of API calls without breaking existing canisters when the Dogecoin subnet grows in terms of its replication factor in the future. Cycles not consumed by the call are returned to the caller.
+The costs of API calls in [cycles](https://docs.internetcomputer.org/concepts/cycles) and USD for the Dogecoin Mainnet APIs are presented in the following table. As a general principle for the Dogecoin API, some API calls must have a minimum number of cycles attached to them, as indicated in the column *Minimum cycles to send with call*. Requiring a relatively large minimum number of cycles makes it possible to change the pricing of API calls without breaking existing canisters when the Dogecoin subnet grows in terms of its replication factor in the future. Cycles not consumed by the call are returned to the caller.
 
 The call for submitting a Dogecoin transaction to the Dogecoin network does not require a minimum number of cycles to send with the call as the charged cost is independent of the replication factor of the subnet.
 

@@ -14,22 +14,21 @@ Another type of address is pay-to-script-hash (P2SH) address. It encodes the has
 
 ## Generating addresses with threshold ECDSA
 
-To generate a Dogecoin address, you need to generate an ECDSA public key. An ECDSA public key can be retrieved using the [`ecdsa_public_key`](https://internetcomputer.org/docs/references/ic-interface-spec#ic-ecdsa_public_key) system API endpoint. The [basic Dogecoin example](https://github.com/dfinity/dogecoin-canister/tree/master/examples/basic_dogecoin) demonstrates how to generate a P2PKH address from a public key:
+To generate a Dogecoin address, you need to generate an ECDSA public key. An ECDSA public key can be retrieved using the [`ecdsa_public_key`](https://docs.internetcomputer.org/references/ic-interface-spec/management-canister/#ic-ecdsa_public_key) system API endpoint. The [basic Dogecoin example](https://github.com/dfinity/dogecoin-canister/tree/master/examples/basic_dogecoin) demonstrates how to generate a P2PKH address from a public key:
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/service/get_p2pkh_address.rs:9:26}}
+{{#include ../../../examples/basic_dogecoin/backend/src/service/get_p2pkh_address.rs:9:26}}
 ```
-*View the source on GitHub: [get_p2pkh_address.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/service/get_p2pkh_address.rs)*
+*View the source on GitHub: [get_p2pkh_address.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/backend/src/service/get_p2pkh_address.rs)*
 
 ```rust
-{{#include ../../../examples/basic_dogecoin/src/ecdsa.rs:16:46}}
+{{#include ../../../examples/basic_dogecoin/backend/src/ecdsa.rs:16:46}}
 ```
 
-*View the source on GitHub: [ecdsa.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/src/ecdsa.rs)*
+*View the source on GitHub: [ecdsa.rs](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/backend/src/ecdsa.rs)*
 
 ## Resources
 
 [Learn more about Dogecoin P2PKH addresses](https://en.bitcoin.it/wiki/Transaction#Pay-to-PubkeyHash).
 
-[Learn more about the `ecdsa_public_key` API](https://internetcomputer.org/docs/references/ic-interface-spec#ic-ecdsa_public_key).
-
+[Learn more about the `ecdsa_public_key` API](https://docs.internetcomputer.org/references/ic-interface-spec/management-canister/#ic-ecdsa_public_key).

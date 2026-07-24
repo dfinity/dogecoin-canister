@@ -2,30 +2,65 @@
 
 To develop Dogecoin applications to be deployed on ICP, your local developer environment will need to include:
 
-- A local Dogecoin regtest node.
+- [icp-cli](https://cli.internetcomputer.org/), the command-line tool used to create, deploy, and manage [canisters](https://docs.internetcomputer.org/concepts/canisters) and to run a local development network. Install it with:
 
-- The [Rust toolchain](https://doc.rust-lang.org/book/ch01-01-installation.html) for installing Rust crates and compiling Rust code.
+  ```bash
+  npm install -g @icp-sdk/icp-cli @icp-sdk/ic-wasm
+  ```
 
-- The [IC SDK](https://internetcomputer.org/docs/building-apps/getting-started/install) for creating, deploying, and managing canisters. You can install it natively on macOS and Linux; however, Windows users will need to set up WSL 2 before installing the IC SDK.
+- The [Rust toolchain](https://doc.rust-lang.org/book/ch01-01-installation.html) with the `wasm32-unknown-unknown` target for compiling canisters:
 
-The IC SDK includes the `dfx` command-line tool, which is used to manage canisters and interact with the Internet Computer network.
+  ```bash
+  rustup target add wasm32-unknown-unknown
+  ```
 
-Interacting with Dogecoin requires `dfx` version `0.30.1-beta.0` or higher. You can check your installed version by running:
+- A local Dogecoin regtest node (`dogecoind`). You can either let icp-cli run one for you inside a Docker container (recommended, see below) or run your own.
 
-```bash
-dfx --version
+```admonish note title="macOS users"
+On macOS, a `clang` with WebAssembly support is required to compile the `secp256k1-sys` C library for the `wasm32-unknown-unknown` target. Xcode's bundled `clang` does not include the WebAssembly backend. Install the [Homebrew LLVM](https://formulae.brew.sh/formula/llvm) and add it to your `PATH`:
+
+    brew install llvm
+    export PATH="$(brew --prefix llvm)/bin:$PATH"
+
+Add the `export` line to your shell profile (`~/.zshrc` or `~/.bashrc`) to make it permanent.
 ```
 
-To install and switch to a specific `dfx` version, use:
-
-```bash
-dfxvm install <version>
-dfxvm default <version>
-```
-
-## Create a local Dogecoin network (regtest) with `dogecoind`
+## Running a local Dogecoin regtest network
 
 It is recommended to set up a local Dogecoin [regtest](https://developer.bitcoin.org/examples/testing.html#regtest-mode) network to mine blocks quickly and at will, which facilitates testing various cases without having to rely on the Dogecoin mainnet where blocks are produced every minute on average.
+
+icp-cli runs the ICP Dogecoin integration (a local instance of the Dogecoin API, deployed as a canister for your application to interact with) as part of its managed local network. There are two ways to provide the underlying `dogecoind` regtest node.
+
+### Option 1: Docker image that bundles `dogecoind` (recommended)
+
+This is the approach used by the [`basic_dogecoin` example](https://github.com/dfinity/dogecoin-canister/tree/master/examples/basic_dogecoin). A custom network-launcher Docker image bundles `dogecoind` together with the network launcher, so a single `icp network start` command brings up both the local IC network and a regtest Dogecoin node — you do not need to install or run `dogecoind` yourself. This is especially convenient on macOS, where there are no official `dogecoind` binaries.
+
+The example wires this up in [`icp.yaml`](https://github.com/dfinity/dogecoin-canister/blob/master/examples/basic_dogecoin/icp.yaml) by pointing its `local` network at the custom image:
+
+```yaml
+networks:
+  - name: local
+    mode: managed
+    image: icp-cli-network-launcher-dogecoin
+```
+
+See [Deploy your first app locally](./deploy.md) for the full workflow (building the image, starting the network, and deploying).
+
+### Option 2: Run your own `dogecoind` and point icp-cli at it
+
+If you prefer to manage the node yourself, run a local `dogecoind` regtest network and connect icp-cli's default (non-Docker) network launcher to it with the `dogecoind-addr` field:
+
+```yaml
+networks:
+  - name: local
+    mode: managed
+    dogecoind-addr:
+      - "127.0.0.1:18444"
+```
+
+`dogecoind-addr` takes the node's P2P address (not its RPC endpoint). For the full set of options, see the [icp-cli configuration reference](https://cli.internetcomputer.org/1.1/reference/configuration/#bitcoin-and-dogecoin-integration).
+
+The steps below set up such a node.
 
 - #### Step 1: Download [Dogecoin Core](https://github.com/dogecoin/dogecoin/releases).
 
@@ -41,8 +76,8 @@ tar -xvf dogecoin-1.14.9-x86_64-linux-gnu.tar.gz
 export PATH="$(pwd)/dogecoin-1.14.9/bin:$PATH"
 ```
 
-```admonish note title="Mac OS X users"
-There are currently no released binaries for Mac OS X. You will need to build Dogecoin Core from source. Follow the instructions in the [Dogecoin Core repository](https://github.com/dogecoin/dogecoin/blob/master/doc/build-macos.md).
+```admonish note title="macOS users"
+There are currently no released binaries for macOS. Either use the Docker image described in Option 1, or build Dogecoin Core from source by following the instructions in the [Dogecoin Core repository](https://github.com/dogecoin/dogecoin/blob/master/doc/build-macos.md).
 ```
 
 - #### Step 2: Create a subdirectory for Dogecoin data.
@@ -82,51 +117,7 @@ Find more details about the `dogecoin.conf` settings in the Dogecoin Core Daemon
 - #### Step 4: Run `dogecoind` to start the Dogecoin client.
 
 ```bash
-dogecoind -datadir=$(pwd)/dogecoin_data -printtoconsole --port=18444 
+dogecoind -datadir=$(pwd)/dogecoin_data -printtoconsole --port=18444
 ```
 
-This command assumes that port `18444` on your machine is available. If it isn't, change the specified port accordingly.
-
-## Starting `dfx` with Dogecoin support
-
-To deploy and test projects locally, first start `dfx` in your local development environment with Dogecoin support enabled.
-
-```bash
-dfx start --enable-dogecoin
-```
-
-`dfx` will run a local instance of the Dogecoin API deployed as a canister for your application to interact with. The `--enable-dogecoin` flag uses the default Dogecoin node configuration, `127.0.0.1:18444`. This address and port can be manually configured with the `--dogecoin-node` flag:
-
-```bash
-dfx start --enable-dogecoin --dogecoin-node <host_address>:<port>
-```
-
-### Configuring the local Dogecoin API
-
-The Dogecoin API can be configured either using the command line option `--dogecoin-node` provided to `dfx` or by modifying the project’s `dfx.json` file.
-
-If both command line options and `dfx.json` configurations are provided, the command line option takes precedence.
-
-The Dogecoin API configuration is specified under the `defaults` section of the `dfx.json` file. Below is an example configuration:
-
-```json
-{
-  "defaults": {
-    "dogecoin": {
-      "enabled": true,
-      "nodes": ["127.0.0.1:18444"]
-    }
-  }
-}
-```
-
-The Dogecoin configuration in `dfx.json` adds fields under `defaults` as shown above. This configuration won't actually have any effect unless `dfx.json` also defines the local IC network, **and** `dfx start` is run within the project directory. An example of a full configuration, including the local IC network definition, can be found in the `dfx.json` file of the [basic_dogecoin example project](https://github.com/dfinity/dogecoin-canister/blob/06fbaecc1b7bcfa91f44fb1fcfabb55ee24c2ba1/examples/basic_dogecoin/dfx.json#L21).
-
-
-#### Configuration options
-
-- `enabled` (boolean): Determines whether the Dogecoin adapter is enabled. Default: `false`.
-
-- `nodes` (array of strings or null): Lists node addresses to connect to. Most likely, you may want to set this to the default IP and port of `dogecoind`, `127.0.0.1:18444`. Default: `null`.
-
-- `canister_init_arg` (string): Optional initialization arguments for the Dogecoin canister. It sets up initial configuration parameters like stability threshold, network type, block sources, fees, syncing state, API access, and more. Details about these parameters can be found in the [Dogecoin canister interface specification](https://github.com/dfinity/dogecoin-canister/blob/master/INTERFACE_SPECIFICATION.md). By default, the local Dogecoin API mirrors the settings used in the production environment. You can view these settings by searching for the [Dogecoin canister](https://dashboard.internetcomputer.org/canister/gordg-fyaaa-aaaan-aaadq-cai) on the ICP Dashboard and calling its `get_config` endpoint.
+This command assumes that port `18444` on your machine is available. If it isn't, change the specified port accordingly (and update `dogecoind-addr` to match).
