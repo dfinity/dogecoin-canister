@@ -411,7 +411,7 @@ mod test {
         for block in blocks[1..].iter() {
             with_state_mut(|s| {
                 crate::state::insert_block(s, block.clone()).unwrap();
-                crate::state::ingest_stable_blocks_into_utxoset(s);
+                let _ = crate::state::ingest_stable_blocks_into_utxoset(s);
             });
         }
 
@@ -798,7 +798,7 @@ mod test {
         for block in blocks[1..].iter() {
             with_state_mut(|s| {
                 crate::state::insert_block(s, block.clone()).unwrap();
-                crate::state::ingest_stable_blocks_into_utxoset(s);
+                let _ = crate::state::ingest_stable_blocks_into_utxoset(s);
             });
         }
 

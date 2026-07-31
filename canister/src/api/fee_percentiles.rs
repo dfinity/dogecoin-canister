@@ -322,7 +322,7 @@ mod test {
                 }
             }
 
-            state::ingest_stable_blocks_into_utxoset(state);
+            let _ = state::ingest_stable_blocks_into_utxoset(state);
         });
     }
 
