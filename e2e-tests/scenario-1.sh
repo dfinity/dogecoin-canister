@@ -33,8 +33,9 @@ if ! [[ $BLOCKCHAIN_INFO == *"height = 5"* ]]; then
   exit 1
 fi
 
-# Wait until the ingestion of stable blocks is complete.
-wait_until_stable_height 3 60
+# Wait until the ingestion of stable blocks is complete. With a main chain of height 5
+# and a stability threshold of 2, blocks 0..3 become stable, so ingestion rests at 4.
+wait_until_stable_height 4 60
 
 # Fetch the balance of an address we do not expect to have funds.
 BALANCE=$(dfx canister call dogecoin dogecoin_get_balance '(record {
