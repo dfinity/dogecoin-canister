@@ -27,11 +27,13 @@ wait_until_metric_at_least () {
     # Metrics lines are `<name> <value> <timestamp>`; take the value of an exact name match.
     VALUE=$(echo "$METRICS" | awk -v name="$METRIC" '$1 == name { print $2; exit }')
     ! [[ "$VALUE" =~ ^[0-9]+$ ]] || (( VALUE < HEIGHT )); do
-      ((ATTEMPTS-=1))
+      # Assignment, not `((ATTEMPTS-=1))`: the latter returns 1 when the result is 0,
+      # which under the callers' `set -e` would abort before the message below is printed.
+      ATTEMPTS=$((ATTEMPTS - 1))
 
       if [[ $ATTEMPTS -eq 0 ]]; then
-	echo "TIMED OUT waiting for $METRIC >= $HEIGHT (last value: ${VALUE:-none})"
-	exit 1
+        echo "TIMED OUT waiting for $METRIC >= $HEIGHT (last value: ${VALUE:-none})"
+        exit 1
       fi
 
       sleep 1
