@@ -4,10 +4,13 @@ use crate::utils::{build_chain_from, build_chain_from_for_each};
 use bitcoin::consensus::Decodable;
 use bitcoin::dogecoin::constants::genesis_block;
 use bitcoin::{block::Header, consensus::Encodable, dogecoin, dogecoin::Block as DogecoinBlock};
-use canbench_rs::{bench, bench_fn, BenchResult};
+use canbench_rs::{bench, bench_fn, bench_scope, BenchResult};
 use ic_cdk::init;
 use ic_doge_canister::state::main_chain_height;
-use ic_doge_canister::{types::BlockHeaderBlob, with_state, with_state_mut};
+use ic_doge_canister::{
+    types::{BlockHeaderBlob, Slicing},
+    with_state, with_state_mut,
+};
 use ic_doge_interface::{
     GetBalanceRequest, GetBlockHeadersRequest, GetCurrentFeePercentilesRequest, GetUtxosRequest,
     InitConfig, Network, NetworkInRequest,
@@ -734,6 +737,69 @@ fn dogecoin_get_current_fee_percentiles() -> BenchResult {
                 network: NetworkInRequest::Regtest,
             },
         );
+    })
+}
+
+// Reproduces the synchronous work of a heartbeat on a fully-synced canister over a
+// realistic unstable block tree, attributing the cost across its components.
+//
+// NOTE: the async fetch (the inter-canister `bitcoin_get_successors` call) is excluded,
+// since canbench builds to wasm32 where the real call is compiled in and cannot execute.
+#[bench(raw)]
+fn heartbeat_steady_state_synced() -> BenchResult {
+    let blocks_to_insert: usize = 100;
+    let num_transactions_per_block: usize = 300;
+    let num_outputs_per_transaction: usize = 3;
+
+    ic_doge_canister::init(InitConfig {
+        network: Some(Network::Regtest),
+        stability_threshold: Some((blocks_to_insert * 2) as u128),
+        ..Default::default()
+    });
+
+    let address = parsed_address();
+    let genesis = genesis_block(dogecoin::Network::Regtest);
+    let mut counter = 1u64;
+    let chain = build_chain_from(
+        *genesis.header,
+        blocks_to_insert,
+        num_transactions_per_block,
+        num_outputs_per_transaction,
+        0,
+        &address,
+        &mut counter,
+    );
+
+    with_state_mut(|s| {
+        for block in &chain {
+            ic_doge_canister::state::insert_block(s, block.clone()).unwrap();
+        }
+    });
+
+    assert_chain_height(blocks_to_insert);
+
+    bench_fn(|| {
+        {
+            let _s = bench_scope("collect_metrics_tip_depths");
+            with_state(|s| {
+                let _ = s.unstable_blocks.tip_depths();
+            });
+        }
+
+        {
+            let _s = bench_scope("ingest_no_op");
+            with_state_mut(|s| {
+                let slicing = ic_doge_canister::state::ingest_stable_blocks_into_utxoset(s);
+                assert!(matches!(slicing, Slicing::Done(false)));
+            });
+        }
+
+        {
+            let _s = bench_scope("build_get_successors_request");
+            with_state(|s| {
+                let _ = ic_doge_canister::state::get_block_hashes(s);
+            });
+        }
     })
 }
 
